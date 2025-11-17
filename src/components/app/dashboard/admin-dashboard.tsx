@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { transactions, users } from "@/lib/data";
 import type { User, UserRole } from '@/types';
-import { ArrowLeft, ArrowRightLeft, Building2, Shield, Users, Wrench, ScanLine } from "lucide-react";
+import { ArrowLeft, ArrowRightLeft, Building2, Shield, Users, Wrench, ScanLine, FileDown } from "lucide-react";
 import { QrCodeDisplay } from "../qr-code";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -47,6 +47,39 @@ export function AdminDashboard() {
     setSelectedUser(null);
   }
 
+  const handleExportCsv = () => {
+    const headers = ['id', 'name', 'email', 'phone', 'role', 'unit', 'sqft', 'service', 'shift'];
+    const csvRows = [headers.join(',')];
+
+    selectedUserList.forEach(user => {
+        const row = [
+            user.id,
+            user.name,
+            user.email,
+            user.phone || '',
+            user.role,
+            user.details?.unit || '',
+            user.details?.sqft || '',
+            user.details?.service || '',
+            user.details?.shift || ''
+        ];
+        csvRows.push(row.join(','));
+    });
+
+    const csvString = csvRows.join('\n');
+    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `${listTitle.toLowerCase().replace(/ /g, '_')}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+  };
+
   const qrData = { id: user.id, type: user.role, name: user.name };
 
   if (view === 'userList') {
@@ -59,8 +92,12 @@ export function AdminDashboard() {
         <div className="grid gap-6 lg:grid-cols-3">
           <div className="lg:col-span-1">
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>{listTitle}</CardTitle>
+                <Button variant="outline" size="icon" onClick={handleExportCsv}>
+                    <FileDown className="h-4 w-4" />
+                    <span className="sr-only">Export as CSV</span>
+                </Button>
               </CardHeader>
               <CardContent>
                 <div className="flex flex-col gap-2">
