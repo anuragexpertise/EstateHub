@@ -19,7 +19,7 @@ export function ApartmentDashboard() {
 
   const userPayments = payments.filter(p => p.userId === user.id).sort((a, b) => b.date.getTime() - a.date.getTime());
   const qrData = { id: user.id, type: user.role, name: user.name };
-  const dateFormatter = new Intl.DateTimeFormat();
+  const dateFormatter = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
   const nextPaymentDate = userPayments.find(p => p.status === 'Due')?.date;
 
   return (
@@ -46,7 +46,7 @@ export function ApartmentDashboard() {
               <div className="flex-1 space-y-1">
                 <p className="text-sm font-medium leading-none">Next Payment Due</p>
                 <p className="text-2xl font-semibold text-muted-foreground">
-                  {nextPaymentDate ? dateFormatter.format(nextPaymentDate) : 'N/A'}
+                  {nextPaymentDate ? dateFormatter.format(nextPaymentDate).replace(/ /g, '-') : 'N/A'}
                 </p>
               </div>
             </div>
@@ -77,7 +77,7 @@ export function ApartmentDashboard() {
                     <TableCell>
                       <Badge variant={payment.status === 'Paid' ? 'secondary' : 'destructive'}>{payment.status}</Badge>
                     </TableCell>
-                    <TableCell>{dateFormatter.format(payment.date)}</TableCell>
+                    <TableCell>{dateFormatter.format(payment.date).replace(/ /g, '-')}</TableCell>
                     <TableCell className="text-right">₹{payment.amount.toLocaleString()}</TableCell>
                   </TableRow>
                 ))}

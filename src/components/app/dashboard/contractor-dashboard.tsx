@@ -17,7 +17,7 @@ export function ContractorDashboard() {
 
   const userPayments = payments.filter(p => p.userId === user.id).sort((a, b) => b.date.getTime() - a.date.getTime());
   const qrData = { id: user.id, type: user.role, name: user.name };
-  const dateFormatter = new Intl.DateTimeFormat();
+  const dateFormatter = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -65,7 +65,7 @@ export function ContractorDashboard() {
                     <TableCell>
                       <Badge variant={payment.status === 'Paid' ? 'secondary' : 'default'}>{payment.status}</Badge>
                     </TableCell>
-                    <TableCell>{dateFormatter.format(payment.date)}</TableCell>
+                    <TableCell>{dateFormatter.format(payment.date).replace(/ /g, '-')}</TableCell>
                     <TableCell className="text-right">₹{payment.amount.toLocaleString()}</TableCell>
                   </TableRow>
                 ))}
