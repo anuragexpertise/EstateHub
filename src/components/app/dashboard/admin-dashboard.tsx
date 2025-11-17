@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { transactions, users, payments as initialPayments, rates } from "@/lib/data";
@@ -177,31 +177,54 @@ export function AdminDashboard() {
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Dashboard
         </Button>
-        <div className="grid gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-3">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>{listTitle}</CardTitle>
-                <Button variant="outline" size="icon" onClick={() => handleExportCsv('users')}>
-                    <FileDown className="h-4 w-4" />
-                    <span className="sr-only">Export as CSV</span>
-                </Button>
-              </CardHeader>
-              <CardContent>
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>{listTitle}</CardTitle>
+            <Button variant="outline" size="icon" onClick={() => handleExportCsv('users')}>
+                <FileDown className="h-4 w-4" />
+                <span className="sr-only">Export as CSV</span>
+            </Button>
+            </CardHeader>
+            <CardContent>
+            {isApartmentList ? (
+                <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
+                    {selectedUserList.map(u => {
+                        const passStatus = checkPassStatus(u.id);
+                        const userQrData = { id: u.id, type: u.role, name: u.name };
+                        return (
+                            <Card key={u.id}>
+                                <CardHeader>
+                                    <CardTitle>{u.name}</CardTitle>
+                                    <CardDescription>Apartment ID: {u.id} | Size: {u.details?.sqft} sqft</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <QrCodeDisplay 
+                                        data={userQrData}
+                                        title="Apartment Pass"
+                                        description="QR code for apartment access."
+                                    />
+                                    <div className="flex items-center justify-between">
+                                        <Badge variant={passStatus.active ? 'secondary' : 'outline'} className={passStatus.active ? 'bg-green-500 text-white' : ''}>
+                                            {passStatus.active ? `Active (Expires ${dateFormatter.format(passStatus.expires!).replace(/ /g, '-')})` : 'Inactive'}
+                                        </Badge>
+                                    </div>
+                                </CardContent>
+                                <CardFooter className="grid grid-cols-3 gap-2">
+                                     <Button size="sm" variant="outline" onClick={() => handleAddPassPayment(u, '1day')}>1-Day Pass</Button>
+                                     <Button size="sm" variant="outline" onClick={() => handleAddPassPayment(u, '7day')}>7-Day Pass</Button>
+                                     <Button size="sm" variant="outline" onClick={() => handleAddPassPayment(u, '1month')}>1-Month Pass</Button>
+                                </CardFooter>
+                            </Card>
+                        )
+                    })}
+                </div>
+            ) : (
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            {isApartmentList && <>
-                                <TableHead>Apartment ID</TableHead>
-                                <TableHead>Resident Name</TableHead>
-                                <TableHead>Size (sqft)</TableHead>
-                            </>}
-                            {isContractorList && <>
-                                <TableHead>Contractor ID</TableHead>
-                                <TableHead>Contractor Name</TableHead>
-                            </>}
+                            <TableHead>Contractor ID</TableHead>
+                            <TableHead>Contractor Name</TableHead>
                             <TableHead>Status</TableHead>
-                             {isApartmentList && <TableHead className="text-right">Actions</TableHead>}
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -211,35 +234,19 @@ export function AdminDashboard() {
                                 <TableRow key={u.id}>
                                     <TableCell className="font-medium">{u.id}</TableCell>
                                     <TableCell>{u.name}</TableCell>
-                                    {isApartmentList && <TableCell>{u.details?.sqft}</TableCell>}
                                     <TableCell>
                                         <Badge variant={passStatus.active ? 'secondary' : 'outline'} className={passStatus.active ? 'bg-green-500 text-white' : ''}>
                                             {passStatus.active ? `Active (Expires ${dateFormatter.format(passStatus.expires!).replace(/ /g, '-')})` : 'Inactive'}
                                         </Badge>
                                     </TableCell>
-                                     {isApartmentList && (
-                                        <TableCell className="text-right">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="outline">Issue Pass</Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent>
-                                                    <DropdownMenuItem onClick={() => handleAddPassPayment(u, '1day')}>1-Day Pass</DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => handleAddPassPayment(u, '7day')}>7-Day Pass</DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => handleAddPassPayment(u, '1month')}>1-Month Pass</DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </TableCell>
-                                    )}
                                 </TableRow>
                             )
                         })}
                     </TableBody>
                 </Table>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+            )}
+            </CardContent>
+        </Card>
       </div>
     );
   }
