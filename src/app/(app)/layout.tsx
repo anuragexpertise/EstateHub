@@ -4,6 +4,7 @@ import { Logo } from '@/components/logo';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { PanelLeft } from 'lucide-react';
+import { SidebarNavHeader } from '@/components/app/sidebar-nav-header';
 
 export default function AppLayout({
   children,
@@ -13,8 +14,11 @@ export default function AppLayout({
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
       <aside className="fixed inset-y-0 left-0 z-10 hidden w-60 flex-col border-r bg-background sm:flex">
-        <div className="flex h-16 items-center border-b px-6">
-          <a href="#" className="flex items-center gap-2 font-bold font-headline">
+        <div className="flex h-16 shrink-0 items-center border-b px-6">
+          <a
+            href="#"
+            className="flex items-center gap-2 font-bold font-headline"
+          >
             <Logo className="h-6 w-6 text-primary" />
             <span>EstateHub</span>
           </a>
@@ -22,7 +26,7 @@ export default function AppLayout({
         <SidebarNav />
       </aside>
       <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-60">
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
+        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
           <Sheet>
             <SheetTrigger asChild>
               <Button size="icon" variant="outline" className="sm:hidden">
@@ -43,8 +47,19 @@ export default function AppLayout({
               </nav>
             </SheetContent>
           </Sheet>
-          <div className="relative ml-auto flex-1 md:grow-0" />
-          <UserNav />
+          
+          <div className="hidden items-center gap-2 font-bold font-headline sm:flex">
+            <Logo className="h-6 w-6 text-primary" />
+            <span>EstateHub</span>
+          </div>
+
+          <div className="flex-1 flex justify-center">
+            <SidebarNavHeader />
+          </div>
+
+          <div className="relative ml-auto flex-none">
+            <UserNav />
+          </div>
         </header>
         <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
           {children}

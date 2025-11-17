@@ -8,10 +8,6 @@ import {
   Settings,
   CreditCard,
   ScanLine,
-  Shield,
-  Building2,
-  Wrench,
-  UserCog,
   type LucideIcon,
 } from 'lucide-react';
 import type { UserRole } from '@/types';
@@ -33,12 +29,6 @@ const allNavItems: NavItem[] = [
   { href: '/settings', label: 'Settings', icon: Settings, roles: ['Admin', 'Apartment', 'Contractor', 'Security'] },
 ];
 
-const roleIcons: Record<UserRole, LucideIcon> = {
-  Admin: UserCog,
-  Apartment: Building2,
-  Contractor: Wrench,
-  Security: Shield,
-};
 
 export function SidebarNav({ isMobile = false }: { isMobile?: boolean }) {
   const searchParams = useSearchParams();
@@ -48,8 +38,7 @@ export function SidebarNav({ isMobile = false }: { isMobile?: boolean }) {
   if (!role) return null;
 
   const navItems = allNavItems.filter((item) => item.roles.includes(role));
-  const RoleIcon = roleIcons[role];
-
+  
   const linkClass = (href: string) => cn(
     "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
     { "bg-muted text-primary": pathname === href },
@@ -61,10 +50,6 @@ export function SidebarNav({ isMobile = false }: { isMobile?: boolean }) {
         "flex-1 overflow-auto py-4",
         { "grid items-start": !isMobile, "grid gap-6 text-lg font-medium": isMobile }
     )}>
-        <div className="flex items-center gap-3 rounded-lg px-3 py-2 text-primary font-semibold">
-            <RoleIcon className="h-5 w-5" />
-            <span>{role} Portal</span>
-        </div>
         {navItems.map((item) => (
             <Link key={item.label} href={`${item.href}?role=${role}`} className={linkClass(item.href)}>
                 <item.icon className="h-5 w-5" />
