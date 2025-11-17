@@ -30,7 +30,7 @@ const allNavItems: NavItem[] = [
   { href: '/payments', label: 'Payments', icon: CreditCard, roles: ['Admin', 'Apartment', 'Contractor', 'Security'] },
   { href: '/enroll', label: 'Enroll Entities', icon: UserPlus, roles: ['Admin'] },
   { href: '/scan', label: 'Evaluate Pass', icon: ScanLine, roles: ['Security'] },
-  { href: '/settings', label: 'Settings', icon: Settings, roles: ['Admin'] },
+  { href: '/settings', label: 'Settings', icon: Settings, roles: ['Admin', 'Apartment', 'Contractor', 'Security'] },
 ];
 
 const roleIcons: Record<UserRole, LucideIcon> = {
