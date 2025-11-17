@@ -34,7 +34,8 @@ import type { UserRole } from '@/types';
 const formSchema = z
   .object({
     role: z.enum(['Admin', 'Apartment', 'Contractor', 'Security']),
-    name: z.string().min(2, { message: 'ID must be at least 2 characters.' }),
+    id: z.string().min(2, { message: 'ID must be at least 2 characters.' }),
+    name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
     email: z.string().email({ message: 'Please enter a valid email.' }),
     phone: z.string().min(10, { message: 'Please enter a valid phone number.' }),
     password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
@@ -52,6 +53,13 @@ const formSchema = z
       path: ['size'],
     }
   );
+  
+const roleLabels = {
+    Admin: { id: 'Admin ID', name: 'Admin Name' },
+    Apartment: { id: 'Apartment ID', name: 'Resident Name' },
+    Contractor: { id: 'Work ID', name: 'Contractor Name' },
+    Security: { id: 'Security ID', name: 'Security Name' },
+};
 
 export default function EnrollPage() {
   const { toast } = useToast();
@@ -59,6 +67,7 @@ export default function EnrollPage() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      id: '',
       name: '',
       email: '',
       phone: '',
@@ -115,12 +124,25 @@ export default function EnrollPage() {
               />
               <FormField
                 control={form.control}
+                name="id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{roleLabels[selectedRole].id}</FormLabel>
+                    <FormControl>
+                      <Input placeholder={`Enter ${roleLabels[selectedRole].id}`} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+               <FormField
+                control={form.control}
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{selectedRole} ID</FormLabel>
+                    <FormLabel>{roleLabels[selectedRole].name}</FormLabel>
                     <FormControl>
-                      <Input placeholder={`Enter ${selectedRole} ID`} {...field} />
+                      <Input placeholder={`Enter ${roleLabels[selectedRole].name}`} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
