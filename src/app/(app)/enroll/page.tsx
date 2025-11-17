@@ -37,6 +37,7 @@ const formSchema = z
   .object({
     name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
     email: z.string().email({ message: 'Please enter a valid email.' }),
+    password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
     role: z.enum(['Admin', 'Apartment', 'Contractor', 'Security']),
     size: z.coerce.number().optional(),
   })
@@ -63,6 +64,7 @@ export default function EnrollPage() {
     defaultValues: {
       name: '',
       email: '',
+      password: '',
       role: 'Apartment',
     },
   });
@@ -137,6 +139,19 @@ export default function EnrollPage() {
                     <FormLabel>Email Address</FormLabel>
                     <FormControl>
                       <Input placeholder="user@example.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="********" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
