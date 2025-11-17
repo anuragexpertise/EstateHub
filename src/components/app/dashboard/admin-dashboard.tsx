@@ -3,26 +3,31 @@ import { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { transactions, users } from "@/lib/data";
-import type { User, UserRole } from '@/types';
-import { ArrowLeft, ArrowRightLeft, Building2, Shield, Users, Wrench, ScanLine, FileDown } from "lucide-react";
+import { transactions, users, payments as initialPayments } from "@/lib/data";
+import type { User, UserRole, Payment } from '@/types';
+import { ArrowLeft, ArrowRightLeft, Building2, Shield, Users, Wrench, ScanLine, FileDown, Hourglass, Check } from "lucide-react";
 import { QrCodeDisplay } from "../qr-code";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { UserProfileCard } from './user-profile-card';
-
-const kpiData: { title: string; value: number; icon: React.ElementType; role: UserRole | 'All' }[] = [
-    { title: "Total Apartments", value: users.filter(u => u.role === 'Apartment').length, icon: Building2, role: 'Apartment' },
-    { title: "Total Contractors", value: users.filter(u => u.role === 'Contractor').length, icon: Wrench, role: 'Contractor' },
-    { title: "Security Staff", value: users.filter(u => u.role === 'Security').length, icon: Shield, role: 'Security' },
-    { title: "Total Users", value: users.length, icon: Users, role: 'All' },
-];
+import { useToast } from '@/hooks/use-toast';
 
 export function AdminDashboard() {
-  const [view, setView] = useState<'dashboard' | 'userList'>('dashboard');
+  const [view, setView] = useState<'dashboard' | 'userList' | 'paymentList'>('dashboard');
   const [selectedUserList, setSelectedUserList] = useState<User[]>([]);
   const [listTitle, setListTitle] = useState('');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [payments, setPayments] = useState<Payment[]>(initialPayments);
+  const { toast } = useToast();
+
+  const nonVerifiedPayments = payments.filter(p => p.status === 'Pending Verification');
+
+  const kpiData: { title: string; value: number; icon: React.ElementType; role: UserRole | 'All' | 'Payments' }[] = [
+    { title: "Total Apartments", value: users.filter(u => u.role === 'Apartment').length, icon: Building2, role: 'Apartment' },
+    { title: "Total Contractors", value: users.filter(u => u.role === 'Contractor').length, icon: Wrench, role: 'Contractor' },
+    { title: "Security Staff", value: users.filter(u => u.role === 'Security').length, icon: Shield, role: 'Security' },
+    { title: "Non-Verified Payments", value: nonVerifiedPayments.length, icon: Hourglass, role: 'Payments' },
+  ];
 
   const recentTransactions = transactions.slice(0, 6);
   const user = users.find(u => u.role === 'Admin');
@@ -32,12 +37,17 @@ export function AdminDashboard() {
     return <p>Admin user not found.</p>;
   }
 
-  const handleKpiClick = (role: UserRole | 'All', title: string) => {
-    const userList = role === 'All' ? users : users.filter(u => u.role === role);
-    setSelectedUserList(userList);
-    setListTitle(title);
-    setSelectedUser(userList[0] || null);
-    setView('userList');
+  const handleKpiClick = (role: UserRole | 'All' | 'Payments', title: string) => {
+    if (role === 'Payments') {
+        setListTitle(title);
+        setView('paymentList');
+    } else {
+        const userList = role === 'All' ? users : users.filter(u => u.role === role);
+        setSelectedUserList(userList);
+        setListTitle(title);
+        setSelectedUser(userList[0] || null);
+        setView('userList');
+    }
   }
 
   const handleBackToDashboard = () => {
@@ -47,24 +57,45 @@ export function AdminDashboard() {
     setSelectedUser(null);
   }
 
-  const handleExportCsv = () => {
-    const headers = ['id', 'name', 'email', 'phone', 'role', 'unit', 'sqft', 'service', 'shift'];
-    const csvRows = [headers.join(',')];
+  const handleExportCsv = (dataType: 'users' | 'payments') => {
+    let headers: string[];
+    let csvRows: string[];
 
-    selectedUserList.forEach(user => {
-        const row = [
-            user.id,
-            user.name,
-            user.email,
-            user.phone || '',
-            user.role,
-            user.details?.unit || '',
-            user.details?.sqft || '',
-            user.details?.service || '',
-            user.details?.shift || ''
-        ];
-        csvRows.push(row.join(','));
-    });
+    if (dataType === 'users') {
+        headers = ['id', 'name', 'email', 'phone', 'role', 'unit', 'sqft', 'service', 'shift'];
+        csvRows = [headers.join(',')];
+
+        selectedUserList.forEach(user => {
+            const row = [
+                user.id,
+                user.name,
+                user.email,
+                user.phone || '',
+                user.role,
+                user.details?.unit || '',
+                user.details?.sqft || '',
+                user.details?.service || '',
+                user.details?.shift || ''
+            ];
+            csvRows.push(row.join(','));
+        });
+    } else {
+        headers = ['id', 'userId', 'userName', 'description', 'amount', 'date', 'status'];
+        csvRows = [headers.join(',')];
+        nonVerifiedPayments.forEach(payment => {
+            const paymentUser = users.find(u => u.id === payment.userId);
+            const row = [
+                payment.id,
+                payment.userId,
+                paymentUser?.name || 'Unknown',
+                payment.description,
+                payment.amount,
+                payment.date.toISOString(),
+                payment.status,
+            ];
+             csvRows.push(row.join(','));
+        })
+    }
 
     const csvString = csvRows.join('\n');
     const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
@@ -79,8 +110,18 @@ export function AdminDashboard() {
         document.body.removeChild(link);
     }
   };
+  
+  const handleVerifyPayment = (paymentId: string) => {
+    setPayments(prev => prev.map(p => p.id === paymentId ? { ...p, status: 'Paid' } : p));
+    toast({
+        title: "Payment Verified",
+        description: "The payment has been marked as paid.",
+    });
+  }
 
   const qrData = { id: user.id, type: user.role, name: user.name };
+  
+  const userForPayment = (userId: string) => users.find(u => u.id === userId)?.name || 'Unknown';
 
   if (view === 'userList') {
     return (
@@ -94,7 +135,7 @@ export function AdminDashboard() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>{listTitle}</CardTitle>
-                <Button variant="outline" size="icon" onClick={handleExportCsv}>
+                <Button variant="outline" size="icon" onClick={() => handleExportCsv('users')}>
                     <FileDown className="h-4 w-4" />
                     <span className="sr-only">Export as CSV</span>
                 </Button>
@@ -131,6 +172,62 @@ export function AdminDashboard() {
     );
   }
 
+  if (view === 'paymentList') {
+    return (
+      <div>
+        <Button variant="outline" onClick={handleBackToDashboard} className="mb-4">
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Dashboard
+        </Button>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>{listTitle}</CardTitle>
+             <Button variant="outline" size="icon" onClick={() => handleExportCsv('payments')}>
+                <FileDown className="h-4 w-4" />
+                <span className="sr-only">Export as CSV</span>
+            </Button>
+          </CardHeader>
+          <CardContent>
+             <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>User</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead className="text-center">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {nonVerifiedPayments.map((payment) => (
+                  <TableRow key={payment.id}>
+                    <TableCell className="font-medium">{userForPayment(payment.userId)}</TableCell>
+                    <TableCell>{payment.description}</TableCell>
+                    <TableCell>{dateFormatter.format(payment.date).replace(/ /g, '-')}</TableCell>
+                    <TableCell className="text-right">₹{payment.amount.toLocaleString()}</TableCell>
+                    <TableCell className="text-center">
+                      <Button size="sm" onClick={() => handleVerifyPayment(payment.id)}>
+                        <Check className="mr-2 h-4 w-4" />
+                        Verify
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {nonVerifiedPayments.length === 0 && (
+                    <TableRow>
+                        <TableCell colSpan={5} className="text-center text-muted-foreground">
+                            No payments to verify.
+                        </TableCell>
+                    </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
@@ -143,7 +240,7 @@ export function AdminDashboard() {
                       </CardHeader>
                       <CardContent>
                           <div className="text-2xl font-bold">{kpi.value}</div>
-                          <p className="text-xs text-muted-foreground">managed in the system</p>
+                          <p className="text-xs text-muted-foreground">{kpi.role === 'Payments' ? 'awaiting verification' : 'managed in the system'}</p>
                       </CardContent>
                     </Card>
                 ))}
@@ -216,3 +313,5 @@ export function AdminDashboard() {
     </div>
   );
 }
+
+    
