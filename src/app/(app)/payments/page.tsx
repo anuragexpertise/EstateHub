@@ -1,3 +1,4 @@
+
 'use client';
 import { useState } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -77,7 +78,8 @@ export default function PaymentsPage() {
 
   const userPayments = payments
     .filter(p => {
-        if (role === 'Admin' || role === 'Security') return true;
+        if (role === 'Admin') return true;
+        if (role === 'Security') return p.status === 'Due' || p.status === 'Pending Verification';
         return p.userId === user.id;
     })
     .sort((a, b) => b.date.getTime() - a.date.getTime());
