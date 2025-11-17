@@ -29,7 +29,7 @@ const allNavItems: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['Admin', 'Apartment', 'Contractor', 'Security'] },
   { href: '/payments', label: 'Payments', icon: CreditCard, roles: ['Admin', 'Apartment', 'Contractor', 'Security'] },
   { href: '/enroll', label: 'Enroll Entities', icon: UserPlus, roles: ['Admin'] },
-  { href: '/scan', label: 'Evaluate Pass', icon: ScanLine, roles: ['Security'] },
+  { href: '/scan', label: 'Evaluate Pass', icon: ScanLine, roles: ['Security', 'Admin'] },
   { href: '/settings', label: 'Settings', icon: Settings, roles: ['Admin', 'Apartment', 'Contractor', 'Security'] },
 ];
 
