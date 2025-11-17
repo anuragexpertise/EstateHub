@@ -33,7 +33,7 @@ import type { UserRole } from '@/types';
 
 const formSchema = z
   .object({
-    name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
+    name: z.string().min(2, { message: 'ID must be at least 2 characters.' }),
     email: z.string().email({ message: 'Please enter a valid email.' }),
     password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
     role: z.enum(['Admin', 'Apartment', 'Contractor', 'Security']),
@@ -116,9 +116,9 @@ export default function EnrollPage() {
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Full Name</FormLabel>
+                    <FormLabel>{selectedRole} ID</FormLabel>
                     <FormControl>
-                      <Input placeholder="John Doe" {...field} />
+                      <Input placeholder={`Enter ${selectedRole} ID`} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
