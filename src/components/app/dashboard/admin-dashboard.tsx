@@ -11,7 +11,6 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { UserProfileCard } from './user-profile-card';
 import { useToast } from '@/hooks/use-toast';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 export function AdminDashboard() {
   const [view, setView] = useState<'dashboard' | 'userList' | 'paymentList'>('dashboard');
@@ -55,6 +54,10 @@ export function AdminDashboard() {
     setView('dashboard');
     setSelectedUserList([]);
     setListTitle('');
+    setSelectedUser(null);
+  }
+  
+  const handleBackToUserList = () => {
     setSelectedUser(null);
   }
 
@@ -170,6 +173,45 @@ export function AdminDashboard() {
   if (view === 'userList') {
     const isApartmentList = listTitle.includes('Apartments');
     const isContractorList = listTitle.includes('Contractors');
+
+    if (selectedUser) {
+        const passStatus = checkPassStatus(selectedUser.id);
+        const userQrData = { id: selectedUser.id, type: selectedUser.role, name: selectedUser.name };
+        return (
+            <div>
+                 <Button variant="outline" onClick={handleBackToUserList} className="mb-4">
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Back to List
+                </Button>
+                <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
+                    <UserProfileCard user={selectedUser} />
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Apartment Pass</CardTitle>
+                            <CardDescription>QR code for apartment access and pass management.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <QrCodeDisplay 
+                                data={userQrData}
+                                title="Apartment Pass"
+                                description="QR code for apartment access."
+                            />
+                            <div className="flex items-center justify-between">
+                                <Badge variant={passStatus.active ? 'secondary' : 'outline'} className={passStatus.active ? 'bg-green-500 text-white' : ''}>
+                                    {passStatus.active ? `Active (Expires ${dateFormatter.format(passStatus.expires!).replace(/ /g, '-')})` : 'Inactive'}
+                                </Badge>
+                            </div>
+                        </CardContent>
+                        <CardFooter className="grid grid-cols-3 gap-2">
+                             <Button size="sm" variant="outline" onClick={() => handleAddPassPayment(selectedUser, '1day')}>1-Day Pass</Button>
+                             <Button size="sm" variant="outline" onClick={() => handleAddPassPayment(selectedUser, '7day')}>7-Day Pass</Button>
+                             <Button size="sm" variant="outline" onClick={() => handleAddPassPayment(selectedUser, '1month')}>1-Month Pass</Button>
+                        </CardFooter>
+                    </Card>
+                </div>
+            </div>
+        )
+    }
     
     return (
       <div>
@@ -186,54 +228,23 @@ export function AdminDashboard() {
             </Button>
             </CardHeader>
             <CardContent>
-            {isApartmentList ? (
-                <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
-                    {selectedUserList.map(u => {
-                        const passStatus = checkPassStatus(u.id);
-                        const userQrData = { id: u.id, type: u.role, name: u.name };
-                        return (
-                            <Card key={u.id}>
-                                <CardHeader>
-                                    <CardTitle>{u.name}</CardTitle>
-                                    <CardDescription>Apartment ID: {u.id} | Size: {u.details?.sqft} sqft</CardDescription>
-                                </CardHeader>
-                                <CardContent className="space-y-4">
-                                    <QrCodeDisplay 
-                                        data={userQrData}
-                                        title="Apartment Pass"
-                                        description="QR code for apartment access."
-                                    />
-                                    <div className="flex items-center justify-between">
-                                        <Badge variant={passStatus.active ? 'secondary' : 'outline'} className={passStatus.active ? 'bg-green-500 text-white' : ''}>
-                                            {passStatus.active ? `Active (Expires ${dateFormatter.format(passStatus.expires!).replace(/ /g, '-')})` : 'Inactive'}
-                                        </Badge>
-                                    </div>
-                                </CardContent>
-                                <CardFooter className="grid grid-cols-3 gap-2">
-                                     <Button size="sm" variant="outline" onClick={() => handleAddPassPayment(u, '1day')}>1-Day Pass</Button>
-                                     <Button size="sm" variant="outline" onClick={() => handleAddPassPayment(u, '7day')}>7-Day Pass</Button>
-                                     <Button size="sm" variant="outline" onClick={() => handleAddPassPayment(u, '1month')}>1-Month Pass</Button>
-                                </CardFooter>
-                            </Card>
-                        )
-                    })}
-                </div>
-            ) : (
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead>Contractor ID</TableHead>
-                            <TableHead>Contractor Name</TableHead>
-                            <TableHead>Status</TableHead>
+                            <TableHead>{isApartmentList ? "Apartment ID" : "Contractor ID"}</TableHead>
+                            <TableHead>{isApartmentList ? "Resident Name" : "Contractor Name"}</TableHead>
+                            {isApartmentList && <TableHead>Size (sqft)</TableHead>}
+                            <TableHead>Pass Status</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {selectedUserList.map(u => {
                             const passStatus = checkPassStatus(u.id);
                             return (
-                                <TableRow key={u.id}>
+                                <TableRow key={u.id} onClick={() => isApartmentList && setSelectedUser(u)} className={isApartmentList ? "cursor-pointer" : ""}>
                                     <TableCell className="font-medium">{u.id}</TableCell>
                                     <TableCell>{u.name}</TableCell>
+                                    {isApartmentList && <TableCell>{u.details?.sqft}</TableCell>}
                                     <TableCell>
                                         <Badge variant={passStatus.active ? 'secondary' : 'outline'} className={passStatus.active ? 'bg-green-500 text-white' : ''}>
                                             {passStatus.active ? `Active (Expires ${dateFormatter.format(passStatus.expires!).replace(/ /g, '-')})` : 'Inactive'}
@@ -244,7 +255,6 @@ export function AdminDashboard() {
                         })}
                     </TableBody>
                 </Table>
-            )}
             </CardContent>
         </Card>
       </div>
