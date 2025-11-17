@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { transactions, users, payments as initialPayments } from "@/lib/data";
+import { transactions, users, payments as initialPayments, rates } from "@/lib/data";
 import type { User, UserRole, Payment } from '@/types';
 import { ArrowLeft, ArrowRightLeft, Building2, Shield, Users, Wrench, ScanLine, FileDown, Hourglass, Check } from "lucide-react";
 import { QrCodeDisplay } from "../qr-code";
@@ -11,6 +11,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { UserProfileCard } from './user-profile-card';
 import { useToast } from '@/hooks/use-toast';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 export function AdminDashboard() {
   const [view, setView] = useState<'dashboard' | 'userList' | 'paymentList'>('dashboard');
@@ -21,6 +22,7 @@ export function AdminDashboard() {
   const { toast } = useToast();
 
   const nonVerifiedPayments = payments.filter(p => p.status === 'Pending Verification');
+  const dateFormatter = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
   const kpiData: { title: string; value: number; icon: React.ElementType; role: UserRole | 'All' | 'Payments' }[] = [
     { title: "Total Apartments", value: users.filter(u => u.role === 'Apartment').length, icon: Building2, role: 'Apartment' },
@@ -31,7 +33,6 @@ export function AdminDashboard() {
 
   const recentTransactions = transactions.slice(0, 6);
   const user = users.find(u => u.role === 'Admin');
-  const dateFormatter = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
   
   if (!user) {
     return <p>Admin user not found.</p>;
@@ -45,7 +46,7 @@ export function AdminDashboard() {
         const userList = role === 'All' ? users : users.filter(u => u.role === role);
         setSelectedUserList(userList);
         setListTitle(title);
-        setSelectedUser(userList[0] || null);
+        setSelectedUser(null);
         setView('userList');
     }
   }
@@ -119,11 +120,57 @@ export function AdminDashboard() {
     });
   }
 
+  const handleAddPassPayment = (user: User, passType: '1day' | '7day' | '1month') => {
+    const sqft = user.details?.sqft || 0;
+    const rate = rates[passType];
+    const amount = sqft * rate;
+    const description = {
+        '1day': '1-Day Pass',
+        '7day': '7-Day Pass',
+        '1month': '1-Month Pass',
+    }[passType];
+    
+    const newPayment: Payment = {
+        id: `pay-${Date.now()}`,
+        userId: user.id,
+        amount: amount,
+        description: description,
+        date: new Date(),
+        status: 'Paid'
+    };
+
+    setPayments(prev => [newPayment, ...prev]);
+    toast({
+        title: "Pass Issued",
+        description: `${description} issued to ${user.name} for ₹${amount.toFixed(2)}.`
+    });
+  }
+
   const qrData = { id: user.id, type: user.role, name: user.name };
   
   const userForPayment = (userId: string) => users.find(u => u.id === userId)?.name || 'Unknown';
 
+  const checkPassStatus = (userId: string) => {
+    const passPayments = payments.filter(p => p.userId === userId && p.description.includes('Pass') && p.status === 'Paid');
+    if (passPayments.length === 0) return { active: false, expires: null };
+
+    const sortedPasses = passPayments.sort((a, b) => b.date.getTime() - a.date.getTime());
+    const lastPass = sortedPasses[0];
+
+    const expiryDate = new Date(lastPass.date);
+    if (lastPass.description.includes('1-Day')) expiryDate.setDate(expiryDate.getDate() + 1);
+    else if (lastPass.description.includes('7-Day')) expiryDate.setDate(expiryDate.getDate() + 7);
+    else if (lastPass.description.includes('1-Month')) expiryDate.setMonth(expiryDate.getMonth() + 1);
+
+    const isActive = expiryDate > new Date();
+
+    return { active: isActive, expires: expiryDate };
+  };
+
   if (view === 'userList') {
+    const isApartmentList = listTitle.includes('Apartments');
+    const isContractorList = listTitle.includes('Contractors');
+    
     return (
       <div>
         <Button variant="outline" onClick={handleBackToDashboard} className="mb-4">
@@ -131,7 +178,7 @@ export function AdminDashboard() {
           Back to Dashboard
         </Button>
         <div className="grid gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-3">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>{listTitle}</CardTitle>
@@ -141,31 +188,56 @@ export function AdminDashboard() {
                 </Button>
               </CardHeader>
               <CardContent>
-                <div className="flex flex-col gap-2">
-                  {selectedUserList.map(u => (
-                    <Button 
-                      key={u.id}
-                      variant={selectedUser?.id === u.id ? 'secondary' : 'ghost'} 
-                      className="justify-start"
-                      onClick={() => setSelectedUser(u)}
-                    >
-                      {u.name}
-                    </Button>
-                  ))}
-                </div>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            {isApartmentList && <>
+                                <TableHead>Apartment ID</TableHead>
+                                <TableHead>Resident Name</TableHead>
+                                <TableHead>Size (sqft)</TableHead>
+                            </>}
+                            {isContractorList && <>
+                                <TableHead>Contractor ID</TableHead>
+                                <TableHead>Contractor Name</TableHead>
+                            </>}
+                            <TableHead>Status</TableHead>
+                             {isApartmentList && <TableHead className="text-right">Actions</TableHead>}
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {selectedUserList.map(u => {
+                            const passStatus = checkPassStatus(u.id);
+                            return (
+                                <TableRow key={u.id}>
+                                    <TableCell className="font-medium">{u.id}</TableCell>
+                                    <TableCell>{u.name}</TableCell>
+                                    {isApartmentList && <TableCell>{u.details?.sqft}</TableCell>}
+                                    <TableCell>
+                                        <Badge variant={passStatus.active ? 'secondary' : 'outline'} className={passStatus.active ? 'bg-green-500 text-white' : ''}>
+                                            {passStatus.active ? `Active (Expires ${dateFormatter.format(passStatus.expires!).replace(/ /g, '-')})` : 'Inactive'}
+                                        </Badge>
+                                    </TableCell>
+                                     {isApartmentList && (
+                                        <TableCell className="text-right">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="outline">Issue Pass</Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent>
+                                                    <DropdownMenuItem onClick={() => handleAddPassPayment(u, '1day')}>1-Day Pass</DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handleAddPassPayment(u, '7day')}>7-Day Pass</DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handleAddPassPayment(u, '1month')}>1-Month Pass</DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </TableCell>
+                                    )}
+                                </TableRow>
+                            )
+                        })}
+                    </TableBody>
+                </Table>
               </CardContent>
             </Card>
-          </div>
-          <div className="lg:col-span-2">
-            {selectedUser ? (
-              <UserProfileCard user={selectedUser} />
-            ) : (
-              <Card className="flex items-center justify-center h-full">
-                <CardContent className="text-center text-muted-foreground">
-                  <p>Select a user to view their profile.</p>
-                </CardContent>
-              </Card>
-            )}
           </div>
         </div>
       </div>
@@ -313,5 +385,3 @@ export function AdminDashboard() {
     </div>
   );
 }
-
-    
