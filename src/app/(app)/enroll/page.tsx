@@ -33,10 +33,11 @@ import type { UserRole } from '@/types';
 
 const formSchema = z
   .object({
+    role: z.enum(['Admin', 'Apartment', 'Contractor', 'Security']),
     name: z.string().min(2, { message: 'ID must be at least 2 characters.' }),
     email: z.string().email({ message: 'Please enter a valid email.' }),
+    phone: z.string().min(10, { message: 'Please enter a valid phone number.' }),
     password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
-    role: z.enum(['Admin', 'Apartment', 'Contractor', 'Security']),
     size: z.coerce.number().optional(),
   })
   .refine(
@@ -60,6 +61,7 @@ export default function EnrollPage() {
     defaultValues: {
       name: '',
       email: '',
+      phone: '',
       password: '',
       role: 'Apartment',
     },
@@ -132,6 +134,19 @@ export default function EnrollPage() {
                     <FormLabel>Email Address</FormLabel>
                     <FormControl>
                       <Input placeholder="user@example.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+               <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone Number</FormLabel>
+                    <FormControl>
+                      <Input placeholder="+1 (555) 555-5555" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

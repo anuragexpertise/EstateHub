@@ -77,6 +77,12 @@ export function UserProfileCard({ user }: UserProfileCardProps) {
                         <Mail className="h-4 w-4 text-muted-foreground" />
                         <span>{user.email}</span>
                     </div>
+                    {user.phone && (
+                        <div className="flex items-center gap-3">
+                            <Phone className="h-4 w-4 text-muted-foreground" />
+                            <span>{user.phone}</span>
+                        </div>
+                    )}
                      {renderDetails()}
                 </div>
                 <Badge variant="secondary">{user.id}</Badge>

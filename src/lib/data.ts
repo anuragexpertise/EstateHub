@@ -1,13 +1,13 @@
 import type { User, Payment, Transaction, Shift, UserRole } from '@/types';
 
 export const users: User[] = [
-  { id: 'admin-01', name: 'Admin User', email: 'admin@estatehub.com', role: 'Admin', avatarId: 'avatar-admin' },
-  { id: 'apt-101', name: 'John Doe', email: 'john.doe@email.com', role: 'Apartment', details: { unit: '101', sqft: 1200 }, avatarId: 'avatar-apartment' },
-  { id: 'apt-204', name: 'Jane Smith', email: 'jane.smith@email.com', role: 'Apartment', details: { unit: '204', sqft: 950 }, avatarId: 'avatar-apartment' },
-  { id: 'contractor-electric', name: 'Sparky Electricians', email: 'contact@sparky.com', role: 'Contractor', details: { service: 'Electrical' }, avatarId: 'avatar-contractor' },
-  { id: 'contractor-plumb', name: 'Flow Plumbing', email: 'service@flowplumbing.com', role: 'Contractor', details: { service: 'Plumbing' }, avatarId: 'avatar-contractor' },
-  { id: 'sec-01', name: 'Mike Guard', email: 'm.guard@estatehub.com', role: 'Security', details: { shift: 'Day' }, avatarId: 'avatar-security' },
-  { id: 'sec-02', name: 'Susan Watch', email: 's.watch@estatehub.com', role: 'Security', details: { shift: 'Night' }, avatarId: 'avatar-security' },
+  { id: 'admin-01', name: 'Admin User', email: 'admin@estatehub.com', phone: '+1-202-555-0104', role: 'Admin', avatarId: 'avatar-admin' },
+  { id: 'apt-101', name: 'John Doe', email: 'john.doe@email.com', phone: '+1-202-555-0162', role: 'Apartment', details: { unit: '101', sqft: 1200 }, avatarId: 'avatar-apartment' },
+  { id: 'apt-204', name: 'Jane Smith', email: 'jane.smith@email.com', phone: '+1-202-555-0183', role: 'Apartment', details: { unit: '204', sqft: 950 }, avatarId: 'avatar-apartment' },
+  { id: 'contractor-electric', name: 'Sparky Electricians', email: 'contact@sparky.com', phone: '+1-202-555-0149', role: 'Contractor', details: { service: 'Electrical' }, avatarId: 'avatar-contractor' },
+  { id: 'contractor-plumb', name: 'Flow Plumbing', email: 'service@flowplumbing.com', phone: '+1-202-555-0128', role: 'Contractor', details: { service: 'Plumbing' }, avatarId: 'avatar-contractor' },
+  { id: 'sec-01', name: 'Mike Guard', email: 'm.guard@estatehub.com', phone: '+1-202-555-0199', role: 'Security', details: { shift: 'Day' }, avatarId: 'avatar-security' },
+  { id: 'sec-02', name: 'Susan Watch', email: 's.watch@estatehub.com', phone: '+1-202-555-0176', role: 'Security', details: { shift: 'Night' }, avatarId: 'avatar-security' },
 ];
 
 const now = new Date();
