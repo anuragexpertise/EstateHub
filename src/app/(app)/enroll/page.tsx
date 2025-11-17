@@ -30,8 +30,6 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import type { UserRole } from '@/types';
-import { generateEntityEnrollmentPrompts } from '@/ai/flows/generate-entity-enrollment-prompts';
-import { Bot, Loader2 } from 'lucide-react';
 
 const formSchema = z
   .object({
@@ -56,8 +54,6 @@ const formSchema = z
 
 export default function EnrollPage() {
   const { toast } = useToast();
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [suggestedPrompts, setSuggestedPrompts] = useState<string[]>([]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -77,38 +73,11 @@ export default function EnrollPage() {
       description: `${values.name} (${values.role}) has been successfully enrolled.`,
     });
     form.reset();
-    setSuggestedPrompts([]);
   }
 
-  const handleGeneratePrompts = async () => {
-    setIsGenerating(true);
-    setSuggestedPrompts([]);
-    const values = form.getValues();
-    try {
-        let entityDetails = `Name: ${values.name}, Email: ${values.email}`;
-        if (values.role === 'Apartment' && values.size) {
-            entityDetails += `, Size: ${values.size} sqft`;
-        }
-      const result = await generateEntityEnrollmentPrompts({
-        entityType: values.role,
-        entityDetails: entityDetails,
-      });
-      setSuggestedPrompts(result.suggestedPrompts);
-    } catch (error) {
-      console.error(error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to generate prompts.',
-      });
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
   return (
-    <div className="grid gap-6 lg:grid-cols-5">
-      <Card className="lg:col-span-3">
+    <div className="grid gap-6">
+      <Card>
         <CardHeader>
           <CardTitle>Enroll New Entity</CardTitle>
           <CardDescription>
@@ -201,40 +170,6 @@ export default function EnrollPage() {
           </Form>
         </CardContent>
       </Card>
-      <div className="lg:col-span-2 space-y-4">
-        <Card>
-            <CardHeader>
-                <CardTitle>AI-Powered Suggestions</CardTitle>
-                <CardDescription>Generate helpful prompts for this enrollment.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                 <Button onClick={handleGeneratePrompts} disabled={isGenerating}>
-                    {isGenerating ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                        <Bot className="mr-2 h-4 w-4" />
-                    )}
-                    Generate Prompts
-                </Button>
-            </CardContent>
-        </Card>
-
-        { (isGenerating || suggestedPrompts.length > 0) &&
-            <Card>
-                <CardHeader>
-                    <CardTitle>Suggested Prompts</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    {isGenerating && <div className="flex items-center space-x-2 text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /><span>Generating...</span></div>}
-                    {suggestedPrompts.map((prompt, index) => (
-                        <div key={index} className="text-sm p-3 bg-muted rounded-md border">
-                            {prompt}
-                        </div>
-                    ))}
-                </CardContent>
-            </Card>
-        }
-      </div>
     </div>
   );
 }

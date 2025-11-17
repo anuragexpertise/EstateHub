@@ -32,10 +32,8 @@ import {
 } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast";
-import { rates as defaultRates, shifts, payments } from "@/lib/data";
+import { rates as defaultRates, shifts } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
-import { summarizePaymentHistory } from '@/ai/flows/summarize-payment-history';
-import { Bot, Loader2 } from 'lucide-react';
 import type { UserRole } from '@/types';
 
 const passwordFormSchema = z.object({
@@ -52,8 +50,6 @@ export default function SettingsPage() {
     const searchParams = useSearchParams();
     const role = searchParams.get('role') as UserRole | null;
     const [rates, setRates] = useState(defaultRates);
-    const [summary, setSummary] = useState('');
-    const [isGenerating, setIsGenerating] = useState(false);
 
     const passwordForm = useForm<z.infer<typeof passwordFormSchema>>({
         resolver: zodResolver(passwordFormSchema),
@@ -82,27 +78,11 @@ export default function SettingsPage() {
         toast({ title: "Success", description: "Rates have been updated." });
     }
 
-    const handleGenerateSummary = async () => {
-        setIsGenerating(true);
-        setSummary('');
-        try {
-            const paymentDataString = JSON.stringify(payments, null, 2);
-            const result = await summarizePaymentHistory({ paymentHistory: paymentDataString });
-            setSummary(result.summary);
-        } catch(e) {
-            console.error(e);
-            toast({ variant: 'destructive', title: "Error", description: "Failed to generate summary." });
-        } finally {
-            setIsGenerating(false);
-        }
-    }
-
     return (
         <Tabs defaultValue="profile" className="w-full">
-        <TabsList className={role === 'Admin' ? "grid w-full grid-cols-4" : "grid w-full grid-cols-1"}>
+        <TabsList className={role === 'Admin' ? "grid w-full grid-cols-3" : "grid w-full grid-cols-1"}>
             <TabsTrigger value="profile">Profile</TabsTrigger>
             {role === 'Admin' && <TabsTrigger value="rates">Rate Management</TabsTrigger>}
-            {role === 'Admin' && <TabsTrigger value="overview">Payment Overview</TabsTrigger>}
             {role === 'Admin' && <TabsTrigger value="shifts">Work Shifts</TabsTrigger>}
         </TabsList>
         <TabsContent value="profile">
@@ -184,32 +164,6 @@ export default function SettingsPage() {
                             <Input id="1month" type="number" value={rates['1month']} onChange={e => handleRateChange('1month', e.target.value)} />
                         </div>
                         <Button onClick={handleSaveRates}>Save Rates</Button>
-                    </CardContent>
-                    </Card>
-                </TabsContent>
-                <TabsContent value="overview">
-                    <Card>
-                    <CardHeader>
-                        <CardTitle>AI-Generated Payment Overview</CardTitle>
-                        <CardDescription>
-                            Get a quick, intelligent summary of the entire payment history.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                         <Button onClick={handleGenerateSummary} disabled={isGenerating}>
-                            {isGenerating ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            ) : (
-                                <Bot className="mr-2 h-4 w-4" />
-                            )}
-                            Generate Summary
-                        </Button>
-                        {(isGenerating || summary) && (
-                            <div className="p-4 bg-muted/50 rounded-lg border">
-                                {isGenerating && <div className="flex items-center text-muted-foreground"><Loader2 className="mr-2 h-4 w-4 animate-spin"/>Analyzing payment data...</div>}
-                                {summary && <p className="text-sm whitespace-pre-wrap">{summary}</p>}
-                            </div>
-                        )}
                     </CardContent>
                     </Card>
                 </TabsContent>
