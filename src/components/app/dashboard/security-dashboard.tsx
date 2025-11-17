@@ -1,0 +1,101 @@
+import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from '@/components/ui/button';
+import { users, payments } from "@/lib/data";
+import { ScanLine, Clock, CreditCard, ArrowRight } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+
+export function SecurityDashboard() {
+  const searchParams = useSearchParams();
+  const role = searchParams.get('role');
+  const user = users.find(u => u.role === 'Security');
+  const { toast } = useToast();
+
+  if (!user) {
+    return <p>No security user found.</p>;
+  }
+
+  const userPayments = payments.filter(p => p.userId === user.id);
+
+  const handleAttendance = (action: 'in' | 'out') => {
+    toast({
+        title: `Attendance Logged`,
+        description: `You have successfully clocked ${action} at ${new Date().toLocaleTimeString()}.`,
+    });
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card className="flex flex-col">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ScanLine className="h-5 w-5" />
+              Security Pass Evaluation
+            </CardTitle>
+            <CardDescription>Scan QR codes to verify entry passes for residents and contractors.</CardDescription>
+          </CardHeader>
+          <CardContent className="flex-grow flex items-center justify-center">
+            <Link href={`/scan?role=${role}`} passHref>
+              <Button size="lg">
+                <ScanLine className="mr-2 h-5 w-5" />
+                Scan QR Code
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+        <Card className="flex flex-col">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              Attendance Relay
+            </CardTitle>
+            <CardDescription>Log your incoming and outgoing shifts.</CardDescription>
+          </CardHeader>
+          <CardContent className="flex-grow flex items-center justify-center gap-4">
+            <Button size="lg" variant="outline" onClick={() => handleAttendance('in')}>
+              <ArrowRight className="mr-2 h-5 w-5 text-green-500" />
+              Clock In
+            </Button>
+            <Button size="lg" variant="outline" onClick={() => handleAttendance('out')}>
+              <ArrowRight className="mr-2 h-5 w-5 text-red-500 rotate-180" />
+              Clock Out
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CreditCard className="h-5 w-5" />
+            Salary History
+          </CardTitle>
+          <CardDescription>Record of payments made to you by the admin.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Description</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead className="text-right">Amount</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {userPayments.map((payment) => (
+                <TableRow key={payment.id}>
+                  <TableCell className="font-medium">{payment.description}</TableCell>
+                  <TableCell>{payment.date.toLocaleDateString()}</TableCell>
+                  <TableCell className="text-right">₹{payment.amount.toLocaleString()}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
