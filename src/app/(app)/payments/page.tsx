@@ -30,6 +30,7 @@ export default function PaymentsPage() {
 
   const [payments, setPayments] = useState<Payment[]>(initialPayments);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const dateFormatter = new Intl.DateTimeFormat();
 
   const form = useForm<z.infer<typeof paymentFormSchema>>({
     resolver: zodResolver(paymentFormSchema),
@@ -123,7 +124,7 @@ export default function PaymentsPage() {
                         {payment.status}
                       </Badge>
                     </TableCell>
-                    <TableCell>{payment.date.toLocaleDateString()}</TableCell>
+                    <TableCell>{dateFormatter.format(payment.date)}</TableCell>
                     <TableCell className="text-right">₹{payment.amount.toLocaleString()}</TableCell>
                     {role === 'Admin' && (
                         <TableCell className="text-center">

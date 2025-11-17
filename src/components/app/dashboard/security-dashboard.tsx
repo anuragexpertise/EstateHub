@@ -21,6 +21,7 @@ export function SecurityDashboard() {
 
   const userPayments = payments.filter(p => p.userId === user.id);
   const qrData = { id: user.id, type: user.role, name: user.name };
+  const dateFormatter = new Intl.DateTimeFormat();
 
   const handleAttendance = (action: 'in' | 'out') => {
     toast({
@@ -92,7 +93,7 @@ export function SecurityDashboard() {
                     {userPayments.map((payment) => (
                         <TableRow key={payment.id}>
                         <TableCell className="font-medium">{payment.description}</TableCell>
-                        <TableCell>{payment.date.toLocaleDateString()}</TableCell>
+                        <TableCell>{dateFormatter.format(payment.date)}</TableCell>
                         <TableCell className="text-right">₹{payment.amount.toLocaleString()}</TableCell>
                         </TableRow>
                     ))}

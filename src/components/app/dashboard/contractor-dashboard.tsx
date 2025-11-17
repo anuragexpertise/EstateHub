@@ -1,3 +1,4 @@
+'use client';
 import { useSearchParams } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -16,6 +17,7 @@ export function ContractorDashboard() {
 
   const userPayments = payments.filter(p => p.userId === user.id).sort((a, b) => b.date.getTime() - a.date.getTime());
   const qrData = { id: user.id, type: user.role, name: user.name };
+  const dateFormatter = new Intl.DateTimeFormat();
 
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -63,7 +65,7 @@ export function ContractorDashboard() {
                     <TableCell>
                       <Badge variant={payment.status === 'Paid' ? 'secondary' : 'default'}>{payment.status}</Badge>
                     </TableCell>
-                    <TableCell>{payment.date.toLocaleDateString()}</TableCell>
+                    <TableCell>{dateFormatter.format(payment.date)}</TableCell>
                     <TableCell className="text-right">₹{payment.amount.toLocaleString()}</TableCell>
                   </TableRow>
                 ))}

@@ -1,3 +1,4 @@
+'use client';
 import { useSearchParams } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -18,6 +19,8 @@ export function ApartmentDashboard() {
 
   const userPayments = payments.filter(p => p.userId === user.id).sort((a, b) => b.date.getTime() - a.date.getTime());
   const qrData = { id: user.id, type: user.role, name: user.name };
+  const dateFormatter = new Intl.DateTimeFormat();
+  const nextPaymentDate = userPayments.find(p => p.status === 'Due')?.date;
 
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -43,7 +46,7 @@ export function ApartmentDashboard() {
               <div className="flex-1 space-y-1">
                 <p className="text-sm font-medium leading-none">Next Payment Due</p>
                 <p className="text-2xl font-semibold text-muted-foreground">
-                  {userPayments.find(p => p.status === 'Due')?.date.toLocaleDateString() || 'N/A'}
+                  {nextPaymentDate ? dateFormatter.format(nextPaymentDate) : 'N/A'}
                 </p>
               </div>
             </div>
@@ -74,7 +77,7 @@ export function ApartmentDashboard() {
                     <TableCell>
                       <Badge variant={payment.status === 'Paid' ? 'secondary' : 'destructive'}>{payment.status}</Badge>
                     </TableCell>
-                    <TableCell>{payment.date.toLocaleDateString()}</TableCell>
+                    <TableCell>{dateFormatter.format(payment.date)}</TableCell>
                     <TableCell className="text-right">₹{payment.amount.toLocaleString()}</TableCell>
                   </TableRow>
                 ))}

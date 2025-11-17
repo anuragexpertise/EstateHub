@@ -24,6 +24,7 @@ export function AdminDashboard() {
   }
 
   const qrData = { id: user.id, type: user.role, name: user.name };
+  const dateFormatter = new Intl.DateTimeFormat();
 
   return (
     <div className="grid gap-6 lg:grid-cols-3">
@@ -74,7 +75,7 @@ export function AdminDashboard() {
                             ₹{transaction.amount.toLocaleString()}
                         </TableCell>
                         <TableCell>
-                            {transaction.date.toLocaleDateString()}
+                            {dateFormatter.format(transaction.date)}
                         </TableCell>
                         </TableRow>
                     ))}
