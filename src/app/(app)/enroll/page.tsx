@@ -1,3 +1,4 @@
+
 'use client';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -32,11 +33,25 @@ import type { UserRole } from '@/types';
 import { generateEntityEnrollmentPrompts } from '@/ai/flows/generate-entity-enrollment-prompts';
 import { Bot, Loader2 } from 'lucide-react';
 
-const formSchema = z.object({
-  name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
-  email: z.string().email({ message: 'Please enter a valid email.' }),
-  role: z.enum(['Admin', 'Apartment', 'Contractor', 'Security']),
-});
+const formSchema = z
+  .object({
+    name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
+    email: z.string().email({ message: 'Please enter a valid email.' }),
+    role: z.enum(['Admin', 'Apartment', 'Contractor', 'Security']),
+    size: z.coerce.number().optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.role === 'Apartment') {
+        return data.size !== undefined && data.size > 0;
+      }
+      return true;
+    },
+    {
+      message: 'Size is required for Apartments and must be greater than 0.',
+      path: ['size'],
+    }
+  );
 
 export default function EnrollPage() {
   const { toast } = useToast();
@@ -52,6 +67,8 @@ export default function EnrollPage() {
     },
   });
 
+  const selectedRole = form.watch('role');
+
   function onSubmit(values: z.infer<typeof formSchema>) {
     toast({
       title: 'Entity Enrolled',
@@ -66,9 +83,13 @@ export default function EnrollPage() {
     setSuggestedPrompts([]);
     const values = form.getValues();
     try {
+        let entityDetails = `Name: ${values.name}, Email: ${values.email}`;
+        if (values.role === 'Apartment' && values.size) {
+            entityDetails += `, Size: ${values.size} sqft`;
+        }
       const result = await generateEntityEnrollmentPrompts({
         entityType: values.role,
-        entityDetails: `Name: ${values.name}, Email: ${values.email}`,
+        entityDetails: entityDetails,
       });
       setSuggestedPrompts(result.suggestedPrompts);
     } catch (error) {
@@ -145,6 +166,21 @@ export default function EnrollPage() {
                   </FormItem>
                 )}
               />
+              {selectedRole === 'Apartment' && (
+                <FormField
+                  control={form.control}
+                  name="size"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Size (sqft)</FormLabel>
+                      <FormControl>
+                        <Input type="number" placeholder="e.g., 1200" {...field} onChange={event => field.onChange(+event.target.value)} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
               <Button type="submit">Enroll Entity</Button>
             </form>
           </Form>
