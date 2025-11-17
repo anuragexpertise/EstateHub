@@ -19,7 +19,7 @@ export type Payment = {
   userId: string;
   amount: number;
   date: Date;
-  status: 'Paid' | 'Due' | 'Overdue';
+  status: 'Paid' | 'Due' | 'Overdue' | 'Pending Verification';
   description: string;
 };
 
