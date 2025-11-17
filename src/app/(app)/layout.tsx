@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { PanelLeft } from 'lucide-react';
 import { SidebarNavHeader } from '@/components/app/sidebar-nav-header';
+import { DateTimeDisplay } from '@/components/app/date-time-display';
 
 export default function AppLayout({
   children,
@@ -43,8 +44,9 @@ export default function AppLayout({
             </SheetContent>
           </Sheet>
 
-          <div className="flex-1 flex justify-center">
+          <div className="flex-1 flex justify-center items-center gap-4">
             <SidebarNavHeader />
+            <DateTimeDisplay />
           </div>
 
           <div className="relative ml-auto flex-none">
