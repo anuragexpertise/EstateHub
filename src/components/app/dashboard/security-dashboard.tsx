@@ -2,10 +2,9 @@
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from '@/components/ui/button';
-import { users, payments } from "@/lib/data";
-import { ScanLine, Clock, CreditCard, ArrowRight } from 'lucide-react';
+import { users } from "@/lib/data";
+import { ScanLine, Clock, ArrowRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { QrCodeDisplay } from '../qr-code';
 
@@ -19,9 +18,7 @@ export function SecurityDashboard() {
     return <p>No security user found.</p>;
   }
 
-  const userPayments = payments.filter(p => p.userId === user.id);
   const qrData = { id: user.id, type: user.role, name: user.name };
-  const dateFormatter = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
   const handleAttendance = (action: 'in' | 'out') => {
     toast({
@@ -71,36 +68,6 @@ export function SecurityDashboard() {
                 </CardContent>
                 </Card>
             </div>
-
-            <Card>
-                <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <CreditCard className="h-5 w-5" />
-                    Salary History
-                </CardTitle>
-                <CardDescription>Record of payments made to you by the admin.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                <Table>
-                    <TableHeader>
-                    <TableRow>
-                        <TableHead>Description</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead className="text-right">Amount</TableHead>
-                    </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                    {userPayments.map((payment) => (
-                        <TableRow key={payment.id}>
-                        <TableCell className="font-medium">{payment.description}</TableCell>
-                        <TableCell>{dateFormatter.format(payment.date).replace(/ /g, '-')}</TableCell>
-                        <TableCell className="text-right">₹{payment.amount.toLocaleString()}</TableCell>
-                        </TableRow>
-                    ))}
-                    </TableBody>
-                </Table>
-                </CardContent>
-            </Card>
         </div>
         <div className="md:col-span-1">
             <QrCodeDisplay

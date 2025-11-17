@@ -8,6 +8,7 @@ import {
   Settings,
   CreditCard,
   ScanLine,
+  Users,
   type LucideIcon,
 } from 'lucide-react';
 import type { UserRole } from '@/types';
@@ -26,6 +27,7 @@ const allNavItems: NavItem[] = [
   { href: '/payments', label: 'Payments', icon: CreditCard, roles: ['Admin', 'Apartment', 'Contractor', 'Security'] },
   { href: '/enroll', label: 'Enroll Entities', icon: UserPlus, roles: ['Admin'] },
   { href: '/scan', label: 'Evaluate Pass', icon: ScanLine, roles: ['Security', 'Admin'] },
+  { href: '/personnel', label: 'Personnel', icon: Users, roles: ['Security'] },
   { href: '/settings', label: 'Settings', icon: Settings, roles: ['Admin', 'Apartment', 'Contractor', 'Security'] },
 ];
 
