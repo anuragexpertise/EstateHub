@@ -47,8 +47,8 @@ export function SidebarNav({ isMobile = false }: { isMobile?: boolean }) {
 
   return (
     <nav className={cn(
-        "flex-1 overflow-auto py-4",
-        { "grid items-start": !isMobile, "grid gap-6 text-lg font-medium": isMobile }
+        "flex-1 overflow-auto p-4",
+        { "grid items-start": !isMobile, "grid gap-6 text-lg font-medium p-0": isMobile }
     )}>
         {navItems.map((item) => (
             <Link key={item.label} href={`${item.href}?role=${role}`} className={linkClass(item.href)}>
