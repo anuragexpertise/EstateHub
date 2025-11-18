@@ -24,10 +24,11 @@ export function AdminDashboard() {
   const dateFormatter = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
   const apartmentsWithDues = users.filter(u => u.role === 'Apartment' && payments.some(p => p.userId === u.id && (p.status === 'Due' || p.status === 'Overdue'))).length;
+  const contractorsWithDues = users.filter(u => u.role === 'Contractor' && payments.some(p => p.userId === u.id && (p.status === 'Due' || p.status === 'Overdue'))).length;
 
   const kpiData: { title: string; value: number | { total: number; withDues: number }; icon: React.ElementType; role: UserRole | 'All' | 'Payments' }[] = [
     { title: "Total Apartments", value: { total: users.filter(u => u.role === 'Apartment').length, withDues: apartmentsWithDues }, icon: Building2, role: 'Apartment' },
-    { title: "Total Contractors", value: users.filter(u => u.role === 'Contractor').length, icon: Wrench, role: 'Contractor' },
+    { title: "Total Contractors", value: { total: users.filter(u => u.role === 'Contractor').length, withDues: contractorsWithDues }, icon: Wrench, role: 'Contractor' },
     { title: "Security Staff", value: users.filter(u => u.role === 'Security').length, icon: Shield, role: 'Security' },
     { title: "Non-Verified Payments", value: nonVerifiedPayments.length, icon: Hourglass, role: 'Payments' },
   ];
