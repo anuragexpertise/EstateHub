@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { payments, users } from '@/lib/data';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { SwitchCamera } from 'lucide-react';
+import jsQR from 'jsqr';
 
 
 type Verdict = 'PASS' | 'FAIL' | null;
@@ -22,8 +23,100 @@ export default function ScanPage() {
   const { toast } = useToast();
   const [hasCameraPermission, setHasCameraPermission] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const [selectedDeviceId, setSelectedDeviceId] = useState<string>('');
+  const requestRef = useRef<number>();
+
+
+  const evaluatePass = useCallback((dataToEvaluate: string) => {
+    if (!dataToEvaluate) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'QR data cannot be empty.',
+      });
+      return;
+    }
+    
+    // Prevent re-evaluation of the same QR code
+    if(isLoading || dataToEvaluate === qrData) return;
+
+    setQrData(dataToEvaluate);
+    setIsLoading(true);
+    setVerdict(null);
+    setScannedUser(null);
+
+    // Simulate network delay
+    setTimeout(() => {
+      try {
+        const data = JSON.parse(dataToEvaluate);
+        if (!data.id || !data.type) {
+          throw new Error('Invalid QR code format.');
+        }
+
+        const user = users.find(u => u.id === data.id);
+        if (!user) {
+          setVerdict('FAIL');
+          setScannedUser('Unknown User');
+          toast({ variant: 'destructive', title: 'Evaluation Failed', description: 'User not found in the system.' });
+          return;
+        }
+
+        setScannedUser(`${user.name} (${user.role})`);
+        const userPayments = payments.filter(p => p.userId === user.id);
+        const hasDues = userPayments.some(p => p.status === 'Due' || p.status === 'Overdue');
+        
+        if (hasDues) {
+          setVerdict('FAIL');
+          toast({ variant: 'destructive', title: 'Evaluation Failed', description: `${user.name} has outstanding payments.` });
+        } else {
+          setVerdict('PASS');
+          toast({ title: 'Evaluation Passed', description: `${user.name} is cleared for entry.` });
+        }
+
+      } catch (error) {
+        setVerdict('FAIL');
+        setScannedUser('Invalid Data');
+        toast({
+          variant: 'destructive',
+          title: 'Scan Error',
+          description: 'Could not parse QR data. Please ensure it is a valid code.',
+        });
+      } finally {
+        setIsLoading(false);
+         // Reset after a delay to allow for re-scanning
+        setTimeout(() => {
+            setQrData('');
+            setVerdict(null);
+            setScannedUser(null);
+        }, 3000);
+      }
+    }, 1000);
+  }, [toast, isLoading, qrData]);
+
+  const scanQRCode = useCallback(() => {
+    if (videoRef.current && videoRef.current.readyState === videoRef.current.HAVE_ENOUGH_DATA && canvasRef.current) {
+        const video = videoRef.current;
+        const canvas = canvasRef.current;
+        const context = canvas.getContext('2d');
+
+        if(context) {
+            canvas.height = video.videoHeight;
+            canvas.width = video.videoWidth;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+            const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                inversionAttempts: "dontInvert",
+            });
+
+            if (code) {
+                evaluatePass(code.data);
+            }
+        }
+    }
+    requestRef.current = requestAnimationFrame(scanQRCode);
+  }, [evaluatePass]);
 
 
   const getCameraPermission = useCallback(async () => {
@@ -59,6 +152,9 @@ export default function ScanPage() {
     getCameraPermission();
 
     return () => {
+      if (requestRef.current) {
+        cancelAnimationFrame(requestRef.current);
+      }
       if (videoRef.current && videoRef.current.srcObject) {
         const stream = videoRef.current.srcObject as MediaStream;
         stream.getTracks().forEach(track => track.stop());
@@ -80,6 +176,9 @@ export default function ScanPage() {
             });
             if (videoRef.current) {
                 videoRef.current.srcObject = stream;
+                videoRef.current.addEventListener('loadeddata', () => {
+                  requestRef.current = requestAnimationFrame(scanQRCode);
+                })
             }
         } catch (error) {
             console.error('Error switching camera:', error);
@@ -92,7 +191,7 @@ export default function ScanPage() {
       };
       startStream();
     }
-  }, [selectedDeviceId, toast]);
+  }, [selectedDeviceId, toast, scanQRCode]);
 
   const handleSwitchCamera = () => {
     if (devices.length > 1) {
@@ -100,63 +199,6 @@ export default function ScanPage() {
       const nextIndex = (currentIndex + 1) % devices.length;
       setSelectedDeviceId(devices[nextIndex].deviceId);
     }
-  };
-
-
-  const evaluatePass = () => {
-    if (!qrData) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'QR data cannot be empty.',
-      });
-      return;
-    }
-
-    setIsLoading(true);
-    setVerdict(null);
-    setScannedUser(null);
-
-    // Simulate network delay
-    setTimeout(() => {
-      try {
-        const data = JSON.parse(qrData);
-        if (!data.id || !data.type) {
-          throw new Error('Invalid QR code format.');
-        }
-
-        const user = users.find(u => u.id === data.id);
-        if (!user) {
-          setVerdict('FAIL');
-          setScannedUser('Unknown User');
-          toast({ variant: 'destructive', title: 'Evaluation Failed', description: 'User not found in the system.' });
-          return;
-        }
-
-        setScannedUser(`${user.name} (${user.role})`);
-        const userPayments = payments.filter(p => p.userId === user.id);
-        const hasDues = userPayments.some(p => p.status === 'Due' || p.status === 'Overdue');
-        
-        if (hasDues) {
-          setVerdict('FAIL');
-          toast({ variant: 'destructive', title: 'Evaluation Failed', description: `${user.name} has outstanding payments.` });
-        } else {
-          setVerdict('PASS');
-          toast({ title: 'Evaluation Passed', description: `${user.name} is cleared for entry.` });
-        }
-
-      } catch (error) {
-        setVerdict('FAIL');
-        setScannedUser('Invalid Data');
-        toast({
-          variant: 'destructive',
-          title: 'Scan Error',
-          description: 'Could not parse QR data. Please ensure it is a valid code.',
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    }, 1000);
   };
 
   return (
@@ -170,7 +212,8 @@ export default function ScanPage() {
         </CardHeader>
         <CardContent>
             <div className="relative aspect-video bg-muted rounded-md flex items-center justify-center">
-                 <video ref={videoRef} className="w-full aspect-video rounded-md" autoPlay muted />
+                 <video ref={videoRef} className="w-full aspect-video rounded-md" autoPlay muted playsInline />
+                 <canvas ref={canvasRef} className="hidden" />
                  <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
                     <div className="w-64 h-64 border-4 border-dashed border-white/50 rounded-lg"></div>
                  </div>
@@ -210,7 +253,7 @@ export default function ScanPage() {
                 onChange={(e) => setQrData(e.target.value)}
                 />
             </div>
-            <Button onClick={evaluatePass} disabled={isLoading}>
+            <Button onClick={() => evaluatePass(qrData)} disabled={isLoading}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Evaluate
             </Button>
@@ -218,7 +261,7 @@ export default function ScanPage() {
         </Card>
         
         <Card className={cn(
-            "flex flex-col items-center justify-center transition-colors",
+            "flex flex-col items-center justify-center transition-colors min-h-[250px]",
             verdict === 'PASS' && 'bg-green-100 dark:bg-green-900/50',
             verdict === 'FAIL' && 'bg-red-100 dark:bg-red-900/50',
         )}>
