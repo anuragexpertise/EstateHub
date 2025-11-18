@@ -18,6 +18,13 @@ const roleIcons: Record<UserRole, LucideIcon> = {
   Security: Shield,
 };
 
+const roleDisplayNames: Record<UserRole, string> = {
+    Admin: 'Admin',
+    Apartment: 'Apartment Owner',
+    Contractor: 'Contractor',
+    Security: 'Security',
+};
+
 export function SidebarNavHeader() {
   const searchParams = useSearchParams();
   const role = searchParams.get('role') as UserRole | null;
@@ -25,11 +32,12 @@ export function SidebarNavHeader() {
   if (!role) return null;
 
   const RoleIcon = roleIcons[role];
+  const displayName = roleDisplayNames[role];
 
   return (
     <div className="flex items-center gap-3 rounded-lg px-3 py-2 text-primary font-semibold text-base sm:text-lg">
       <RoleIcon className="h-6 w-6" />
-      <span>{role} Portal</span>
+      <span>{displayName} Portal</span>
     </div>
   );
 }
