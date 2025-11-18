@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
@@ -262,8 +263,8 @@ export default function ScanPage() {
         
         <Card className={cn(
             "flex flex-col items-center justify-center transition-colors min-h-[250px]",
-            verdict === 'PASS' && 'bg-green-100 dark:bg-green-900/50',
-            verdict === 'FAIL' && 'bg-red-100 dark:bg-red-900/50',
+            verdict === 'PASS' && 'bg-green-600 dark:bg-green-800',
+            verdict === 'FAIL' && 'bg-red-600 dark:bg-red-800',
         )}>
             <CardContent className="p-6 text-center">
             {verdict === null && !isLoading && (
@@ -279,14 +280,14 @@ export default function ScanPage() {
                 </div>
             )}
             {verdict === 'PASS' && (
-                <div className="text-green-600 dark:text-green-400 space-y-2">
+                <div className="text-white dark:text-green-200 space-y-2">
                 <CheckCircle2 className="h-24 w-24 mx-auto" />
                 <h2 className="text-5xl font-bold">PASS</h2>
                 <p className="text-lg">{scannedUser}</p>
                 </div>
             )}
             {verdict === 'FAIL' && (
-                <div className="text-red-600 dark:text-red-400 space-y-2">
+                <div className="text-white dark:text-red-200 space-y-2">
                 <XCircle className="h-24 w-24 mx-auto" />
                 <h2 className="text-5xl font-bold">FAIL</h2>
                 <p className="text-lg">{scannedUser}</p>
@@ -298,3 +299,5 @@ export default function ScanPage() {
     </div>
   );
 }
+
+    
