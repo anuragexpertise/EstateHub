@@ -26,11 +26,14 @@ export function AdminDashboard() {
   const totalApartments = users.filter(u => u.role === 'Apartment').length;
   const apartmentsWithDues = users.filter(u => u.role === 'Apartment' && payments.some(p => p.userId === u.id && (p.status === 'Due' || p.status === 'Overdue'))).length;
   const apartmentsNoDues = totalApartments - apartmentsWithDues;
+  
+  const totalContractors = users.filter(u => u.role === 'Contractor').length;
   const contractorsWithDues = users.filter(u => u.role === 'Contractor' && payments.some(p => p.userId === u.id && (p.status === 'Due' || p.status === 'Overdue'))).length;
+  const contractorsNoDues = totalContractors - contractorsWithDues;
 
   const kpiData: { title: string; value: number | { total: number; withDues: number; noDues?: number }; icon: React.ElementType; role: UserRole | 'All' | 'Payments' }[] = [
     { title: "Apartments", value: { total: totalApartments, withDues: apartmentsWithDues, noDues: apartmentsNoDues }, icon: Building2, role: 'Apartment' },
-    { title: "Contractors", value: { total: users.filter(u => u.role === 'Contractor').length, withDues: contractorsWithDues }, icon: Wrench, role: 'Contractor' },
+    { title: "Contractors", value: { total: totalContractors, withDues: contractorsWithDues, noDues: contractorsNoDues }, icon: Wrench, role: 'Contractor' },
     { title: "Security Staff", value: users.filter(u => u.role === 'Security').length, icon: Shield, role: 'Security' },
     { title: "Non-Verified Payments", value: nonVerifiedPayments.length, icon: Hourglass, role: 'Payments' },
   ];
@@ -339,7 +342,7 @@ export function AdminDashboard() {
                                 <p className="text-xs text-muted-foreground">{kpi.role === 'Payments' ? 'awaiting verification' : 'managed in the system'}</p>
                             </>
                           ) : (
-                            kpi.role === 'Apartment' && typeof kpi.value.noDues !== 'undefined' ? (
+                            typeof kpi.value.noDues !== 'undefined' ? (
                                 <div className="flex items-baseline gap-4">
                                     <div>
                                         <p className="text-xs text-red-500">With Dues</p>
