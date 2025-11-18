@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { transactions, users, payments as initialPayments, rates } from "@/lib/data";
+import { transactions, users, payments as initialPayments, rates, shifts } from "@/lib/data";
 import type { User, UserRole, Payment } from '@/types';
 import { ArrowLeft, ArrowRightLeft, Building2, Shield, Users, Wrench, ScanLine, FileDown, Hourglass, Check } from "lucide-react";
 import { QrCodeDisplay } from "../qr-code";
@@ -30,11 +30,16 @@ export function AdminDashboard() {
   const totalContractors = users.filter(u => u.role === 'Contractor').length;
   const contractorsWithDues = users.filter(u => u.role === 'Contractor' && payments.some(p => p.userId === u.id && (p.status === 'Due' || p.status === 'Overdue'))).length;
   const contractorsNoDues = totalContractors - contractorsWithDues;
+  
+  const securityUsers = users.filter(u => u.role === 'Security');
+  const totalSecurity = securityUsers.length;
+  const activeSecurity = shifts.filter(s => s.status === 'Active' && securityUsers.some(u => u.name === s.personnel)).length;
+  const inactiveSecurity = totalSecurity - activeSecurity;
 
-  const kpiData: { title: string; value: number | { total: number; withDues: number; noDues?: number }; icon: React.ElementType; role: UserRole | 'All' | 'Payments' }[] = [
+  const kpiData: { title: string; value: number | { total: number; withDues?: number; noDues?: number; active?: number; inactive?: number; }; icon: React.ElementType; role: UserRole | 'All' | 'Payments' }[] = [
     { title: "Apartments", value: { total: totalApartments, withDues: apartmentsWithDues, noDues: apartmentsNoDues }, icon: Building2, role: 'Apartment' },
     { title: "Contractors", value: { total: totalContractors, withDues: contractorsWithDues, noDues: contractorsNoDues }, icon: Wrench, role: 'Contractor' },
-    { title: "Security Staff", value: users.filter(u => u.role === 'Security').length, icon: Shield, role: 'Security' },
+    { title: "Security Staff", value: { total: totalSecurity, active: activeSecurity, inactive: inactiveSecurity }, icon: Shield, role: 'Security' },
     { title: "Non-Verified Payments", value: nonVerifiedPayments.length, icon: Hourglass, role: 'Payments' },
   ];
 
@@ -239,10 +244,10 @@ export function AdminDashboard() {
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead>{isApartmentList ? "Apartment ID" : "Contractor ID"}</TableHead>
-                            <TableHead>{isApartmentList ? "Resident Name" : "Contractor Name"}</TableHead>
+                            <TableHead>{isApartmentList ? "Apartment ID" : isContractorList ? "Contractor ID" : "Staff ID"}</TableHead>
+                            <TableHead>{isApartmentList ? "Resident Name" : isContractorList ? "Contractor Name" : "Staff Name"}</TableHead>
                             {isApartmentList && <TableHead>Size (sqft)</TableHead>}
-                            <TableHead>Pass Status</TableHead>
+                            {isApartmentList && <TableHead>Pass Status</TableHead>}
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -253,11 +258,11 @@ export function AdminDashboard() {
                                     <TableCell className="font-medium">{u.id}</TableCell>
                                     <TableCell>{u.name}</TableCell>
                                     {isApartmentList && <TableCell>{u.details?.sqft}</TableCell>}
-                                    <TableCell>
+                                    {isApartmentList && <TableCell>
                                         <Badge variant={passStatus.active ? 'secondary' : 'outline'} className={passStatus.active ? 'bg-green-500 text-white' : ''}>
                                             {passStatus.active ? `Active (Expires ${dateFormatter.format(passStatus.expires!).replace(/ /g, '-')})` : 'Inactive'}
                                         </Badge>
-                                    </TableCell>
+                                    </TableCell>}
                                 </TableRow>
                             )
                         })}
@@ -342,33 +347,36 @@ export function AdminDashboard() {
                                 <p className="text-xs text-muted-foreground">{kpi.role === 'Payments' ? 'awaiting verification' : 'managed in the system'}</p>
                             </>
                           ) : (
-                            typeof kpi.value.noDues !== 'undefined' ? (
-                                <div className="flex items-baseline gap-4">
+                            <div className="flex items-baseline gap-4">
+                                {typeof kpi.value.inactive !== 'undefined' && (
+                                    <div>
+                                        <p className="text-xs text-red-500">Inactive</p>
+                                        <div className="text-2xl font-bold text-red-500">{kpi.value.inactive}</div>
+                                    </div>
+                                )}
+                                {typeof kpi.value.withDues !== 'undefined' && (
                                     <div>
                                         <p className="text-xs text-red-500">With Dues</p>
                                         <div className="text-2xl font-bold text-red-500">{kpi.value.withDues}</div>
                                     </div>
-                                    <div>
+                                )}
+                                {typeof kpi.value.active !== 'undefined' && (
+                                     <div>
+                                        <p className="text-xs text-green-700">Active</p>
+                                        <div className="text-2xl font-bold text-green-700">{kpi.value.active}</div>
+                                    </div>
+                                )}
+                                {typeof kpi.value.noDues !== 'undefined' && (
+                                     <div>
                                         <p className="text-xs text-green-700">No Dues</p>
                                         <div className="text-2xl font-bold text-green-700">{kpi.value.noDues}</div>
                                     </div>
-                                    <div>
-                                        <p className="text-xs text-muted-foreground">Total</p>
-                                        <div className="text-2xl font-bold">{kpi.value.total}</div>
-                                    </div>
+                                )}
+                                <div>
+                                    <p className="text-xs text-muted-foreground">Total</p>
+                                    <div className="text-2xl font-bold">{kpi.value.total}</div>
                                 </div>
-                            ) : (
-                                <div className="flex items-baseline gap-4">
-                                    <div>
-                                        <p className="text-xs text-red-500">With Dues</p>
-                                        <div className="text-2xl font-bold text-red-500">{kpi.value.withDues}</div>
-                                    </div>
-                                    <div>
-                                        <p className="text-xs text-muted-foreground">Total</p>
-                                        <div className="text-2xl font-bold">{kpi.value.total}</div>
-                                    </div>
-                                </div>
-                            )
+                            </div>
                           )}
                       </CardContent>
                     </Card>
