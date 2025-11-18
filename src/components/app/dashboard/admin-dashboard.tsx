@@ -23,11 +23,13 @@ export function AdminDashboard() {
   const nonVerifiedPayments = payments.filter(p => p.status === 'Pending Verification');
   const dateFormatter = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
+  const totalApartments = users.filter(u => u.role === 'Apartment').length;
   const apartmentsWithDues = users.filter(u => u.role === 'Apartment' && payments.some(p => p.userId === u.id && (p.status === 'Due' || p.status === 'Overdue'))).length;
+  const apartmentsNoDues = totalApartments - apartmentsWithDues;
   const contractorsWithDues = users.filter(u => u.role === 'Contractor' && payments.some(p => p.userId === u.id && (p.status === 'Due' || p.status === 'Overdue'))).length;
 
-  const kpiData: { title: string; value: number | { total: number; withDues: number }; icon: React.ElementType; role: UserRole | 'All' | 'Payments' }[] = [
-    { title: "Apartments", value: { total: users.filter(u => u.role === 'Apartment').length, withDues: apartmentsWithDues }, icon: Building2, role: 'Apartment' },
+  const kpiData: { title: string; value: number | { total: number; withDues: number; noDues?: number }; icon: React.ElementType; role: UserRole | 'All' | 'Payments' }[] = [
+    { title: "Apartments", value: { total: totalApartments, withDues: apartmentsWithDues, noDues: apartmentsNoDues }, icon: Building2, role: 'Apartment' },
     { title: "Contractors", value: { total: users.filter(u => u.role === 'Contractor').length, withDues: contractorsWithDues }, icon: Wrench, role: 'Contractor' },
     { title: "Security Staff", value: users.filter(u => u.role === 'Security').length, icon: Shield, role: 'Security' },
     { title: "Non-Verified Payments", value: nonVerifiedPayments.length, icon: Hourglass, role: 'Payments' },
@@ -337,16 +339,33 @@ export function AdminDashboard() {
                                 <p className="text-xs text-muted-foreground">{kpi.role === 'Payments' ? 'awaiting verification' : 'managed in the system'}</p>
                             </>
                           ) : (
-                            <div className="flex items-baseline gap-4">
-                                <div>
-                                    <p className="text-xs text-red-500">With Dues</p>
-                                    <div className="text-2xl font-bold text-red-500">{kpi.value.withDues}</div>
+                            kpi.role === 'Apartment' && typeof kpi.value.noDues !== 'undefined' ? (
+                                <div className="flex items-baseline gap-4">
+                                    <div>
+                                        <p className="text-xs text-red-500">With Dues</p>
+                                        <div className="text-2xl font-bold text-red-500">{kpi.value.withDues}</div>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-green-700">No Dues</p>
+                                        <div className="text-2xl font-bold text-green-700">{kpi.value.noDues}</div>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-muted-foreground">Total</p>
+                                        <div className="text-2xl font-bold">{kpi.value.total}</div>
+                                    </div>
                                 </div>
-                                <div>
-                                    <p className="text-xs text-muted-foreground">Total</p>
-                                    <div className="text-2xl font-bold">{kpi.value.total}</div>
+                            ) : (
+                                <div className="flex items-baseline gap-4">
+                                    <div>
+                                        <p className="text-xs text-red-500">With Dues</p>
+                                        <div className="text-2xl font-bold text-red-500">{kpi.value.withDues}</div>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-muted-foreground">Total</p>
+                                        <div className="text-2xl font-bold">{kpi.value.total}</div>
+                                    </div>
                                 </div>
-                            </div>
+                            )
                           )}
                       </CardContent>
                     </Card>
