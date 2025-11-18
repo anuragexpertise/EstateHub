@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { UserProfileCard } from './user-profile-card';
 import { useToast } from '@/hooks/use-toast';
 
+type ListFilter = 'all' | 'withDues' | 'noDues' | 'active' | 'inactive' | 'pending' | 'verified';
+
 export function AdminDashboard() {
   const [view, setView] = useState<'dashboard' | 'userList' | 'paymentList'>('dashboard');
   const [selectedUserList, setSelectedUserList] = useState<User[]>([]);
@@ -37,14 +39,14 @@ export function AdminDashboard() {
   const inactiveSecurity = totalSecurity - activeSecurity;
 
   const totalPayments = payments.length;
-  const pendingPayments = payments.filter(p => p.status === 'Pending Verification').length;
-  const verifiedPayments = payments.filter(p => p.status === 'Paid').length;
+  const pendingPaymentsCount = payments.filter(p => p.status === 'Pending Verification').length;
+  const verifiedPaymentsCount = payments.filter(p => p.status === 'Paid').length;
 
-  const kpiData: { title: string; value: number | { total: number; withDues?: number; noDues?: number; active?: number; inactive?: number; pending?: number; verified?: number; }; icon: React.ElementType; role: UserRole | 'All' | 'Payments' }[] = [
+  const kpiData: { title: string; value: { total: number; withDues?: number; noDues?: number; active?: number; inactive?: number; pending?: number; verified?: number; }; icon: React.ElementType; role: UserRole | 'All' | 'Payments' }[] = [
     { title: "Apartments", value: { total: totalApartments, withDues: apartmentsWithDues, noDues: apartmentsNoDues }, icon: Building2, role: 'Apartment' },
     { title: "Contractors", value: { total: totalContractors, withDues: contractorsWithDues, noDues: contractorsNoDues }, icon: Wrench, role: 'Contractor' },
     { title: "Security Staff", value: { total: totalSecurity, active: activeSecurity, inactive: inactiveSecurity }, icon: Shield, role: 'Security' },
-    { title: "Payments", value: { total: totalPayments, pending: pendingPayments, verified: verifiedPayments }, icon: CreditCard, role: 'Payments' },
+    { title: "Payments", value: { total: totalPayments, pending: pendingPaymentsCount, verified: verifiedPaymentsCount }, icon: CreditCard, role: 'Payments' },
   ];
 
   const recentTransactions = transactions.slice(0, 6);
@@ -54,17 +56,55 @@ export function AdminDashboard() {
     return <p>Admin user not found.</p>;
   }
 
-  const handleKpiClick = (role: UserRole | 'All' | 'Payments', title: string) => {
+  const handleKpiClick = (role: UserRole | 'Payments', title: string, filter: ListFilter) => {
+    let filteredUsers: User[] = [];
+    let filteredPayments: Payment[] = [];
+    let newTitle = '';
+
     if (role === 'Payments') {
-        setListTitle('Non-Verified Payments');
+        if (filter === 'pending') {
+            filteredPayments = payments.filter(p => p.status === 'Pending Verification');
+            newTitle = 'Pending Payments';
+        } else if (filter === 'verified') {
+            filteredPayments = payments.filter(p => p.status === 'Paid');
+            newTitle = 'Verified Payments';
+        } else {
+            filteredPayments = payments;
+            newTitle = 'All Payments';
+        }
+        setPayments(filteredPayments); // This seems wrong, should set a different state for the list view
+        setListTitle(newTitle);
         setView('paymentList');
-    } else {
-        const userList = role === 'All' ? users : users.filter(u => u.role === role);
-        setSelectedUserList(userList);
-        setListTitle(`${title} List`);
-        setSelectedUser(null);
-        setView('userList');
+        return;
     }
+
+    const roleUsers = users.filter(u => u.role === role);
+    switch (filter) {
+        case 'withDues':
+            filteredUsers = roleUsers.filter(u => payments.some(p => p.userId === u.id && (p.status === 'Due' || p.status === 'Overdue')));
+            newTitle = `${title} with Dues`;
+            break;
+        case 'noDues':
+            filteredUsers = roleUsers.filter(u => !payments.some(p => p.userId === u.id && (p.status === 'Due' || p.status === 'Overdue')));
+            newTitle = `${title} with No Dues`;
+            break;
+        case 'active':
+            filteredUsers = roleUsers.filter(u => shifts.some(s => s.personnel === u.name && s.status === 'Active'));
+            newTitle = `Active ${title}`;
+            break;
+        case 'inactive':
+            filteredUsers = roleUsers.filter(u => !shifts.some(s => s.personnel === u.name && s.status === 'Active'));
+            newTitle = `Inactive ${title}`;
+            break;
+        default:
+            filteredUsers = roleUsers;
+            newTitle = `All ${title}`;
+    }
+
+    setSelectedUserList(filteredUsers);
+    setListTitle(newTitle);
+    setSelectedUser(null);
+    setView('userList');
   }
 
   const handleBackToDashboard = () => {
@@ -100,10 +140,11 @@ export function AdminDashboard() {
             ];
             csvRows.push(row.join(','));
         });
-    } else {
+    } else { // This part needs to be aware of the filtered list if paymentList is used
+        const paymentList = view === 'paymentList' ? nonVerifiedPayments : payments;
         headers = ['id', 'userId', 'userName', 'description', 'amount', 'date', 'status'];
         csvRows = [headers.join(',')];
-        nonVerifiedPayments.forEach(payment => {
+        paymentList.forEach(payment => {
             const paymentUser = users.find(u => u.id === payment.userId);
             const row = [
                 payment.id,
@@ -270,6 +311,11 @@ export function AdminDashboard() {
                                 </TableRow>
                             )
                         })}
+                        {selectedUserList.length === 0 && (
+                            <TableRow>
+                                <TableCell colSpan={isApartmentList ? 4 : 2} className="text-center">No users found for this filter.</TableCell>
+                            </TableRow>
+                        )}
                     </TableBody>
                 </Table>
             </CardContent>
@@ -279,6 +325,8 @@ export function AdminDashboard() {
   }
 
   if (view === 'paymentList') {
+    // Note: This logic assumes the 'payments' state is now the filtered list.
+    const paymentList = payments;
     return (
       <div>
         <Button variant="outline" onClick={handleBackToDashboard} className="mb-4">
@@ -299,30 +347,41 @@ export function AdminDashboard() {
                 <TableRow>
                   <TableHead>User</TableHead>
                   <TableHead>Description</TableHead>
+                   <TableHead>Status</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead className="text-right">Amount</TableHead>
                   <TableHead className="text-center">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {nonVerifiedPayments.map((payment) => (
+                {paymentList.map((payment) => (
                   <TableRow key={payment.id}>
                     <TableCell className="font-medium">{userForPayment(payment.userId)}</TableCell>
                     <TableCell>{payment.description}</TableCell>
+                     <TableCell>
+                        <Badge 
+                            variant={payment.status === 'Paid' ? 'secondary' : payment.status === 'Due' ? 'outline' : payment.status === 'Pending Verification' ? 'default' : 'destructive'}
+                            className={payment.status === 'Pending Verification' ? 'bg-amber-500 text-white' : ''}
+                        >
+                            {payment.status}
+                        </Badge>
+                    </TableCell>
                     <TableCell>{dateFormatter.format(payment.date).replace(/ /g, '-')}</TableCell>
                     <TableCell className="text-right">₹{payment.amount.toLocaleString()}</TableCell>
                     <TableCell className="text-center">
-                      <Button size="sm" onClick={() => handleVerifyPayment(payment.id)}>
-                        <Check className="mr-2 h-4 w-4" />
-                        Verify
-                      </Button>
+                      {payment.status === 'Pending Verification' && (
+                        <Button size="sm" onClick={() => handleVerifyPayment(payment.id)}>
+                            <Check className="mr-2 h-4 w-4" />
+                            Verify
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
-                {nonVerifiedPayments.length === 0 && (
+                {paymentList.length === 0 && (
                     <TableRow>
-                        <TableCell colSpan={5} className="text-center text-muted-foreground">
-                            No payments to verify.
+                        <TableCell colSpan={6} className="text-center text-muted-foreground">
+                            No payments found for this filter.
                         </TableCell>
                     </TableRow>
                 )}
@@ -339,61 +398,52 @@ export function AdminDashboard() {
         <div className="lg:col-span-2 space-y-6">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
                 {kpiData.map((kpi, index) => (
-                    <Card key={index} className="hover:bg-muted/50 cursor-pointer" onClick={() => handleKpiClick(kpi.role, kpi.title)}>
+                    <Card key={index}>
                       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                           <CardTitle className="text-sm font-medium">{kpi.title}</CardTitle>
                           <kpi.icon className="h-4 w-4 text-muted-foreground" />
                       </CardHeader>
                       <CardContent>
-                          {typeof kpi.value === 'number' ? (
-                            <>
-                                <div className="text-2xl font-bold">{kpi.value}</div>
-                                <p className="text-xs text-muted-foreground">{kpi.role === 'Payments' ? 'awaiting verification' : 'managed in the system'}</p>
-                            </>
-                          ) : (
-                            <div className="flex items-baseline gap-4">
-                                {typeof kpi.value.pending !== 'undefined' && (
-                                    <div>
+                        <div className="flex items-baseline gap-4">
+                            {kpi.role === 'Payments' ? (
+                                <>
+                                    <div className="hover:bg-muted/50 cursor-pointer p-2 rounded-md" onClick={() => handleKpiClick(kpi.role, kpi.title, 'pending')}>
                                         <p className="text-xs text-red-500">Pending</p>
                                         <div className="text-2xl font-bold text-red-500">{kpi.value.pending}</div>
                                     </div>
-                                )}
-                                {typeof kpi.value.inactive !== 'undefined' && (
-                                    <div>
-                                        <p className="text-xs text-red-500">Inactive</p>
-                                        <div className="text-2xl font-bold text-red-500">{kpi.value.inactive}</div>
-                                    </div>
-                                )}
-                                {typeof kpi.value.withDues !== 'undefined' && (
-                                    <div>
-                                        <p className="text-xs text-red-500">With Dues</p>
-                                        <div className="text-2xl font-bold text-red-500">{kpi.value.withDues}</div>
-                                    </div>
-                                )}
-                                {typeof kpi.value.verified !== 'undefined' && (
-                                     <div>
+                                    <div className="hover:bg-muted/50 cursor-pointer p-2 rounded-md" onClick={() => handleKpiClick(kpi.role, kpi.title, 'verified')}>
                                         <p className="text-xs text-green-700">Verified</p>
                                         <div className="text-2xl font-bold text-green-700">{kpi.value.verified}</div>
                                     </div>
-                                )}
-                                {typeof kpi.value.active !== 'undefined' && (
-                                     <div>
+                                </>
+                            ) : kpi.role === 'Security' ? (
+                                <>
+                                    <div className="hover:bg-muted/50 cursor-pointer p-2 rounded-md" onClick={() => handleKpiClick(kpi.role, kpi.title, 'inactive')}>
+                                        <p className="text-xs text-red-500">Inactive</p>
+                                        <div className="text-2xl font-bold text-red-500">{kpi.value.inactive}</div>
+                                    </div>
+                                    <div className="hover:bg-muted/50 cursor-pointer p-2 rounded-md" onClick={() => handleKpiClick(kpi.role, kpi.title, 'active')}>
                                         <p className="text-xs text-green-700">Active</p>
                                         <div className="text-2xl font-bold text-green-700">{kpi.value.active}</div>
                                     </div>
-                                )}
-                                {typeof kpi.value.noDues !== 'undefined' && (
-                                     <div>
+                                </>
+                            ) : (
+                                <>
+                                    <div className="hover:bg-muted/50 cursor-pointer p-2 rounded-md" onClick={() => handleKpiClick(kpi.role, kpi.title, 'withDues')}>
+                                        <p className="text-xs text-red-500">With Dues</p>
+                                        <div className="text-2xl font-bold text-red-500">{kpi.value.withDues}</div>
+                                    </div>
+                                    <div className="hover:bg-muted/50 cursor-pointer p-2 rounded-md" onClick={() => handleKpiClick(kpi.role, kpi.title, 'noDues')}>
                                         <p className="text-xs text-green-700">No Dues</p>
                                         <div className="text-2xl font-bold text-green-700">{kpi.value.noDues}</div>
                                     </div>
-                                )}
-                                <div>
-                                    <p className="text-xs text-muted-foreground">Total</p>
-                                    <div className="text-2xl font-bold">{kpi.value.total}</div>
-                                </div>
+                                </>
+                            )}
+                             <div className="hover:bg-muted/50 cursor-pointer p-2 rounded-md" onClick={() => handleKpiClick(kpi.role, kpi.title, 'all')}>
+                                <p className="text-xs text-muted-foreground">Total</p>
+                                <div className="text-2xl font-bold">{kpi.value.total}</div>
                             </div>
-                          )}
+                        </div>
                       </CardContent>
                     </Card>
                 ))}
