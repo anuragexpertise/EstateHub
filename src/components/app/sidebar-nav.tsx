@@ -42,7 +42,7 @@ export function SidebarNav({ isMobile = false }: { isMobile?: boolean }) {
   const navItems = allNavItems.filter((item) => item.roles.includes(role));
   
   const linkClass = (href: string) => cn(
-    "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
+    "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-accent hover:text-accent-foreground",
     { "bg-muted text-primary": pathname === href },
     { "gap-4 px-2.5": isMobile }
   );
