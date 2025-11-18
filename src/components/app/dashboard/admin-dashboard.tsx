@@ -23,8 +23,10 @@ export function AdminDashboard() {
   const nonVerifiedPayments = payments.filter(p => p.status === 'Pending Verification');
   const dateFormatter = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
-  const kpiData: { title: string; value: number; icon: React.ElementType; role: UserRole | 'All' | 'Payments' }[] = [
-    { title: "Total Apartments", value: users.filter(u => u.role === 'Apartment').length, icon: Building2, role: 'Apartment' },
+  const apartmentsWithDues = users.filter(u => u.role === 'Apartment' && payments.some(p => p.userId === u.id && (p.status === 'Due' || p.status === 'Overdue'))).length;
+
+  const kpiData: { title: string; value: number | { total: number; withDues: number }; icon: React.ElementType; role: UserRole | 'All' | 'Payments' }[] = [
+    { title: "Total Apartments", value: { total: users.filter(u => u.role === 'Apartment').length, withDues: apartmentsWithDues }, icon: Building2, role: 'Apartment' },
     { title: "Total Contractors", value: users.filter(u => u.role === 'Contractor').length, icon: Wrench, role: 'Contractor' },
     { title: "Security Staff", value: users.filter(u => u.role === 'Security').length, icon: Shield, role: 'Security' },
     { title: "Non-Verified Payments", value: nonVerifiedPayments.length, icon: Hourglass, role: 'Payments' },
@@ -328,8 +330,23 @@ export function AdminDashboard() {
                           <kpi.icon className="h-4 w-4 text-muted-foreground" />
                       </CardHeader>
                       <CardContent>
-                          <div className="text-2xl font-bold">{kpi.value}</div>
-                          <p className="text-xs text-muted-foreground">{kpi.role === 'Payments' ? 'awaiting verification' : 'managed in the system'}</p>
+                          {typeof kpi.value === 'number' ? (
+                            <>
+                                <div className="text-2xl font-bold">{kpi.value}</div>
+                                <p className="text-xs text-muted-foreground">{kpi.role === 'Payments' ? 'awaiting verification' : 'managed in the system'}</p>
+                            </>
+                          ) : (
+                            <div className="flex items-baseline gap-4">
+                                <div>
+                                    <p className="text-xs text-red-500">With Dues</p>
+                                    <div className="text-2xl font-bold text-red-500">{kpi.value.withDues}</div>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-muted-foreground">Total</p>
+                                    <div className="text-2xl font-bold">{kpi.value.total}</div>
+                                </div>
+                            </div>
+                          )}
                       </CardContent>
                     </Card>
                 ))}
