@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { transactions, users, payments as initialPayments, rates, shifts } from "@/lib/data";
 import type { User, UserRole, Payment } from '@/types';
-import { ArrowLeft, ArrowRightLeft, Building2, Shield, Users, Wrench, ScanLine, FileDown, Hourglass, Check } from "lucide-react";
+import { ArrowLeft, ArrowRightLeft, Building2, Shield, Users, Wrench, ScanLine, FileDown, Hourglass, Check, CreditCard } from "lucide-react";
 import { QrCodeDisplay } from "../qr-code";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -36,11 +36,15 @@ export function AdminDashboard() {
   const activeSecurity = shifts.filter(s => s.status === 'Active' && securityUsers.some(u => u.name === s.personnel)).length;
   const inactiveSecurity = totalSecurity - activeSecurity;
 
-  const kpiData: { title: string; value: number | { total: number; withDues?: number; noDues?: number; active?: number; inactive?: number; }; icon: React.ElementType; role: UserRole | 'All' | 'Payments' }[] = [
+  const totalPayments = payments.length;
+  const pendingPayments = payments.filter(p => p.status === 'Pending Verification').length;
+  const verifiedPayments = payments.filter(p => p.status === 'Paid').length;
+
+  const kpiData: { title: string; value: number | { total: number; withDues?: number; noDues?: number; active?: number; inactive?: number; pending?: number; verified?: number; }; icon: React.ElementType; role: UserRole | 'All' | 'Payments' }[] = [
     { title: "Apartments", value: { total: totalApartments, withDues: apartmentsWithDues, noDues: apartmentsNoDues }, icon: Building2, role: 'Apartment' },
     { title: "Contractors", value: { total: totalContractors, withDues: contractorsWithDues, noDues: contractorsNoDues }, icon: Wrench, role: 'Contractor' },
     { title: "Security Staff", value: { total: totalSecurity, active: activeSecurity, inactive: inactiveSecurity }, icon: Shield, role: 'Security' },
-    { title: "Non-Verified Payments", value: nonVerifiedPayments.length, icon: Hourglass, role: 'Payments' },
+    { title: "Payments", value: { total: totalPayments, pending: pendingPayments, verified: verifiedPayments }, icon: CreditCard, role: 'Payments' },
   ];
 
   const recentTransactions = transactions.slice(0, 6);
@@ -52,7 +56,7 @@ export function AdminDashboard() {
 
   const handleKpiClick = (role: UserRole | 'All' | 'Payments', title: string) => {
     if (role === 'Payments') {
-        setListTitle(title);
+        setListTitle('Non-Verified Payments');
         setView('paymentList');
     } else {
         const userList = role === 'All' ? users : users.filter(u => u.role === role);
@@ -348,6 +352,12 @@ export function AdminDashboard() {
                             </>
                           ) : (
                             <div className="flex items-baseline gap-4">
+                                {typeof kpi.value.pending !== 'undefined' && (
+                                    <div>
+                                        <p className="text-xs text-red-500">Pending</p>
+                                        <div className="text-2xl font-bold text-red-500">{kpi.value.pending}</div>
+                                    </div>
+                                )}
                                 {typeof kpi.value.inactive !== 'undefined' && (
                                     <div>
                                         <p className="text-xs text-red-500">Inactive</p>
@@ -358,6 +368,12 @@ export function AdminDashboard() {
                                     <div>
                                         <p className="text-xs text-red-500">With Dues</p>
                                         <div className="text-2xl font-bold text-red-500">{kpi.value.withDues}</div>
+                                    </div>
+                                )}
+                                {typeof kpi.value.verified !== 'undefined' && (
+                                     <div>
+                                        <p className="text-xs text-green-700">Verified</p>
+                                        <div className="text-2xl font-bold text-green-700">{kpi.value.verified}</div>
                                     </div>
                                 )}
                                 {typeof kpi.value.active !== 'undefined' && (
