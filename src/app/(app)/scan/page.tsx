@@ -1,13 +1,15 @@
 'use client';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { CheckCircle2, XCircle, ScanLine, Loader2 } from 'lucide-react';
+import { CheckCircle2, XCircle, ScanLine, Loader2, Video } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { payments, users } from '@/lib/data';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+
 
 type Verdict = 'PASS' | 'FAIL' | null;
 
@@ -17,6 +19,40 @@ export default function ScanPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [scannedUser, setScannedUser] = useState<string | null>(null);
   const { toast } = useToast();
+  const [hasCameraPermission, setHasCameraPermission] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+
+  useEffect(() => {
+    const getCameraPermission = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        setHasCameraPermission(true);
+
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      } catch (error) {
+        console.error('Error accessing camera:', error);
+        setHasCameraPermission(false);
+        toast({
+          variant: 'destructive',
+          title: 'Camera Access Denied',
+          description: 'Please enable camera permissions in your browser settings to use this app.',
+        });
+      }
+    };
+
+    getCameraPermission();
+    
+    return () => {
+        if (videoRef.current && videoRef.current.srcObject) {
+            const stream = videoRef.current.srcObject as MediaStream;
+            stream.getTracks().forEach(track => track.stop());
+        }
+    }
+  }, [toast]);
+
 
   const evaluatePass = () => {
     if (!qrData) {
@@ -76,64 +112,91 @@ export default function ScanPage() {
 
   return (
     <div className="grid gap-6 md:grid-cols-2">
-      <Card>
+       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2"><ScanLine /> Evaluate Security Pass</CardTitle>
+          <CardTitle className="flex items-center gap-2"><Video /> Camera Feed</CardTitle>
           <CardDescription>
-            Enter the data from the QR code to evaluate the pass status.
+            Position the QR code in front of the camera.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="qr-data">QR Code Data</Label>
-            <Input
-              id="qr-data"
-              placeholder='Paste QR code data here, e.g., {"id":"apt-101",...}'
-              value={qrData}
-              onChange={(e) => setQrData(e.target.value)}
-            />
-          </div>
-          <Button onClick={evaluatePass} disabled={isLoading}>
-            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Evaluate
-          </Button>
+        <CardContent>
+            <div className="relative aspect-video bg-muted rounded-md flex items-center justify-center">
+                 <video ref={videoRef} className="w-full aspect-video rounded-md" autoPlay muted />
+                 <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                    <div className="w-64 h-64 border-4 border-dashed border-white/50 rounded-lg"></div>
+                 </div>
+            </div>
+          {!hasCameraPermission && (
+            <Alert variant="destructive" className="mt-4">
+              <AlertTitle>Camera Access Required</AlertTitle>
+              <AlertDescription>
+                Please allow camera access to use this feature.
+              </AlertDescription>
+            </Alert>
+          )}
         </CardContent>
       </Card>
       
-      <Card className={cn(
-        "flex flex-col items-center justify-center transition-colors",
-        verdict === 'PASS' && 'bg-green-100 dark:bg-green-900/50',
-        verdict === 'FAIL' && 'bg-red-100 dark:bg-red-900/50',
-      )}>
-        <CardContent className="p-6 text-center">
-          {verdict === null && !isLoading && (
-            <div className="text-muted-foreground space-y-2">
-                <ScanLine className="h-24 w-24 mx-auto"/>
-                <p>Awaiting evaluation...</p>
+      <div className="space-y-6">
+        <Card>
+            <CardHeader>
+            <CardTitle className="flex items-center gap-2"><ScanLine /> Manual Evaluation</CardTitle>
+            <CardDescription>
+                If scanning fails, you can enter the data manually.
+            </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+            <div className="space-y-2">
+                <Label htmlFor="qr-data">QR Code Data</Label>
+                <Input
+                id="qr-data"
+                placeholder='Paste QR code data here, e.g., {"id":"apt-101",...}'
+                value={qrData}
+                onChange={(e) => setQrData(e.target.value)}
+                />
             </div>
-          )}
-          {isLoading && (
-            <div className="text-muted-foreground space-y-2">
-                <Loader2 className="h-24 w-24 mx-auto animate-spin"/>
-                <p>Evaluating...</p>
-            </div>
-          )}
-          {verdict === 'PASS' && (
-            <div className="text-green-600 dark:text-green-400 space-y-2">
-              <CheckCircle2 className="h-24 w-24 mx-auto" />
-              <h2 className="text-5xl font-bold">PASS</h2>
-              <p className="text-lg">{scannedUser}</p>
-            </div>
-          )}
-          {verdict === 'FAIL' && (
-            <div className="text-red-600 dark:text-red-400 space-y-2">
-              <XCircle className="h-24 w-24 mx-auto" />
-              <h2 className="text-5xl font-bold">FAIL</h2>
-              <p className="text-lg">{scannedUser}</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            <Button onClick={evaluatePass} disabled={isLoading}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Evaluate
+            </Button>
+            </CardContent>
+        </Card>
+        
+        <Card className={cn(
+            "flex flex-col items-center justify-center transition-colors",
+            verdict === 'PASS' && 'bg-green-100 dark:bg-green-900/50',
+            verdict === 'FAIL' && 'bg-red-100 dark:bg-red-900/50',
+        )}>
+            <CardContent className="p-6 text-center">
+            {verdict === null && !isLoading && (
+                <div className="text-muted-foreground space-y-2">
+                    <ScanLine className="h-24 w-24 mx-auto"/>
+                    <p>Awaiting evaluation...</p>
+                </div>
+            )}
+            {isLoading && (
+                <div className="text-muted-foreground space-y-2">
+                    <Loader2 className="h-24 w-24 mx-auto animate-spin"/>
+                    <p>Evaluating...</p>
+                </div>
+            )}
+            {verdict === 'PASS' && (
+                <div className="text-green-600 dark:text-green-400 space-y-2">
+                <CheckCircle2 className="h-24 w-24 mx-auto" />
+                <h2 className="text-5xl font-bold">PASS</h2>
+                <p className="text-lg">{scannedUser}</p>
+                </div>
+            )}
+            {verdict === 'FAIL' && (
+                <div className="text-red-600 dark:text-red-400 space-y-2">
+                <XCircle className="h-24 w-24 mx-auto" />
+                <h2 className="text-5xl font-bold">FAIL</h2>
+                <p className="text-lg">{scannedUser}</p>
+                </div>
+            )}
+            </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
