@@ -1,14 +1,15 @@
 'use client';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { CheckCircle2, XCircle, ScanLine, Loader2, Video } from 'lucide-react';
+import { CheckCircle2, XCircle, ScanLine, Loader2, Video, Camera } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { payments, users } from '@/lib/data';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { SwitchCamera } from 'lucide-react';
 
 
 type Verdict = 'PASS' | 'FAIL' | null;
@@ -21,37 +22,85 @@ export default function ScanPage() {
   const { toast } = useToast();
   const [hasCameraPermission, setHasCameraPermission] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
+  const [selectedDeviceId, setSelectedDeviceId] = useState<string>('');
 
 
-  useEffect(() => {
-    const getCameraPermission = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        setHasCameraPermission(true);
+  const getCameraPermission = useCallback(async () => {
+    try {
+      // Get initial permission and stream to populate device list
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      setHasCameraPermission(true);
 
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
-      } catch (error) {
-        console.error('Error accessing camera:', error);
-        setHasCameraPermission(false);
-        toast({
-          variant: 'destructive',
-          title: 'Camera Access Denied',
-          description: 'Please enable camera permissions in your browser settings to use this app.',
-        });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
       }
-    };
+      
+      // Enumerate devices
+      const mediaDevices = await navigator.mediaDevices.enumerateDevices();
+      const videoDevices = mediaDevices.filter((device) => device.kind === 'videoinput');
+      setDevices(videoDevices);
+      if (videoDevices.length > 0) {
+        setSelectedDeviceId(videoDevices[0].deviceId);
+      }
 
-    getCameraPermission();
-    
-    return () => {
-        if (videoRef.current && videoRef.current.srcObject) {
-            const stream = videoRef.current.srcObject as MediaStream;
-            stream.getTracks().forEach(track => track.stop());
-        }
+    } catch (error) {
+      console.error('Error accessing camera:', error);
+      setHasCameraPermission(false);
+      toast({
+        variant: 'destructive',
+        title: 'Camera Access Denied',
+        description: 'Please enable camera permissions in your browser settings to use this app.',
+      });
     }
   }, [toast]);
+
+  useEffect(() => {
+    getCameraPermission();
+
+    return () => {
+      if (videoRef.current && videoRef.current.srcObject) {
+        const stream = videoRef.current.srcObject as MediaStream;
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [getCameraPermission]);
+
+  useEffect(() => {
+    if (selectedDeviceId) {
+      const startStream = async () => {
+        if (videoRef.current && videoRef.current.srcObject) {
+          const stream = videoRef.current.srcObject as MediaStream;
+          stream.getTracks().forEach(track => track.stop());
+        }
+
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: { deviceId: { exact: selectedDeviceId } },
+            });
+            if (videoRef.current) {
+                videoRef.current.srcObject = stream;
+            }
+        } catch (error) {
+            console.error('Error switching camera:', error);
+            toast({
+                variant: 'destructive',
+                title: 'Camera Error',
+                description: 'Could not switch to the selected camera.',
+            });
+        }
+      };
+      startStream();
+    }
+  }, [selectedDeviceId, toast]);
+
+  const handleSwitchCamera = () => {
+    if (devices.length > 1) {
+      const currentIndex = devices.findIndex(device => device.deviceId === selectedDeviceId);
+      const nextIndex = (currentIndex + 1) % devices.length;
+      setSelectedDeviceId(devices[nextIndex].deviceId);
+    }
+  };
 
 
   const evaluatePass = () => {
@@ -125,6 +174,12 @@ export default function ScanPage() {
                  <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
                     <div className="w-64 h-64 border-4 border-dashed border-white/50 rounded-lg"></div>
                  </div>
+                 {devices.length > 1 && (
+                    <Button onClick={handleSwitchCamera} size="icon" variant="outline" className="absolute bottom-4 right-4">
+                        <SwitchCamera className="h-5 w-5" />
+                        <span className="sr-only">Switch Camera</span>
+                    </Button>
+                )}
             </div>
           {!hasCameraPermission && (
             <Alert variant="destructive" className="mt-4">
