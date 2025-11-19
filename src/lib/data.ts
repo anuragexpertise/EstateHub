@@ -58,8 +58,9 @@ export const rates = {
         '1month': 1.0,
     },
     contractor: {
-        'serviceFee': 50,
-        'hourlyRate': 75,
+        '1day': 50,
+        '7day': 250,
+        '1month': 800,
     }
 };
 

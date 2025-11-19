@@ -307,17 +307,21 @@ export function UtilityContractorRateManagementCard() {
         <CardHeader>
             <CardTitle>Utility Contractor Rate Management</CardTitle>
             <CardDescription>
-            Manage service fees and hourly rates for contractors.
+            Manage pass rates for utility contractors.
             </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
             <div className="space-y-2">
-                <Label htmlFor="serviceFee">Service Call Fee</Label>
-                <Input id="serviceFee" type="number" value={rates['serviceFee']} onChange={e => handleRateChange('serviceFee', e.target.value)} />
+                <Label htmlFor="contractor-1day">1-Day Pass Rate</Label>
+                <Input id="contractor-1day" type="number" value={rates['1day']} onChange={e => handleRateChange('1day', e.target.value)} />
             </div>
             <div className="space-y-2">
-                <Label htmlFor="hourlyRate">Hourly Rate</Label>
-                <Input id="hourlyRate" type="number" value={rates['hourlyRate']} onChange={e => handleRateChange('hourlyRate', e.target.value)} />
+                <Label htmlFor="contractor-7day">7-Day Pass Rate</Label>
+                <Input id="contractor-7day" type="number" value={rates['7day']} onChange={e => handleRateChange('7day', e.target.value)} />
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="contractor-1month">1-Month Pass Rate</Label>
+                <Input id="contractor-1month" type="number" value={rates['1month']} onChange={e => handleRateChange('1month', e.target.value)} />
             </div>
             <Button onClick={handleSaveRates}>Save Rates</Button>
         </CardContent>
