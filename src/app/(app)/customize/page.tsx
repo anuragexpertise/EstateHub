@@ -18,6 +18,7 @@ import { InfoCard } from '@/components/app/kpi-cards/info-card';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { ProfileCard } from '@/components/app/kpi-cards/profile-card';
 
 const allCardComponents: { [key: string]: React.ReactNode } = {
     'Enrollment': <EnrollCard />,
@@ -30,6 +31,7 @@ const allCardComponents: { [key: string]: React.ReactNode } = {
     'Rate Management': <RateManagementCard />,
     'Shift Management': <WorkShiftsCard />,
     'Info': <InfoCard />,
+    'Profile': <ProfileCard />,
 };
 
 const allCardIds = Object.keys(allCardComponents);
