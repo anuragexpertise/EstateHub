@@ -14,6 +14,7 @@ import { SettingsCard, RateManagementCard, WorkShiftsCard } from '@/components/a
 import { useCardStore } from '@/hooks/use-card-store';
 import { InfoCard } from '@/components/app/kpi-cards/info-card';
 import { ProfileCard } from '@/components/app/kpi-cards/profile-card';
+import { allNavItems } from '@/lib/data';
 
 const cardComponents: { [key: string]: React.ReactNode } = {
     'Enrollment': <EnrollCard />,
@@ -43,7 +44,8 @@ export default function ScanPage() {
   const role = searchParams.get('role') as UserRole | null;
   const { getLayout } = useCardStore();
 
-  const pageKey = pathname.split('/').pop() || 'scan';
+  const navItem = allNavItems.find(item => item.href === pathname);
+  const pageKey = navItem ? navItem.label.toLowerCase().replace(/ /g, '-') : (pathname.split('/').pop() || 'scan');
 
   if (!role) {
       return (
