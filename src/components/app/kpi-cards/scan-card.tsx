@@ -294,4 +294,8 @@ export function ScanCard() {
                 </div>
             )}
             </CardContent>
-        </
+        </Card>
+      </div>
+    </div>
+  );
+}

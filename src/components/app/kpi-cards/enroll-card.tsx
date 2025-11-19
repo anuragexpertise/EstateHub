@@ -205,3 +205,6 @@ export function EnrollCard() {
             </form>
           </Form>
         </CardContent>
+      </Card>
+  );
+}

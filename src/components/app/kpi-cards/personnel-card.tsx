@@ -85,4 +85,7 @@ export function SalaryHistoryCard() {
                 )}
                 </TableBody>
             </Table>
-            
+            </CardContent>
+        </Card>
+    );
+}
