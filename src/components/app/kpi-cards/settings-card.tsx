@@ -251,28 +251,27 @@ export function SettingsCard() {
     )
 }
 
-export function RateManagementCard() {
+export function ApartmentRateManagementCard() {
     const { toast } = useToast();
-    const [rates, setRates] = useState(defaultRates);
+    const [rates, setRates] = useState(defaultRates.apartment);
 
     const handleRateChange = (key: keyof typeof rates, value: string) => {
         setRates(prev => ({...prev, [key]: parseFloat(value) || 0 }));
     }
 
     const handleSaveRates = () => {
-        console.log("Saving rates:", rates);
-        toast({ title: "Success", description: "Rates have been updated." });
+        console.log("Saving apartment rates:", rates);
+        toast({ title: "Success", description: "Apartment rates have been updated." });
     }
     return (
         <Card>
         <CardHeader>
-            <CardTitle>Rate Management</CardTitle>
+            <CardTitle>Apartment Rate Management</CardTitle>
             <CardDescription>
-            Manage the rates for various passes and services.
+            Manage the rates for apartment passes (per sqft).
             </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">Rates for Apartment Passes (per sqft)</p>
             <div className="space-y-2">
                 <Label htmlFor="1day">1-Day Pass Rate</Label>
                 <Input id="1day" type="number" value={rates['1day']} onChange={e => handleRateChange('1day', e.target.value)} />
@@ -284,6 +283,41 @@ export function RateManagementCard() {
             <div className="space-y-2">
                 <Label htmlFor="1month">1-Month Pass Rate</Label>
                 <Input id="1month" type="number" value={rates['1month']} onChange={e => handleRateChange('1month', e.target.value)} />
+            </div>
+            <Button onClick={handleSaveRates}>Save Rates</Button>
+        </CardContent>
+        </Card>
+    );
+}
+
+export function UtilityContractorRateManagementCard() {
+    const { toast } = useToast();
+    const [rates, setRates] = useState(defaultRates.contractor);
+
+    const handleRateChange = (key: keyof typeof rates, value: string) => {
+        setRates(prev => ({...prev, [key]: parseFloat(value) || 0 }));
+    }
+
+    const handleSaveRates = () => {
+        console.log("Saving contractor rates:", rates);
+        toast({ title: "Success", description: "Utility Contractor rates have been updated." });
+    }
+    return (
+        <Card>
+        <CardHeader>
+            <CardTitle>Utility Contractor Rate Management</CardTitle>
+            <CardDescription>
+            Manage service fees and hourly rates for contractors.
+            </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+            <div className="space-y-2">
+                <Label htmlFor="serviceFee">Service Call Fee</Label>
+                <Input id="serviceFee" type="number" value={rates['serviceFee']} onChange={e => handleRateChange('serviceFee', e.target.value)} />
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="hourlyRate">Hourly Rate</Label>
+                <Input id="hourlyRate" type="number" value={rates['hourlyRate']} onChange={e => handleRateChange('hourlyRate', e.target.value)} />
             </div>
             <Button onClick={handleSaveRates}>Save Rates</Button>
         </CardContent>

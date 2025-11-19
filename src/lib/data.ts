@@ -52,9 +52,15 @@ export const shifts: Shift[] = [
 ]
 
 export const rates = {
-    '1day': 0.3,
-    '7day': 0.5,
-    '1month': 1.0,
+    apartment: {
+        '1day': 0.3,
+        '7day': 0.5,
+        '1month': 1.0,
+    },
+    contractor: {
+        'serviceFee': 50,
+        'hourlyRate': 75,
+    }
 };
 
 export const allNavItems: NavItem[] = [
