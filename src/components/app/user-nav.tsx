@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import {
   Popover,
@@ -12,6 +13,8 @@ import { users } from '@/lib/data';
 import type { UserRole } from '@/types';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { QrCodeDisplay } from './qr-code';
+import { Separator } from '../ui/separator';
+import { LogOut } from 'lucide-react';
 
 export function UserNav() {
   const searchParams = useSearchParams();
@@ -35,12 +38,38 @@ export function UserNav() {
           </Avatar>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="end">
-        <QrCodeDisplay
-          data={qrData}
-          title={`${user.name}'s Pass`}
-          description="Your personal identification QR code."
-        />
+      <PopoverContent className="w-80" align="end">
+        <div className="p-4">
+            <div className="flex items-center gap-4">
+                 <Avatar className="h-12 w-12">
+                    {avatarImage && (
+                    <AvatarImage src={avatarImage.imageUrl} alt={user.name} data-ai-hint={avatarImage.imageHint} />
+                    )}
+                    <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div className="grid gap-1">
+                    <p className="font-semibold">{user.name}</p>
+                    <p className="text-sm text-muted-foreground">{user.id}</p>
+                </div>
+            </div>
+        </div>
+        <Separator />
+        <div className="p-2">
+            <QrCodeDisplay
+                data={qrData}
+                title="Your Pass"
+                description="Personal identification QR code."
+            />
+        </div>
+        <Separator />
+        <div className="p-2">
+            <Link href="/" passHref>
+                <Button variant="ghost" className="w-full justify-start">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Logout
+                </Button>
+            </Link>
+        </div>
       </PopoverContent>
     </Popover>
   );
