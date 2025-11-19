@@ -1,6 +1,6 @@
 
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Brush, GripVertical, PlusCircle, XCircle } from 'lucide-react';
@@ -47,7 +47,11 @@ export default function CustomizePage() {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [activeLayout, setActiveLayout] = useState<string[]>([]);
   
-  const roleNavItems = selectedRole ? allNavItems.filter(item => item.roles.includes(selectedRole)) : [];
+  const roleNavItems = useMemo(() => {
+    if (!selectedRole) return [];
+    return allNavItems.filter(item => item.roles.includes(selectedRole));
+  }, [selectedRole]);
+
 
   const getPageKey = (option: string) => {
     const navItem = roleNavItems.find(item => item.label === option);
