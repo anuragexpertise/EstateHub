@@ -11,7 +11,6 @@ import { ArrowLeft, Building2, Shield, Wrench, FileDown, Check, CreditCard } fro
 import { Button } from "@/components/ui/button";
 import { useToast } from '@/hooks/use-toast';
 import { UserProfileCard } from '@/components/app/dashboard/user-profile-card';
-import { QrCodeDisplay } from '../qr-code';
 
 type ListFilter = 'all' | 'withDues' | 'noDues' | 'active' | 'inactive' | 'pending' | 'paid';
 
@@ -348,7 +347,7 @@ export function InfoCard() {
             <CardTitle>Info KPIs</CardTitle>
             <CardDescription>An overview of key metrics across the system.</CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-6 md:grid-cols-2">
+        <CardContent className="grid gap-6">
             <div className="grid gap-4 md:grid-cols-2">
                 {kpiData.map((kpi, index) => (
                     <Card key={index}>
@@ -401,15 +400,6 @@ export function InfoCard() {
                     </Card>
                 ))}
             </div>
-            {currentUser && (
-                <div className="lg:col-span-1">
-                    <QrCodeDisplay
-                        data={{ id: currentUser.id, type: currentUser.role, name: currentUser.name }}
-                        title="Your Pass"
-                        description="Your personal identification QR code."
-                    />
-                </div>
-            )}
         </CardContent>
     </Card>
   );

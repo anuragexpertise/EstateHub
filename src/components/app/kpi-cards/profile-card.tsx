@@ -1,9 +1,11 @@
+
 'use client';
 import { useSearchParams } from 'next/navigation';
 import { UserProfileCard } from '@/components/app/dashboard/user-profile-card';
 import { users } from '@/lib/data';
 import type { UserRole } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { QrCodeDisplay } from '../qr-code';
 
 export function ProfileCard() {
   const searchParams = useSearchParams();
@@ -23,5 +25,16 @@ export function ProfileCard() {
     );
   }
 
-  return <UserProfileCard user={user} />;
+  const qrData = { id: user.id, type: user.role, name: user.name };
+
+  return (
+    <div className="grid gap-6 md:grid-cols-2">
+      <UserProfileCard user={user} />
+      <QrCodeDisplay
+        data={qrData}
+        title="Your Pass"
+        description="Your personal identification QR code."
+      />
+    </div>
+  );
 }
