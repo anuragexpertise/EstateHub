@@ -1,6 +1,6 @@
 
 'use client';
-import { useSearchParams } from 'next/navigation';
+import { useState, useEffect, useMemo } from 'react';
 import type { UserRole } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,10 +14,10 @@ import { PersonnelCard, SalaryHistoryCard } from '@/components/app/kpi-cards/per
 import { SettingsCard, RateManagementCard, WorkShiftsCard } from '@/components/app/kpi-cards/settings-card';
 import { useCardStore } from '@/hooks/use-card-store';
 import { useToast } from '@/hooks/use-toast';
-import { useEffect, useState, useMemo } from 'react';
 import { InfoCard } from '@/components/app/kpi-cards/info-card';
-import { Separator } from '@/components/ui/separator';
-
+import { cn } from '@/lib/utils';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 
 const allCardComponents: { [key: string]: React.ReactNode } = {
     'Enrollment': <EnrollCard />,
@@ -32,36 +32,32 @@ const allCardComponents: { [key: string]: React.ReactNode } = {
     'Info': <InfoCard />,
 };
 
-export default function CustomizePage() {
-  const searchParams = useSearchParams();
-  const role = searchParams.get('role') as UserRole | null;
-  const { toast } = useToast();
+const allCardIds = Object.keys(allCardComponents);
 
+export default function CustomizePage() {
+  const { toast } = useToast();
   const { layouts, getLayout, setLayout } = useCardStore();
   
+  const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
   const [activeLayout, setActiveLayout] = useState<string[]>([]);
   
   useEffect(() => {
-    if (role) {
-      setActiveLayout(getLayout(role));
+    if (selectedRole) {
+      setActiveLayout(getLayout(selectedRole));
+    } else {
+      setActiveLayout([]);
     }
-  }, [role, getLayout]);
-
-
-  const availableCards = useMemo(() => {
-    const allCards = Object.keys(allCardComponents);
-    return allCards.filter(cardId => !activeLayout.includes(cardId));
-  }, [activeLayout]);
+  }, [selectedRole, getLayout]);
 
   const onDragEnd = (result: DropResult) => {
     const { source, destination } = result;
 
-    if (!destination || !role) {
+    if (!destination || !selectedRole) {
         return;
     }
 
     if (source.droppableId === destination.droppableId) {
-        // Reordering within the same list
+        // Reordering within the same list (active layout)
         if(source.droppableId === 'activeLayout'){
             const items = Array.from(activeLayout);
             const [reorderedItem] = items.splice(source.index, 1);
@@ -70,156 +66,179 @@ export default function CustomizePage() {
         }
     } else {
         // Moving from one list to another
-        if (source.droppableId === 'availableCards' && destination.droppableId === 'activeLayout') {
-            // Move from available to active
-            const sourceClone = Array.from(availableCards);
+        if (source.droppableId === 'allCards' && destination.droppableId === 'activeLayout') {
             const destClone = Array.from(activeLayout);
-            const [movedItem] = sourceClone.splice(source.index, 1);
-            destClone.splice(destination.index, 0, movedItem);
-
-            setActiveLayout(destClone);
-
-        } else if (source.droppableId === 'activeLayout' && destination.droppableId === 'availableCards') {
-            // Move from active to available (remove from layout)
-            const sourceClone = Array.from(activeLayout);
-            const [movedItem] = sourceClone.splice(source.index, 1);
+            const movedItem = allCardIds[source.index];
             
-            // The available cards list is derived, so we just update the active layout
+            // Prevent adding duplicates
+            if (!destClone.includes(movedItem)) {
+                destClone.splice(destination.index, 0, movedItem);
+                setActiveLayout(destClone);
+            } else {
+                 toast({
+                    variant: "destructive",
+                    title: 'Card Already Exists',
+                    description: `The "${movedItem}" card is already in the layout.`,
+                });
+            }
+        } else if (source.droppableId === 'activeLayout' && destination.droppableId === 'allCards') {
+            // This case is for removing an item by dragging it out.
+            // We just update the active layout, and it will be gone.
+            const sourceClone = Array.from(activeLayout);
+            sourceClone.splice(source.index, 1);
             setActiveLayout(sourceClone);
         }
     }
   };
   
   const handleSaveChanges = () => {
-    if(role) {
-        setLayout(role, activeLayout);
+    if(selectedRole) {
+        setLayout(selectedRole, activeLayout);
         toast({
             title: 'Layout Saved',
-            description: `Your dashboard layout for the ${role} role has been saved.`,
+            description: `Your dashboard layout for the ${selectedRole} role has been saved.`,
         });
     }
   }
 
   const addCardToLayout = (cardId: string) => {
-      setActiveLayout(prev => [...prev, cardId]);
+      if (!activeLayout.includes(cardId)) {
+        setActiveLayout(prev => [...prev, cardId]);
+      } else {
+        toast({
+            variant: "destructive",
+            title: 'Card Already Exists',
+            description: `The "${cardId}" card is already in the layout.`,
+        });
+      }
   }
 
-  if (!role) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Error</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p>Please select a role to see customizable cards.</p>
-        </CardContent>
-      </Card>
-    );
+  const removeCardFromLayout = (cardId: string) => {
+    setActiveLayout(prev => prev.filter(id => id !== cardId));
   }
-  
+
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <div className='flex justify-between items-start'>
+          <div className='flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4'>
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Brush className="h-5 w-5" />
-                Customize Dashboard ({role})
+                Customize Dashboard
               </CardTitle>
               <CardDescription>
-                Drag and drop cards to arrange your dashboard, or click to add.
+                Select a role, then drag and drop cards to arrange the dashboard.
               </CardDescription>
             </div>
-            <Button onClick={handleSaveChanges}>Save Changes</Button>
+            <div className="flex items-center gap-4">
+                <div className="grid w-full max-w-sm items-center gap-1.5">
+                  <Label htmlFor="role-select">Role to Customize</Label>
+                    <Select onValueChange={(value) => setSelectedRole(value as UserRole)} value={selectedRole || ''}>
+                      <SelectTrigger id="role-select" className="w-[180px]">
+                        <SelectValue placeholder="Select a role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(['Admin', 'Apartment', 'Contractor', 'Security'] as UserRole[]).map((role) => (
+                          <SelectItem key={role} value={role}>{role}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                </div>
+                <Button onClick={handleSaveChanges} disabled={!selectedRole}>Save Changes</Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
-          <DragDropContext onDragEnd={onDragEnd}>
-            <div className='grid lg:grid-cols-3 gap-8'>
-                <div className='lg:col-span-1'>
-                    <h3 className='text-lg font-semibold mb-4'>Available Cards</h3>
-                    <Droppable droppableId="availableCards">
-                        {(provided, snapshot) => (
-                             <div
-                                ref={provided.innerRef}
-                                {...provided.droppableProps}
-                                className={cn(
-                                    "space-y-4 p-4 rounded-lg border-dashed border-2 min-h-48",
-                                    snapshot.isDraggingOver ? 'bg-muted' : ''
-                                )}
-                            >
-                                {availableCards.map((cardId, index) => (
-                                     <Draggable key={cardId} draggableId={cardId} index={index}>
-                                     {(provided, snapshot) => (
-                                        <div
-                                            ref={provided.innerRef}
-                                            {...provided.draggableProps}
-                                            {...provided.dragHandleProps}
-                                            className="p-4 rounded-lg border bg-card text-card-foreground shadow-sm flex justify-between items-center"
-                                        >
-                                            <span>{cardId}</span>
-                                            <Button size="icon" variant="ghost" onClick={() => addCardToLayout(cardId)}>
-                                                <PlusCircle className='h-5 w-5'/>
-                                            </Button>
-                                        </div>
-                                     )}
-                                     </Draggable>
-                                ))}
-                                {provided.placeholder}
-                                {availableCards.length === 0 && (
-                                    <p className='text-sm text-muted-foreground text-center pt-4'>All cards are in use.</p>
-                                )}
-                            </div>
-                        )}
-                    </Droppable>
-                </div>
-
-                <div className='lg:col-span-2'>
-                    <h3 className='text-lg font-semibold mb-4'>Dashboard Layout Preview</h3>
-                    <Droppable droppableId="activeLayout">
-                    {(provided, snapshot) => (
-                        <div
-                        {...provided.droppableProps}
-                        ref={provided.innerRef}
-                        className={cn(
-                            "grid gap-6 p-4 rounded-lg border-dashed border-2 min-h-48",
-                            snapshot.isDraggingOver ? 'bg-muted' : ''
-                        )}
-                        >
-                        {activeLayout.map((cardId, index) => (
-                            <Draggable key={cardId} draggableId={cardId} index={index}>
-                            {(provided, snapshot) => (
+          {!selectedRole ? (
+             <div className="flex items-center justify-center h-96 border-2 border-dashed rounded-lg">
+                <p className="text-muted-foreground">Please select a role to start customizing.</p>
+            </div>
+          ) : (
+            <DragDropContext onDragEnd={onDragEnd}>
+                <div className='grid lg:grid-cols-3 gap-8'>
+                    <div className='lg:col-span-1'>
+                        <h3 className='text-lg font-semibold mb-4'>All KPI Cards</h3>
+                        <Droppable droppableId="allCards" isDropDisabled={true}>
+                            {(provided) => (
                                 <div
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                className="relative rounded-lg border bg-card text-card-foreground shadow-sm"
+                                    ref={provided.innerRef}
+                                    {...provided.droppableProps}
+                                    className="space-y-4 p-4 rounded-lg border min-h-48 bg-muted/50"
                                 >
-                                    <div {...provided.dragHandleProps} className="absolute top-4 right-4 text-muted-foreground cursor-move">
-                                        <GripVertical />
-                                    </div>
-                                <CardHeader>
-                                        <CardTitle>{cardId}</CardTitle>
-                                    </CardHeader>
-                                    <CardContent className={snapshot.isDragging ? 'opacity-50' : ''}>
-                                        <div className="pointer-events-none">
-                                            {allCardComponents[cardId]}
-                                        </div>
-                                    </CardContent>
+                                    {allCardIds.map((cardId, index) => (
+                                        <Draggable key={cardId} draggableId={cardId} index={index}>
+                                        {(provided, snapshot) => (
+                                            <div
+                                                ref={provided.innerRef}
+                                                {...provided.draggableProps}
+                                                {...provided.dragHandleProps}
+                                                className={cn(
+                                                    "p-4 rounded-lg border bg-card text-card-foreground shadow-sm flex justify-between items-center",
+                                                    snapshot.isDragging && "shadow-lg"
+                                                )}
+                                            >
+                                                <span>{cardId}</span>
+                                                <Button size="icon" variant="ghost" onClick={() => addCardToLayout(cardId)}>
+                                                    <PlusCircle className='h-5 w-5'/>
+                                                </Button>
+                                            </div>
+                                        )}
+                                        </Draggable>
+                                    ))}
+                                    {provided.placeholder}
                                 </div>
                             )}
-                            </Draggable>
-                        ))}
-                        {provided.placeholder}
-                        {activeLayout.length === 0 && (
-                            <p className='text-sm text-muted-foreground text-center pt-4'>Drag cards from the left to add them to your dashboard.</p>
+                        </Droppable>
+                    </div>
+
+                    <div className='lg:col-span-2'>
+                        <h3 className='text-lg font-semibold mb-4'>Layout for {selectedRole}</h3>
+                        <Droppable droppableId="activeLayout">
+                        {(provided, snapshot) => (
+                            <div
+                            {...provided.droppableProps}
+                            ref={provided.innerRef}
+                            className={cn(
+                                "grid gap-6 p-4 rounded-lg border-dashed border-2 min-h-48",
+                                snapshot.isDraggingOver ? 'bg-muted' : ''
+                            )}
+                            >
+                            {activeLayout.map((cardId, index) => (
+                                <Draggable key={cardId} draggableId={cardId} index={index}>
+                                {(provided, snapshot) => (
+                                    <div
+                                        ref={provided.innerRef}
+                                        {...provided.draggableProps}
+                                        className="relative rounded-lg border bg-card text-card-foreground shadow-sm"
+                                    >
+                                        <div {...provided.dragHandleProps} className="absolute top-2 left-2 text-muted-foreground cursor-move p-2">
+                                            <GripVertical />
+                                        </div>
+                                        <Button size="icon" variant="ghost" onClick={() => removeCardFromLayout(cardId)} className="absolute top-2 right-2">
+                                            <XCircle className='h-5 w-5 text-destructive'/>
+                                        </Button>
+                                        <CardHeader>
+                                            <CardTitle className="text-center">{cardId}</CardTitle>
+                                        </CardHeader>
+                                        <CardContent className={cn("pointer-events-none", snapshot.isDragging ? 'opacity-50' : '')}>
+                                            {allCardComponents[cardId]}
+                                        </CardContent>
+                                    </div>
+                                )}
+                                </Draggable>
+                            ))}
+                            {provided.placeholder}
+                            {activeLayout.length === 0 && (
+                                <p className='text-sm text-muted-foreground text-center pt-4'>Drag cards from the left or click the '+' icon to add them to your dashboard.</p>
+                            )}
+                            </div>
                         )}
-                        </div>
-                    )}
-                    </Droppable>
+                        </Droppable>
+                    </div>
                 </div>
-            </div>
-          </DragDropContext>
+            </DragDropContext>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -203,6 +203,8 @@ export function ScanCard() {
   };
 
   return (
+    <Card>
+    <CardContent className="p-0">
     <div className="grid gap-6 md:grid-cols-2">
        <Card>
         <CardHeader>
@@ -297,5 +299,7 @@ export function ScanCard() {
         </Card>
       </div>
     </div>
+    </CardContent>
+    </Card>
   );
 }
