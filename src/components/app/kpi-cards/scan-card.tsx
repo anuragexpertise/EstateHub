@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { CheckCircle2, XCircle, ScanLine, Loader2, Video, Camera, SwitchCamera } from 'lucide-react';
+import { CheckCircle2, XCircle, ScanLine, Loader2, Video, Camera, SwitchCamera, Play, StopCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { payments, users } from '@/lib/data';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
@@ -27,6 +27,7 @@ export function ScanCard() {
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const [selectedDeviceId, setSelectedDeviceId] = useState<string>('');
   const requestRef = useRef<number>();
+  const [isScanning, setIsScanning] = useState(true);
 
 
   const evaluatePass = useCallback((dataToEvaluate: string) => {
@@ -45,6 +46,7 @@ export function ScanCard() {
     setIsLoading(true);
     setVerdict(null);
     setScannedUser(null);
+    setIsScanning(false);
 
     setTimeout(() => {
       try {
@@ -87,12 +89,15 @@ export function ScanCard() {
             setQrData('');
             setVerdict(null);
             setScannedUser(null);
+            setIsScanning(true);
         }, 5000);
       }
     }, 1000);
   }, [toast, isLoading, qrData]);
 
   const scanQRCode = useCallback(() => {
+    if (!isScanning) return;
+
     if (videoRef.current && videoRef.current.readyState === videoRef.current.HAVE_ENOUGH_DATA && canvasRef.current) {
         const video = videoRef.current;
         const canvas = canvasRef.current;
@@ -113,7 +118,7 @@ export function ScanCard() {
         }
     }
     requestRef.current = requestAnimationFrame(scanQRCode);
-  }, [evaluatePass]);
+  }, [evaluatePass, isScanning]);
 
 
   const getCameraPermission = useCallback(async () => {
@@ -158,7 +163,7 @@ export function ScanCard() {
   }, [getCameraPermission]);
 
   useEffect(() => {
-    if (selectedDeviceId) {
+    if (selectedDeviceId && hasCameraPermission) {
       const startStream = async () => {
         if (videoRef.current && videoRef.current.srcObject) {
           const stream = videoRef.current.srcObject as MediaStream;
@@ -172,6 +177,9 @@ export function ScanCard() {
             if (videoRef.current) {
                 videoRef.current.srcObject = stream;
                 videoRef.current.addEventListener('loadeddata', () => {
+                  if (requestRef.current) {
+                    cancelAnimationFrame(requestRef.current);
+                  }
                   requestRef.current = requestAnimationFrame(scanQRCode);
                 })
             }
@@ -186,7 +194,13 @@ export function ScanCard() {
       };
       startStream();
     }
-  }, [selectedDeviceId, toast, scanQRCode]);
+    
+    return () => {
+      if(requestRef.current){
+          cancelAnimationFrame(requestRef.current);
+      }
+    }
+  }, [selectedDeviceId, toast, scanQRCode, hasCameraPermission]);
 
   const handleSwitchCamera = () => {
     if (devices.length > 1) {
@@ -196,11 +210,22 @@ export function ScanCard() {
     }
   };
 
+  const toggleScanning = () => {
+    setIsScanning(prev => !prev);
+  }
+
   const VerdictOverlay = () => {
-      if (verdict === null && !isLoading) {
+      if (verdict === null && !isLoading && isScanning) {
           return (
               <div className="absolute inset-0 bg-black/20 flex items-center justify-center pointer-events-none">
                   <div className="w-64 h-64 border-4 border-dashed border-white/50 rounded-lg"></div>
+              </div>
+          );
+      }
+       if (verdict === null && !isLoading && !isScanning) {
+          return (
+              <div className="absolute inset-0 bg-black/50 flex items-center justify-center pointer-events-none">
+                  <p className="text-white text-lg font-semibold">Scanning paused</p>
               </div>
           );
       }
@@ -250,12 +275,18 @@ export function ScanCard() {
                 <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
                 <canvas ref={canvasRef} className="hidden" />
                 <VerdictOverlay />
-                 {devices.length > 1 && !verdict && (
-                    <Button onClick={handleSwitchCamera} size="icon" variant="outline" className="absolute bottom-4 right-4 z-20">
-                        <SwitchCamera className="h-5 w-5" />
-                        <span className="sr-only">Switch Camera</span>
+                 <div className="absolute bottom-4 right-4 z-20 flex gap-2">
+                    {devices.length > 1 && !verdict && (
+                      <Button onClick={handleSwitchCamera} size="icon" variant="outline">
+                          <SwitchCamera className="h-5 w-5" />
+                          <span className="sr-only">Switch Camera</span>
+                      </Button>
+                    )}
+                    <Button onClick={toggleScanning} size="icon" variant="outline" disabled={!!verdict}>
+                      {isScanning ? <StopCircle className="h-5 w-5"/> : <Play className="h-5 w-5" />}
+                      <span className="sr-only">{isScanning ? 'Stop' : 'Start'} Scanning</span>
                     </Button>
-                )}
+                 </div>
             </div>
             {!hasCameraPermission && (
                 <Alert variant="destructive" className="mt-4">
