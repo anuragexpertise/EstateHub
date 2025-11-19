@@ -115,4 +115,82 @@ export function SettingsCard() {
                         <Button type="submit">Update Password</Button>
                     </form>
                 </Form>
-            </C<ctrl63>
+            </CardContent>
+        </Card>
+    )
+}
+
+export function RateManagementCard() {
+    const { toast } = useToast();
+    const [rates, setRates] = useState(defaultRates);
+
+    const handleRateChange = (key: keyof typeof rates, value: string) => {
+        setRates(prev => ({...prev, [key]: parseFloat(value) || 0 }));
+    }
+
+    const handleSaveRates = () => {
+        console.log("Saving rates:", rates);
+        toast({ title: "Success", description: "Rates have been updated." });
+    }
+    return (
+        <Card>
+        <CardHeader>
+            <CardTitle>Rate Management</CardTitle>
+            <CardDescription>
+            Manage the rates for various passes and services.
+            </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">Rates for Apartment Passes (per sqft)</p>
+            <div className="space-y-2">
+                <Label htmlFor="1day">1-Day Pass Rate</Label>
+                <Input id="1day" type="number" value={rates['1day']} onChange={e => handleRateChange('1day', e.target.value)} />
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="7day">7-Day Pass Rate</Label>
+                <Input id="7day" type="number" value={rates['7day']} onChange={e => handleRateChange('7day', e.target.value)} />
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="1month">1-Month Pass Rate</Label>
+                <Input id="1month" type="number" value={rates['1month']} onChange={e => handleRateChange('1month', e.target.value)} />
+            </div>
+            <Button onClick={handleSaveRates}>Save Rates</Button>
+        </CardContent>
+        </Card>
+    );
+}
+
+export function WorkShiftsCard() {
+    return (
+        <Card>
+        <CardHeader>
+            <CardTitle>Security Work Shifts</CardTitle>
+            <CardDescription>
+            Manage and view the work shifts for all security personnel.
+            </CardDescription>
+        </CardHeader>
+        <CardContent>
+            <Table>
+            <TableHeader>
+                <TableRow>
+                <TableHead>Personnel</TableHead>
+                <TableHead>Shift</TableHead>
+                <TableHead>Status</TableHead>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                {shifts.map(shift => (
+                    <TableRow key={shift.id}>
+                        <TableCell className="font-medium">{shift.personnel}</TableCell>
+                        <TableCell>{shift.shift}</TableCell>
+                        <TableCell>
+                            <Badge variant={shift.status === 'Active' ? 'default' : 'outline'}>{shift.status}</Badge>
+                        </TableCell>
+                    </TableRow>
+                ))}
+            </TableBody>
+            </Table>
+        </CardContent>
+        </Card>
+    );
+}
