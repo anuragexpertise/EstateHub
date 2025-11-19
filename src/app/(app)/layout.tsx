@@ -1,3 +1,6 @@
+
+'use client';
+import * as React from 'react';
 import { SidebarNav } from '@/components/app/sidebar-nav';
 import { UserNav } from '@/components/app/user-nav';
 import { Logo } from '@/components/logo';
@@ -12,6 +15,12 @@ export default function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const [isSheetOpen, setIsSheetOpen] = React.useState(false);
+
+  const handleLinkClick = () => {
+    setIsSheetOpen(false);
+  };
+
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background px-4 sm:px-6">
@@ -23,7 +32,7 @@ export default function AppLayout({
             <span>EstateHub</span>
           </a>
           
-          <Sheet>
+          <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
             <SheetTrigger asChild>
               <Button size="icon" variant="outline" className="sm:hidden">
                 <PanelLeft className="h-5 w-5" />
@@ -39,7 +48,7 @@ export default function AppLayout({
                   <Logo className="h-5 w-5 transition-all group-hover:scale-110" />
                   <span className="sr-only">EstateHub</span>
                 </a>
-                <SidebarNav isMobile={true} />
+                <SidebarNav isMobile={true} onLinkClick={handleLinkClick} />
               </nav>
             </SheetContent>
           </Sheet>

@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 import * as React from 'react';
 import { allNavItems } from '@/lib/data';
 
-export function SidebarNav({ isMobile = false }: { isMobile?: boolean }) {
+export function SidebarNav({ isMobile = false, onLinkClick }: { isMobile?: boolean, onLinkClick?: () => void }) {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const role = searchParams.get('role') as UserRole | null;
@@ -23,13 +23,24 @@ export function SidebarNav({ isMobile = false }: { isMobile?: boolean }) {
     { "gap-4 px-2.5": isMobile }
   );
 
+  const handleLinkClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    if (onLinkClick) {
+      onLinkClick();
+    }
+  }
+
   return (
     <nav className={cn(
         "flex-1 overflow-auto p-4",
         { "grid items-start": !isMobile, "grid gap-6 text-lg font-medium p-0": isMobile }
     )}>
         {navItems.map((item) => (
-            <Link key={item.label} href={`${item.href}?role=${role}`} className={linkClass(item.href)}>
+            <Link 
+              key={item.label} 
+              href={`${item.href}?role=${role}`} 
+              className={linkClass(item.href)}
+              onClick={handleLinkClick}
+            >
                 <item.icon className="h-5 w-5" />
                 {item.label}
             </Link>
