@@ -10,6 +10,7 @@ import {
   ScanLine,
   Users,
   type LucideIcon,
+  Brush,
 } from 'lucide-react';
 import type { UserRole } from '@/types';
 import { cn } from '@/lib/utils';
@@ -29,6 +30,7 @@ const allNavItems: NavItem[] = [
   { href: '/scan', label: 'Evaluate Pass', icon: ScanLine, roles: ['Security', 'Admin'] },
   { href: '/personnel', label: 'Personnel', icon: Users, roles: ['Security'] },
   { href: '/settings', label: 'Settings', icon: Settings, roles: ['Admin', 'Apartment', 'Contractor', 'Security'] },
+  { href: '/customize', label: 'Customize', icon: Brush, roles: ['Admin', 'Apartment', 'Contractor', 'Security'] },
 ];
 
 
