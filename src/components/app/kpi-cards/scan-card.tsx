@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { CheckCircle2, XCircle, ScanLine, Loader2, Video, Camera, SwitchCamera, Play, StopCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { payments, users } from '@/lib/data';
+import type { User } from '@/types';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import jsQR from 'jsqr';
 
@@ -16,7 +17,7 @@ import jsQR from 'jsqr';
 type Verdict = 'PASS' | 'FAIL' | null;
 
 export function ScanCard() {
-  const [qrData, setQrData] = useState('');
+  const [manualInput, setManualInput] = useState('');
   const [verdict, setVerdict] = useState<Verdict>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [scannedUser, setScannedUser] = useState<string | null>(null);
@@ -36,28 +37,34 @@ export function ScanCard() {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'QR data cannot be empty.',
+        description: 'Input data cannot be empty.',
       });
       return;
     }
     
-    if(isLoading || dataToEvaluate === qrData) return;
+    if(isLoading) return;
 
-    setQrData(dataToEvaluate);
     setIsLoading(true);
     setVerdict(null);
     setScannedUser(null);
-    setIsScanning(false);
-    stopCamera();
+    if(isScanning) {
+        setIsScanning(false);
+        stopCamera();
+    }
 
     setTimeout(() => {
       try {
-        const data = JSON.parse(dataToEvaluate);
-        if (!data.id || !data.type) {
-          throw new Error('Invalid QR code format.');
+        let user: User | undefined;
+
+        try {
+            // First, try to parse it as JSON (from QR scan)
+            const data = JSON.parse(dataToEvaluate);
+            user = users.find(u => u.id === data.id);
+        } catch (e) {
+            // If it fails, assume it's a plain entity ID (from manual input)
+            user = users.find(u => u.id === dataToEvaluate);
         }
 
-        const user = users.find(u => u.id === data.id);
         if (!user) {
           setVerdict('FAIL');
           setScannedUser('Unknown User');
@@ -83,19 +90,19 @@ export function ScanCard() {
         toast({
           variant: 'destructive',
           title: 'Scan Error',
-          description: 'Could not parse QR data. Please ensure it is a valid code.',
+          description: 'Could not parse QR data or find user. Please ensure it is a valid code or ID.',
         });
       } finally {
         setIsLoading(false);
         setTimeout(() => {
-            setQrData('');
+            setManualInput('');
             setVerdict(null);
             setScannedUser(null);
             setIsScanning(true);
         }, 5000);
       }
     }, 1000);
-  }, [toast, isLoading, qrData]);
+  }, [toast, isLoading, isScanning]);
 
   const scanQRCode = useCallback(() => {
     if (!isScanning) return;
@@ -115,6 +122,7 @@ export function ScanCard() {
             });
 
             if (code) {
+                setManualInput(code.data);
                 evaluatePass(code.data);
             }
         }
@@ -299,12 +307,12 @@ export function ScanCard() {
                 <div className="flex gap-2">
                     <Input
                         id="qr-data"
-                        placeholder='Paste QR code data here if scanning fails'
-                        value={qrData}
-                        onChange={(e) => setQrData(e.target.value)}
+                        placeholder='Paste Entity ID here if scanning fails'
+                        value={manualInput}
+                        onChange={(e) => setManualInput(e.target.value)}
                         disabled={isLoading}
                     />
-                    <Button onClick={() => evaluatePass(qrData)} disabled={isLoading || !qrData}>
+                    <Button onClick={() => evaluatePass(manualInput)} disabled={isLoading || !manualInput}>
                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Evaluate
                     </Button>
