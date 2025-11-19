@@ -18,7 +18,8 @@ import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { ProfileCard } from '@/components/app/kpi-cards/profile-card';
-import { sidebarOptions } from '@/lib/data';
+import { allNavItems, roles } from '@/lib/data';
+import type { UserRole } from '@/types';
 
 const allCardComponents: { [key: string]: React.ReactNode } = {
     'Enrollment': <EnrollCard />,
@@ -40,16 +41,24 @@ export default function CustomizePage() {
   const { toast } = useToast();
   const { layouts, getLayout, setLayout } = useCardStore();
   
+  const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [activeLayout, setActiveLayout] = useState<string[]>([]);
   
+  const roleNavItems = selectedRole ? allNavItems.filter(item => item.roles.includes(selectedRole)) : [];
+
   useEffect(() => {
     if (selectedOption) {
-      setActiveLayout(getLayout(selectedOption));
+      setActiveLayout(getLayout(selectedOption.toLowerCase().replace(/ /g, '-')));
     } else {
       setActiveLayout([]);
     }
   }, [selectedOption, getLayout]);
+  
+  useEffect(() => {
+    setSelectedOption(null);
+  }, [selectedRole]);
+
 
   const onDragEnd = (result: DropResult) => {
     const { source, destination } = result;
@@ -90,7 +99,7 @@ export default function CustomizePage() {
   
   const handleSaveChanges = () => {
     if(selectedOption) {
-        setLayout(selectedOption, activeLayout);
+        setLayout(selectedOption.toLowerCase().replace(/ /g, '-'), activeLayout);
         toast({
             title: 'Layout Saved',
             description: `Your layout for the ${selectedOption} page has been saved.`,
@@ -125,19 +134,32 @@ export default function CustomizePage() {
                 Customize Page Layouts
               </CardTitle>
               <CardDescription>
-                Select a page, then drag and drop cards to arrange the layout.
+                Select a role and a page, then drag and drop cards to arrange the layout.
               </CardDescription>
             </div>
             <div className="flex items-center gap-4">
                 <div className="grid w-full max-w-sm items-center gap-1.5">
+                  <Label htmlFor="role-select">Role</Label>
+                  <Select onValueChange={(value: UserRole) => setSelectedRole(value)} value={selectedRole || ''}>
+                      <SelectTrigger id="role-select" className="w-[180px]">
+                        <SelectValue placeholder="Select a role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {roles.map((role) => (
+                          <SelectItem key={role.role} value={role.role}>{role.role}</SelectItem>
+                        ))}
+                      </SelectContent>
+                  </Select>
+                </div>
+                 <div className="grid w-full max-w-sm items-center gap-1.5">
                   <Label htmlFor="option-select">Page to Customize</Label>
-                    <Select onValueChange={(value) => setSelectedOption(value)} value={selectedOption || ''}>
+                    <Select onValueChange={(value) => setSelectedOption(value)} value={selectedOption || ''} disabled={!selectedRole}>
                       <SelectTrigger id="option-select" className="w-[180px]">
                         <SelectValue placeholder="Select a page" />
                       </SelectTrigger>
                       <SelectContent>
-                        {sidebarOptions.map((option) => (
-                          <SelectItem key={option} value={option}>{option}</SelectItem>
+                        {roleNavItems.map((option) => (
+                          <SelectItem key={option.label} value={option.label}>{option.label}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -149,7 +171,9 @@ export default function CustomizePage() {
         <CardContent>
           {!selectedOption ? (
              <div className="flex items-center justify-center h-96 border-2 border-dashed rounded-lg">
-                <p className="text-muted-foreground">Please select a page to start customizing.</p>
+                <p className="text-muted-foreground">
+                    {selectedRole ? 'Please select a page to customize.' : 'Please select a role to begin.'}
+                </p>
             </div>
           ) : (
             <DragDropContext onDragEnd={onDragEnd}>

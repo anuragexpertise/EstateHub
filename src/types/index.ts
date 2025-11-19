@@ -1,3 +1,5 @@
+import type { LucideIcon } from "lucide-react";
+
 export type UserRole = 'Admin' | 'Apartment' | 'Contractor' | 'Security';
 
 export type User = {
@@ -38,3 +40,10 @@ export type Shift = {
     shift: string;
     status: 'Active' | 'Inactive';
 }
+
+export type NavItem = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  roles: UserRole[];
+};

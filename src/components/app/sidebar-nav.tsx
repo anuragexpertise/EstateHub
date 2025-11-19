@@ -3,37 +3,10 @@
 
 import { useSearchParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import {
-  LayoutDashboard,
-  UserPlus,
-  Settings,
-  CreditCard,
-  ScanLine,
-  Users,
-  type LucideIcon,
-  Brush,
-} from 'lucide-react';
 import type { UserRole } from '@/types';
 import { cn } from '@/lib/utils';
 import * as React from 'react';
-
-type NavItem = {
-  href: string;
-  label: string;
-  icon: LucideIcon;
-  roles: UserRole[];
-};
-
-const allNavItems: NavItem[] = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['Admin', 'Apartment', 'Contractor', 'Security'] },
-  { href: '/payments', label: 'Payments', icon: CreditCard, roles: ['Admin', 'Apartment', 'Contractor', 'Security'] },
-  { href: '/enroll', label: 'Enroll Entities', icon: UserPlus, roles: [] },
-  { href: '/scan', label: 'Evaluate Pass', icon: ScanLine, roles: ['Admin'] },
-  { href: '/personnel', label: 'Personnel', icon: Users, roles: [] },
-  { href: '/settings', label: 'Settings', icon: Settings, roles: ['Admin', 'Apartment', 'Contractor', 'Security'] },
-  { href: '/customize', label: 'Customize', icon: Brush, roles: ['Admin'] },
-];
-
+import { allNavItems } from '@/lib/data';
 
 export function SidebarNav({ isMobile = false }: { isMobile?: boolean }) {
   const searchParams = useSearchParams();

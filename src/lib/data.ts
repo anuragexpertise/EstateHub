@@ -1,4 +1,17 @@
-import type { User, Payment, Transaction, Shift, UserRole } from '@/types';
+import type { User, Payment, Transaction, Shift, UserRole, NavItem } from '@/types';
+import {
+  LayoutDashboard,
+  UserPlus,
+  Settings,
+  CreditCard,
+  ScanLine,
+  Users,
+  Brush,
+  UserCog,
+  Building2,
+  Wrench,
+  Shield,
+} from 'lucide-react';
 
 export const users: User[] = [
   { id: 'admin-01', name: 'Admin User', email: 'admin@estatehub.com', phone: '+1-202-555-0104', role: 'Admin', avatarId: 'avatar-admin' },
@@ -43,6 +56,22 @@ export const rates = {
     '1month': 1.0,
 };
 
-export const sidebarOptions = ['Dashboard', 'Payments', 'Evaluate Pass', 'Settings'];
+export const allNavItems: NavItem[] = [
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['Admin', 'Apartment', 'Contractor', 'Security'] },
+  { href: '/payments', label: 'Payments', icon: CreditCard, roles: ['Admin', 'Apartment', 'Contractor', 'Security'] },
+  { href: '/enroll', label: 'Enroll Entities', icon: UserPlus, roles: [] },
+  { href: '/scan', label: 'Evaluate Pass', icon: ScanLine, roles: ['Admin'] },
+  { href: '/personnel', label: 'Personnel', icon: Users, roles: [] },
+  { href: '/settings', label: 'Settings', icon: Settings, roles: ['Admin', 'Apartment', 'Contractor', 'Security'] },
+  { href: '/customize', label: 'Customize', icon: Brush, roles: ['Admin'] },
+];
+
+export const roles: { role: UserRole; icon: React.ElementType }[] = [
+  { role: 'Admin', icon: UserCog },
+  { role: 'Apartment', icon: Building2 },
+  { role: 'Contractor', icon: Wrench },
+  { role: 'Security', icon: Shield },
+];
+
 
 export const findUserByRole = (role: UserRole) => users.find((user) => user.role === role);
