@@ -67,7 +67,7 @@ export function SettingsCard() {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Change Password</CardTitle>
+                <CardTitle>User Settings</CardTitle>
                 <CardDescription>Update your account's password here.</CardDescription>
             </CardHeader>
             <CardContent>
@@ -164,7 +164,7 @@ export function WorkShiftsCard() {
     return (
         <Card>
         <CardHeader>
-            <CardTitle>Security Work Shifts</CardTitle>
+            <CardTitle>Shift Management</CardTitle>
             <CardDescription>
             Manage and view the work shifts for all security personnel.
             </CardDescription>
