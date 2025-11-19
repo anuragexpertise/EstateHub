@@ -28,6 +28,7 @@ export function ScanCard() {
   const [selectedDeviceId, setSelectedDeviceId] = useState<string>('');
   const requestRef = useRef<number>();
   const [isScanning, setIsScanning] = useState(true);
+  const streamRef = useRef<MediaStream | null>(null);
 
 
   const evaluatePass = useCallback((dataToEvaluate: string) => {
@@ -47,6 +48,7 @@ export function ScanCard() {
     setVerdict(null);
     setScannedUser(null);
     setIsScanning(false);
+    stopCamera();
 
     setTimeout(() => {
       try {
@@ -120,23 +122,39 @@ export function ScanCard() {
     requestRef.current = requestAnimationFrame(scanQRCode);
   }, [evaluatePass, isScanning]);
 
+  const stopCamera = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+      if(videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
+    }
+    if (requestRef.current) {
+        cancelAnimationFrame(requestRef.current);
+    }
+  }, []);
 
-  const getCameraPermission = useCallback(async () => {
+  const startCamera = useCallback(async () => {
+    stopCamera();
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      const constraints: MediaStreamConstraints = { video: true, audio: false };
+      if (selectedDeviceId) {
+        constraints.video = { deviceId: { exact: selectedDeviceId } };
+      }
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      streamRef.current = stream;
       setHasCameraPermission(true);
 
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        videoRef.current.addEventListener('loadeddata', () => {
+          if (requestRef.current) {
+            cancelAnimationFrame(requestRef.current);
+          }
+          requestRef.current = requestAnimationFrame(scanQRCode);
+        });
       }
-      
-      const mediaDevices = await navigator.mediaDevices.enumerateDevices();
-      const videoDevices = mediaDevices.filter((device) => device.kind === 'videoinput');
-      setDevices(videoDevices);
-      if (videoDevices.length > 0) {
-        setSelectedDeviceId(videoDevices[0].deviceId);
-      }
-
     } catch (error) {
       console.error('Error accessing camera:', error);
       setHasCameraPermission(false);
@@ -146,61 +164,41 @@ export function ScanCard() {
         description: 'Please enable camera permissions in your browser settings to use this app.',
       });
     }
-  }, [toast]);
+  }, [selectedDeviceId, scanQRCode, stopCamera, toast]);
+  
+   const getInitialDevices = useCallback(async () => {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        stream.getTracks().forEach(track => track.stop()); // We only need it to get permission and device list
+
+        const mediaDevices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = mediaDevices.filter((device) => device.kind === 'videoinput');
+        setDevices(videoDevices);
+        if (videoDevices.length > 0 && !selectedDeviceId) {
+            setSelectedDeviceId(videoDevices[0].deviceId);
+        }
+        setHasCameraPermission(true);
+    } catch (error) {
+        console.error("Could not get camera permission", error);
+        setHasCameraPermission(false);
+    }
+   }, [selectedDeviceId]);
 
   useEffect(() => {
-    getCameraPermission();
+    getInitialDevices();
+  }, [getInitialDevices]);
+
+  useEffect(() => {
+    if (isScanning && hasCameraPermission) {
+      startCamera();
+    } else {
+      stopCamera();
+    }
 
     return () => {
-      if (requestRef.current) {
-        cancelAnimationFrame(requestRef.current);
-      }
-      if (videoRef.current && videoRef.current.srcObject) {
-        const stream = videoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach(track => track.stop());
-      }
+      stopCamera();
     };
-  }, [getCameraPermission]);
-
-  useEffect(() => {
-    if (selectedDeviceId && hasCameraPermission) {
-      const startStream = async () => {
-        if (videoRef.current && videoRef.current.srcObject) {
-          const stream = videoRef.current.srcObject as MediaStream;
-          stream.getTracks().forEach(track => track.stop());
-        }
-
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({
-                video: { deviceId: { exact: selectedDeviceId } },
-            });
-            if (videoRef.current) {
-                videoRef.current.srcObject = stream;
-                videoRef.current.addEventListener('loadeddata', () => {
-                  if (requestRef.current) {
-                    cancelAnimationFrame(requestRef.current);
-                  }
-                  requestRef.current = requestAnimationFrame(scanQRCode);
-                })
-            }
-        } catch (error) {
-            console.error('Error switching camera:', error);
-            toast({
-                variant: 'destructive',
-                title: 'Camera Error',
-                description: 'Could not switch to the selected camera.',
-            });
-        }
-      };
-      startStream();
-    }
-    
-    return () => {
-      if(requestRef.current){
-          cancelAnimationFrame(requestRef.current);
-      }
-    }
-  }, [selectedDeviceId, toast, scanQRCode, hasCameraPermission]);
+  }, [isScanning, selectedDeviceId, hasCameraPermission, startCamera, stopCamera]);
 
   const handleSwitchCamera = () => {
     if (devices.length > 1) {
@@ -215,17 +213,17 @@ export function ScanCard() {
   }
 
   const VerdictOverlay = () => {
-      if (verdict === null && !isLoading && isScanning) {
+      if (!isScanning && !isLoading && !verdict) {
           return (
-              <div className="absolute inset-0 bg-black/20 flex items-center justify-center pointer-events-none">
-                  <div className="w-64 h-64 border-4 border-dashed border-white/50 rounded-lg"></div>
+              <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center pointer-events-none">
+                  <p className="text-white text-lg font-semibold">Camera Off</p>
               </div>
           );
       }
-       if (verdict === null && !isLoading && !isScanning) {
+      if (isScanning && !verdict) {
           return (
-              <div className="absolute inset-0 bg-black/50 flex items-center justify-center pointer-events-none">
-                  <p className="text-white text-lg font-semibold">Scanning paused</p>
+              <div className="absolute inset-0 bg-black/20 flex items-center justify-center pointer-events-none">
+                  <div className="w-64 h-64 border-4 border-dashed border-white/50 rounded-lg"></div>
               </div>
           );
       }
@@ -277,7 +275,7 @@ export function ScanCard() {
                 <VerdictOverlay />
                  <div className="absolute bottom-4 right-4 z-20 flex gap-2">
                     {devices.length > 1 && !verdict && (
-                      <Button onClick={handleSwitchCamera} size="icon" variant="outline">
+                      <Button onClick={handleSwitchCamera} size="icon" variant="outline" disabled={!isScanning}>
                           <SwitchCamera className="h-5 w-5" />
                           <span className="sr-only">Switch Camera</span>
                       </Button>
@@ -316,5 +314,3 @@ export function ScanCard() {
     </Card>
   );
 }
-
-    
