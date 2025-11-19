@@ -31,7 +31,7 @@ const allNavItems: NavItem[] = [
   { href: '/scan', label: 'Evaluate Pass', icon: ScanLine, roles: ['Admin'] },
   { href: '/personnel', label: 'Personnel', icon: Users, roles: [] },
   { href: '/settings', label: 'Settings', icon: Settings, roles: ['Admin', 'Apartment', 'Contractor', 'Security'] },
-  { href: '/customize', label: 'Customize', icon: Brush, roles: [] },
+  { href: '/customize', label: 'Customize', icon: Brush, roles: ['Admin'] },
 ];
 
 
