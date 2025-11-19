@@ -134,23 +134,13 @@ export function SettingsCard() {
 
     const handleAvatarSave = () => {
         if (!avatarFile || !avatarPreview || !user) return;
-
-        // In a real app, you'd upload the file and get a new URL
-        console.log("New avatar selected, saving...", avatarFile.name);
-
-        // For this demo, we'll simulate updating the user's avatar.
-        // We find the placeholder and update its URL to the local blob URL.
-        const userAvatarPlaceholder = PlaceHolderImages.find(p => p.id === user.avatarId);
-        if (userAvatarPlaceholder) {
-            userAvatarPlaceholder.imageUrl = avatarPreview;
-        }
         
         toast({
             title: "Avatar Updated",
             description: "Your profile picture has been changed successfully."
         });
         
-        refreshAvatar();
+        refreshAvatar(avatarPreview, user.avatarId);
     }
 
     return (

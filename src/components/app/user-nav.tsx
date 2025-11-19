@@ -16,7 +16,7 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { QrCodeDisplay } from './qr-code';
 import { Separator } from '../ui/separator';
 import { LogOut } from 'lucide-react';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAvatarStore } from '@/hooks/use-avatar-store';
 
 export function UserNav() {
@@ -24,21 +24,31 @@ export function UserNav() {
   const role = searchParams.get('role') as UserRole | null;
   const user = users.find((u) => u.role === role);
   
-  // Subscribe to avatar updates
-  const avatarVersion = useAvatarStore((state) => state.version);
+  const { version, newAvatarUrl, lastUpdatedAvatarId } = useAvatarStore();
+  const initialAvatar = user ? PlaceHolderImages.find(img => img.id === user.avatarId) : null;
+  const [currentAvatarUrl, setCurrentAvatarUrl] = useState(initialAvatar?.imageUrl);
+  
+  useEffect(() => {
+    if (user && lastUpdatedAvatarId === user.avatarId && newAvatarUrl) {
+        setCurrentAvatarUrl(newAvatarUrl);
+    } else {
+        const originalAvatar = user ? PlaceHolderImages.find(img => img.id === user.avatarId) : null;
+        setCurrentAvatarUrl(originalAvatar?.imageUrl);
+    }
+  }, [version, newAvatarUrl, lastUpdatedAvatarId, user]);
+
 
   if (!user || !role) return null;
 
-  const avatarImage = PlaceHolderImages.find(img => img.id === user.avatarId);
   const qrData = { id: user.id, type: user.role, name: user.name };
 
   return (
     <Popover>
       <PopoverTrigger asChild>
         <Button variant="outline" size="icon" className="overflow-hidden rounded-full">
-          <Avatar key={avatarVersion}>
-            {avatarImage && (
-              <AvatarImage src={`${avatarImage.imageUrl}?v=${avatarVersion}`} alt={user.name} data-ai-hint={avatarImage.imageHint} />
+          <Avatar>
+            {currentAvatarUrl && (
+              <AvatarImage src={currentAvatarUrl} alt={user.name} />
             )}
             <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
           </Avatar>
@@ -47,9 +57,9 @@ export function UserNav() {
       <PopoverContent className="w-80" align="end">
         <div className="p-4">
             <div className="flex items-center gap-4">
-                 <Avatar className="h-12 w-12" key={avatarVersion}>
-                    {avatarImage && (
-                    <AvatarImage src={`${avatarImage.imageUrl}?v=${avatarVersion}`} alt={user.name} data-ai-hint={avatarImage.imageHint} />
+                 <Avatar className="h-12 w-12">
+                    {currentAvatarUrl && (
+                      <AvatarImage src={currentAvatarUrl} alt={user.name} />
                     )}
                     <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                 </Avatar>

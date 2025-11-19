@@ -1,3 +1,4 @@
+
 'use client';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -6,6 +7,7 @@ import { User, UserRole } from "@/types";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { Building2, Wrench, Shield, Mail, Phone, Hash } from 'lucide-react';
 import { useAvatarStore } from "@/hooks/use-avatar-store";
+import { useEffect, useState } from "react";
 
 interface UserProfileCardProps {
     user: User;
@@ -19,8 +21,19 @@ const roleIcons: Record<UserRole, React.ElementType> = {
 };
 
 export function UserProfileCard({ user }: UserProfileCardProps) {
-    const avatarVersion = useAvatarStore((state) => state.version);
-    const avatarImage = PlaceHolderImages.find(img => img.id === user.avatarId);
+    const { version, newAvatarUrl, lastUpdatedAvatarId } = useAvatarStore();
+    const initialAvatar = PlaceHolderImages.find(img => img.id === user.avatarId);
+    const [currentAvatarUrl, setCurrentAvatarUrl] = useState(initialAvatar?.imageUrl);
+    
+    useEffect(() => {
+        if (lastUpdatedAvatarId === user.avatarId && newAvatarUrl) {
+            setCurrentAvatarUrl(newAvatarUrl);
+        } else {
+            const originalAvatar = PlaceHolderImages.find(img => img.id === user.avatarId);
+            setCurrentAvatarUrl(originalAvatar?.imageUrl);
+        }
+    }, [version, newAvatarUrl, lastUpdatedAvatarId, user.avatarId]);
+
     const RoleIcon = roleIcons[user.role];
 
     const renderDetails = () => {
@@ -61,8 +74,8 @@ export function UserProfileCard({ user }: UserProfileCardProps) {
         <Card>
             <CardHeader>
                 <div className="flex items-center gap-4">
-                    <Avatar className="h-16 w-16" key={avatarVersion}>
-                        {avatarImage && <AvatarImage src={`${avatarImage.imageUrl}?v=${avatarVersion}`} alt={user.name} />}
+                    <Avatar className="h-16 w-16">
+                        {currentAvatarUrl && <AvatarImage src={currentAvatarUrl} alt={user.name} />}
                         <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <div>
@@ -92,3 +105,4 @@ export function UserProfileCard({ user }: UserProfileCardProps) {
         </Card>
     );
 }
+
