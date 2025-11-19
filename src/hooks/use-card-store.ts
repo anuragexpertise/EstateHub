@@ -13,6 +13,7 @@ interface CardState {
 
 const defaultLayouts: { [key in UserRole]: CardLayout } = {
   Admin: [
+    'Info',
     'Enrollment',
     'Payment History',
     'New Payment',

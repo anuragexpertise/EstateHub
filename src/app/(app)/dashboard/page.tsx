@@ -12,6 +12,7 @@ import { ScanCard } from '@/components/app/kpi-cards/scan-card';
 import { PersonnelCard, SalaryHistoryCard } from '@/components/app/kpi-cards/personnel-card';
 import { SettingsCard, RateManagementCard, WorkShiftsCard } from '@/components/app/kpi-cards/settings-card';
 import { useCardStore } from '@/hooks/use-card-store';
+import { InfoCard } from '@/components/app/kpi-cards/info-card';
 
 const cardComponents: { [key: string]: React.ReactNode } = {
     'Enrollment': <EnrollCard />,
@@ -23,6 +24,7 @@ const cardComponents: { [key: string]: React.ReactNode } = {
     'User Settings': <SettingsCard />,
     'Rate Management': <RateManagementCard />,
     'Shift Management': <WorkShiftsCard />,
+    'Info': <InfoCard />,
 };
 
 function DashboardSkeleton() {

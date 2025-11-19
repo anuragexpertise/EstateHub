@@ -15,6 +15,7 @@ import { SettingsCard, RateManagementCard, WorkShiftsCard } from '@/components/a
 import { useCardStore } from '@/hooks/use-card-store';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect } from 'react';
+import { InfoCard } from '@/components/app/kpi-cards/info-card';
 
 
 const cardComponents: { [key: string]: React.ReactNode } = {
@@ -27,6 +28,7 @@ const cardComponents: { [key: string]: React.ReactNode } = {
     'User Settings': <SettingsCard />,
     'Rate Management': <RateManagementCard />,
     'Shift Management': <WorkShiftsCard />,
+    'Info': <InfoCard />,
 };
 
 export default function CustomizePage() {
