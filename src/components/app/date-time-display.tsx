@@ -1,10 +1,12 @@
+
 'use client';
 import { useState, useEffect } from 'react';
 
 export function DateTimeDisplay() {
-    const [currentDateTime, setCurrentDateTime] = useState(new Date());
+    const [currentDateTime, setCurrentDateTime] = useState<Date | null>(null);
 
     useEffect(() => {
+        setCurrentDateTime(new Date());
         const timer = setInterval(() => {
             setCurrentDateTime(new Date());
         }, 1000);
@@ -13,6 +15,14 @@ export function DateTimeDisplay() {
             clearInterval(timer);
         };
     }, []);
+
+    if (!currentDateTime) {
+        return (
+            <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
+                <span>Loading...</span>
+            </div>
+        );
+    }
 
     const dateFormatter = new Intl.DateTimeFormat('en-GB', {
         year: 'numeric',
