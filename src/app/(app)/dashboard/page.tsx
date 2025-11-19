@@ -1,3 +1,4 @@
+
 'use client';
 import * as React from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -16,6 +17,7 @@ import { PersonnelCard, SalaryHistoryCard } from '@/components/app/kpi-cards/per
 import { SettingsCard, RateManagementCard, WorkShiftsCard } from '@/components/app/kpi-cards/settings-card';
 import { CustomizationPlaceholder } from '@/components/app/kpi-cards/customization-card';
 import { usePathname } from 'next/navigation';
+import CustomizePage from '../customize/page';
 
 function DashboardSkeleton() {
     return (
@@ -91,7 +93,7 @@ export default function DashboardPage() {
                 </div>
             )
         case '/customize':
-            return <CustomizationPlaceholder />;
+            return <CustomizePage />;
         default:
             return renderDashboard();
     }
