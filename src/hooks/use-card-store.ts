@@ -1,39 +1,34 @@
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import type { UserRole } from '@/types';
+import { sidebarOptions } from '@/lib/data';
 
 type CardLayout = string[];
 
 interface CardState {
-  layouts: { [key in UserRole]?: CardLayout };
-  getLayout: (role: UserRole) => CardLayout;
-  setLayout: (role: UserRole, layout: CardLayout) => void;
+  layouts: { [key: string]: CardLayout };
+  getLayout: (page: string) => CardLayout;
+  setLayout: (page: string, layout: CardLayout) => void;
 }
 
-const defaultLayouts: { [key in UserRole]: CardLayout } = {
-  Admin: [
+const defaultLayouts: { [key: string]: CardLayout } = {
+  dashboard: [
     'Info',
-    'Enrollment',
+    'Profile',
+  ],
+  payments: [
     'Payment History',
     'New Payment',
+  ],
+  'evaluate-pass': [
+    'Scan Pass',
+  ],
+  settings: [
+    'User Settings',
     'Rate Management',
     'Shift Management'
   ],
-  Apartment: [
-    'Payment History',
-    'User Settings'
-  ],
-  Contractor: [
-    'Payment History',
-    'User Settings'
-  ],
-  Security: [
-    'Scan Pass',
-    'Work Shift',
-    'Salary History',
-    'New Payment',
-  ],
+  customize: [],
 };
 
 
@@ -41,16 +36,16 @@ export const useCardStore = create<CardState>()(
   persist(
     (set, get) => ({
       layouts: defaultLayouts,
-      getLayout: (role) => {
+      getLayout: (page) => {
         const state = get();
-        // If a layout for the role doesn't exist in the persisted state, use the default.
-        return state.layouts[role] || defaultLayouts[role];
+        // If a layout for the page doesn't exist, return default or empty array
+        return state.layouts[page] || defaultLayouts[page] || [];
       },
-      setLayout: (role, layout) =>
+      setLayout: (page, layout) =>
         set((state) => ({
           layouts: {
             ...state.layouts,
-            [role]: layout,
+            [page]: layout,
           },
         })),
     }),
@@ -61,13 +56,14 @@ export const useCardStore = create<CardState>()(
         if (state) {
           // This ensures that new default cards are added for existing users
           // without wiping their customizations for existing cards.
-          Object.keys(defaultLayouts).forEach(role => {
-            const r = role as UserRole;
-            const currentLayout = state.layouts[r] || [];
-            const defaultLayout = defaultLayouts[r];
-            const newCards = defaultLayout.filter(card => !currentLayout.includes(card));
-            if (newCards.length > 0) {
-              state.layouts[r] = [...currentLayout, ...newCards];
+          Object.keys(defaultLayouts).forEach(page => {
+            const currentLayout = state.layouts[page] || [];
+            const defaultLayout = defaultLayouts[page];
+            if (defaultLayout) {
+                const newCards = defaultLayout.filter(card => !currentLayout.includes(card));
+                if (newCards.length > 0) {
+                  state.layouts[page] = [...currentLayout, ...newCards];
+                }
             }
           });
         }

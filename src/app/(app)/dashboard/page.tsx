@@ -1,7 +1,7 @@
 
 'use client';
 import * as React from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, usePathname } from 'next/navigation';
 import type { UserRole } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -45,8 +45,11 @@ function DashboardSkeleton() {
 
 export default function DashboardPage() {
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   const role = searchParams.get('role') as UserRole | null;
   const { getLayout } = useCardStore();
+
+  const pageKey = pathname.split('/').pop() || 'dashboard';
 
   if (!role) {
       return (
@@ -57,7 +60,7 @@ export default function DashboardPage() {
       );
   }
 
-  const layout = getLayout(role);
+  const layout = getLayout(pageKey);
 
   return (
     <React.Suspense fallback={<DashboardSkeleton />}>
@@ -73,7 +76,7 @@ export default function DashboardPage() {
                         <CardTitle>Welcome, {role}!</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p>Your dashboard is empty. Go to the 'Customize' page to add some cards!</p>
+                        <p>This page is empty. Go to the 'Customize' page to add some cards!</p>
                     </CardContent>
                 </Card>
             )}

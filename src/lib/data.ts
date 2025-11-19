@@ -43,4 +43,6 @@ export const rates = {
     '1month': 1.0,
 };
 
+export const sidebarOptions = ['Dashboard', 'Payments', 'Evaluate Pass', 'Settings'];
+
 export const findUserByRole = (role: UserRole) => users.find((user) => user.role === role);

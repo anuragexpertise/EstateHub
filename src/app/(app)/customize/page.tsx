@@ -1,7 +1,6 @@
 
 'use client';
-import { useState, useEffect, useMemo } from 'react';
-import type { UserRole } from '@/types';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Brush, GripVertical, PlusCircle, XCircle } from 'lucide-react';
@@ -19,6 +18,7 @@ import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { ProfileCard } from '@/components/app/kpi-cards/profile-card';
+import { sidebarOptions } from '@/lib/data';
 
 const allCardComponents: { [key: string]: React.ReactNode } = {
     'Enrollment': <EnrollCard />,
@@ -40,26 +40,25 @@ export default function CustomizePage() {
   const { toast } = useToast();
   const { layouts, getLayout, setLayout } = useCardStore();
   
-  const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
+  const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [activeLayout, setActiveLayout] = useState<string[]>([]);
   
   useEffect(() => {
-    if (selectedRole) {
-      setActiveLayout(getLayout(selectedRole));
+    if (selectedOption) {
+      setActiveLayout(getLayout(selectedOption));
     } else {
       setActiveLayout([]);
     }
-  }, [selectedRole, getLayout]);
+  }, [selectedOption, getLayout]);
 
   const onDragEnd = (result: DropResult) => {
     const { source, destination } = result;
 
-    if (!destination || !selectedRole) {
+    if (!destination || !selectedOption) {
         return;
     }
 
     if (source.droppableId === destination.droppableId) {
-        // Reordering within the same list (active layout)
         if(source.droppableId === 'activeLayout'){
             const items = Array.from(activeLayout);
             const [reorderedItem] = items.splice(source.index, 1);
@@ -67,12 +66,10 @@ export default function CustomizePage() {
             setActiveLayout(items);
         }
     } else {
-        // Moving from one list to another
         if (source.droppableId === 'allCards' && destination.droppableId === 'activeLayout') {
             const destClone = Array.from(activeLayout);
             const movedItem = allCardIds[source.index];
             
-            // Prevent adding duplicates
             if (!destClone.includes(movedItem)) {
                 destClone.splice(destination.index, 0, movedItem);
                 setActiveLayout(destClone);
@@ -84,8 +81,6 @@ export default function CustomizePage() {
                 });
             }
         } else if (source.droppableId === 'activeLayout' && destination.droppableId === 'allCards') {
-            // This case is for removing an item by dragging it out.
-            // We just update the active layout, and it will be gone.
             const sourceClone = Array.from(activeLayout);
             sourceClone.splice(source.index, 1);
             setActiveLayout(sourceClone);
@@ -94,11 +89,11 @@ export default function CustomizePage() {
   };
   
   const handleSaveChanges = () => {
-    if(selectedRole) {
-        setLayout(selectedRole, activeLayout);
+    if(selectedOption) {
+        setLayout(selectedOption, activeLayout);
         toast({
             title: 'Layout Saved',
-            description: `Your dashboard layout for the ${selectedRole} role has been saved.`,
+            description: `Your layout for the ${selectedOption} page has been saved.`,
         });
     }
   }
@@ -127,34 +122,34 @@ export default function CustomizePage() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Brush className="h-5 w-5" />
-                Customize Dashboard
+                Customize Page Layouts
               </CardTitle>
               <CardDescription>
-                Select a role, then drag and drop cards to arrange the dashboard.
+                Select a page, then drag and drop cards to arrange the layout.
               </CardDescription>
             </div>
             <div className="flex items-center gap-4">
                 <div className="grid w-full max-w-sm items-center gap-1.5">
-                  <Label htmlFor="role-select">Role to Customize</Label>
-                    <Select onValueChange={(value) => setSelectedRole(value as UserRole)} value={selectedRole || ''}>
-                      <SelectTrigger id="role-select" className="w-[180px]">
-                        <SelectValue placeholder="Select a role" />
+                  <Label htmlFor="option-select">Page to Customize</Label>
+                    <Select onValueChange={(value) => setSelectedOption(value)} value={selectedOption || ''}>
+                      <SelectTrigger id="option-select" className="w-[180px]">
+                        <SelectValue placeholder="Select a page" />
                       </SelectTrigger>
                       <SelectContent>
-                        {(['Admin', 'Apartment', 'Contractor', 'Security'] as UserRole[]).map((role) => (
-                          <SelectItem key={role} value={role}>{role}</SelectItem>
+                        {sidebarOptions.map((option) => (
+                          <SelectItem key={option} value={option}>{option}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                 </div>
-                <Button onClick={handleSaveChanges} disabled={!selectedRole}>Save Changes</Button>
+                <Button onClick={handleSaveChanges} disabled={!selectedOption}>Save Changes</Button>
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          {!selectedRole ? (
+          {!selectedOption ? (
              <div className="flex items-center justify-center h-96 border-2 border-dashed rounded-lg">
-                <p className="text-muted-foreground">Please select a role to start customizing.</p>
+                <p className="text-muted-foreground">Please select a page to start customizing.</p>
             </div>
           ) : (
             <DragDropContext onDragEnd={onDragEnd}>
@@ -195,7 +190,7 @@ export default function CustomizePage() {
                     </div>
 
                     <div className='lg:col-span-2'>
-                        <h3 className='text-lg font-semibold mb-4'>Layout for {selectedRole}</h3>
+                        <h3 className='text-lg font-semibold mb-4'>Layout for {selectedOption}</h3>
                         <Droppable droppableId="activeLayout">
                         {(provided, snapshot) => (
                             <div
@@ -232,7 +227,7 @@ export default function CustomizePage() {
                             ))}
                             {provided.placeholder}
                             {activeLayout.length === 0 && (
-                                <p className='text-sm text-muted-foreground text-center pt-4'>Drag cards from the left or click the '+' icon to add them to your dashboard.</p>
+                                <p className='text-sm text-muted-foreground text-center pt-4'>Drag cards from the left or click the '+' icon to add them to this page.</p>
                             )}
                             </div>
                         )}
