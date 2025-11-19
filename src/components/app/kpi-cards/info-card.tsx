@@ -1,20 +1,25 @@
 
 'use client';
 import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { transactions, users, payments as initialPayments, rates, shifts } from "@/lib/data";
+import { transactions, users, payments as initialPayments, rates, shifts, findUserByRole } from "@/lib/data";
 import type { User, UserRole, Payment } from '@/types';
-import { ArrowLeft, ArrowRightLeft, Building2, Shield, Users, Wrench, ScanLine, FileDown, Hourglass, Check, CreditCard } from "lucide-react";
-import Link from "next/link";
+import { ArrowLeft, Building2, Shield, Wrench, FileDown, Check, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from '@/hooks/use-toast';
 import { UserProfileCard } from '@/components/app/dashboard/user-profile-card';
+import { QrCodeDisplay } from '../qr-code';
 
 type ListFilter = 'all' | 'withDues' | 'noDues' | 'active' | 'inactive' | 'pending' | 'paid';
 
 export function InfoCard() {
+  const searchParams = useSearchParams();
+  const role = searchParams.get('role') as UserRole | null;
+  const currentUser = role ? findUserByRole(role) : null;
+  
   const [view, setView] = useState<'dashboard' | 'userList' | 'paymentList'>('dashboard');
   const [selectedUserList, setSelectedUserList] = useState<User[]>([]);
   const [listTitle, setListTitle] = useState('');
@@ -343,58 +348,71 @@ export function InfoCard() {
             <CardTitle>Info KPIs</CardTitle>
             <CardDescription>An overview of key metrics across the system.</CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
-            {kpiData.map((kpi, index) => (
-                <Card key={index}>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">{kpi.title}</CardTitle>
-                        <kpi.icon className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                    <div className="flex items-baseline gap-x-4 gap-y-2 flex-wrap">
-                        {kpi.role === 'Payments' ? (
-                            <>
-                                <div className="hover:bg-muted/50 cursor-pointer p-2 rounded-md" onClick={() => handleKpiClick(kpi.role, kpi.title, 'pending')}>
-                                    <p className="text-xs text-red-500">Pending</p>
-                                    <div className="text-2xl font-bold text-red-500">{kpi.value.pending}</div>
-                                </div>
-                                <div className="hover:bg-muted/50 cursor-pointer p-2 rounded-md" onClick={() => handleKpiClick(kpi.role, kpi.title, 'paid')}>
-                                    <p className="text-xs text-green-700">Verified</p>
-                                    <div className="text-2xl font-bold text-green-700">{kpi.value.paid}</div>
-                                </div>
-                            </>
-                        ) : kpi.role === 'Security' ? (
-                            <>
-                                <div className="hover:bg-muted/50 cursor-pointer p-2 rounded-md" onClick={() => handleKpiClick(kpi.role, kpi.title, 'inactive')}>
-                                    <p className="text-xs text-red-500">Inactive</p>
-                                    <div className="text-2xl font-bold text-red-500">{kpi.value.inactive}</div>
-                                </div>
-                                <div className="hover:bg-muted/50 cursor-pointer p-2 rounded-md" onClick={() => handleKpiClick(kpi.role, kpi.title, 'active')}>
-                                    <p className="text-xs text-green-700">Active</p>
-                                    <div className="text-2xl font-bold text-green-700">{kpi.value.active}</div>
-                                </div>
-                            </>
-                        ) : (
-                            <>
-                                <div className="hover:bg-muted/50 cursor-pointer p-2 rounded-md" onClick={() => handleKpiClick(kpi.role, kpi.title, 'withDues')}>
-                                    <p className="text-xs text-red-500">With Dues</p>
-                                    <div className="text-2xl font-bold text-red-500">{kpi.value.withDues}</div>
-                                </div>
-                                <div className="hover:bg-muted/50 cursor-pointer p-2 rounded-md" onClick={() => handleKpiClick(kpi.role, kpi.title, 'noDues')}>
-                                    <p className="text-xs text-green-700">No Dues</p>
-                                    <div className="text-2xl font-bold text-green-700">{kpi.value.noDues}</div>
-                                </div>
-                            </>
-                        )}
-                            <div className="hover:bg-muted/50 cursor-pointer p-2 rounded-md" onClick={() => handleKpiClick(kpi.role, kpi.title, 'all')}>
-                            <p className="text-xs text-muted-foreground">Total</p>
-                            <div className="text-2xl font-bold">{kpi.value.total}</div>
+        <CardContent className="grid gap-6 md:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-2">
+                {kpiData.map((kpi, index) => (
+                    <Card key={index}>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">{kpi.title}</CardTitle>
+                            <kpi.icon className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                        <div className="flex items-baseline gap-x-4 gap-y-2 flex-wrap">
+                            {kpi.role === 'Payments' ? (
+                                <>
+                                    <div className="hover:bg-muted/50 cursor-pointer p-2 rounded-md" onClick={() => handleKpiClick(kpi.role, kpi.title, 'pending')}>
+                                        <p className="text-xs text-red-500">Pending</p>
+                                        <div className="text-2xl font-bold text-red-500">{kpi.value.pending}</div>
+                                    </div>
+                                    <div className="hover:bg-muted/50 cursor-pointer p-2 rounded-md" onClick={() => handleKpiClick(kpi.role, kpi.title, 'paid')}>
+                                        <p className="text-xs text-green-700">Verified</p>
+                                        <div className="text-2xl font-bold text-green-700">{kpi.value.paid}</div>
+                                    </div>
+                                </>
+                            ) : kpi.role === 'Security' ? (
+                                <>
+                                    <div className="hover:bg-muted/50 cursor-pointer p-2 rounded-md" onClick={() => handleKpiClick(kpi.role, kpi.title, 'inactive')}>
+                                        <p className="text-xs text-red-500">Inactive</p>
+                                        <div className="text-2xl font-bold text-red-500">{kpi.value.inactive}</div>
+                                    </div>
+                                    <div className="hover:bg-muted/50 cursor-pointer p-2 rounded-md" onClick={() => handleKpiClick(kpi.role, kpi.title, 'active')}>
+                                        <p className="text-xs text-green-700">Active</p>
+                                        <div className="text-2xl font-bold text-green-700">{kpi.value.active}</div>
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <div className="hover:bg-muted/50 cursor-pointer p-2 rounded-md" onClick={() => handleKpiClick(kpi.role, kpi.title, 'withDues')}>
+                                        <p className="text-xs text-red-500">With Dues</p>
+                                        <div className="text-2xl font-bold text-red-500">{kpi.value.withDues}</div>
+                                    </div>
+                                    <div className="hover:bg-muted/50 cursor-pointer p-2 rounded-md" onClick={() => handleKpiClick(kpi.role, kpi.title, 'noDues')}>
+                                        <p className="text-xs text-green-700">No Dues</p>
+                                        <div className="text-2xl font-bold text-green-700">{kpi.value.noDues}</div>
+                                    </div>
+                                </>
+                            )}
+                                <div className="hover:bg-muted/50 cursor-pointer p-2 rounded-md" onClick={() => handleKpiClick(kpi.role, kpi.title, 'all')}>
+                                <p className="text-xs text-muted-foreground">Total</p>
+                                <div className="text-2xl font-bold">{kpi.value.total}</div>
+                            </div>
                         </div>
-                    </div>
-                    </CardContent>
-                </Card>
-            ))}
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
+            {currentUser && (
+                <div className="lg:col-span-1">
+                    <QrCodeDisplay
+                        data={{ id: currentUser.id, type: currentUser.role, name: currentUser.name }}
+                        title="Your Pass"
+                        description="Your personal identification QR code."
+                    />
+                </div>
+            )}
         </CardContent>
     </Card>
   );
 }
+
+    
