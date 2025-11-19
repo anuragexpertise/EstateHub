@@ -152,7 +152,7 @@ export default function CustomizePage() {
                       </SelectTrigger>
                       <SelectContent>
                         {roles.map((role) => (
-                          <SelectItem key={role.role} value={role.role}>{role.role}</SelectItem>
+                          <SelectItem key={role.role} value={role.role}>{role.displayName}</SelectItem>
                         ))}
                       </SelectContent>
                   </Select>

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useSearchParams } from 'next/navigation';
@@ -10,19 +11,13 @@ import {
 } from 'lucide-react';
 import type { UserRole } from '@/types';
 import * as React from 'react';
+import { roleDisplayNames } from '@/lib/data';
 
 const roleIcons: Record<UserRole, LucideIcon> = {
   Admin: UserCog,
   Apartment: Building2,
   Contractor: Wrench,
   Security: Shield,
-};
-
-const roleDisplayNames: Record<UserRole, string> = {
-    Admin: 'Admin',
-    Apartment: 'Apartment Owner',
-    Contractor: 'Contractor',
-    Security: 'Security',
 };
 
 export function SidebarNavHeader() {

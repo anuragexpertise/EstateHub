@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -5,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import type { UserRole } from '@/types';
 import { Shield, Building2, Wrench, UserCog } from 'lucide-react';
 import * as React from 'react';
+import { roleDisplayNames } from '@/lib/data';
 
 const roles: { role: UserRole; icon: React.ElementType }[] = [
   { role: 'Admin', icon: UserCog },
@@ -30,7 +32,7 @@ export function LoginForm() {
           onClick={() => handleLogin(role)}
         >
           <Icon className="mr-2 h-5 w-5" />
-          Login as {role}
+          Login as {roleDisplayNames[role]}
         </Button>
       ))}
     </div>

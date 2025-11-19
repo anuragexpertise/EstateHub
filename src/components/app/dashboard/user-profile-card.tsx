@@ -4,6 +4,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/com
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { User, UserRole } from "@/types";
+import { roleDisplayNames } from "@/lib/data";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { Building2, Wrench, Shield, Mail, Phone, Hash } from 'lucide-react';
 import { useAvatarStore } from "@/hooks/use-avatar-store";
@@ -81,7 +82,7 @@ export function UserProfileCard({ user }: UserProfileCardProps) {
                     <div>
                         <CardTitle className="text-2xl">{user.name}</CardTitle>
                         <CardDescription className="flex items-center gap-2">
-                           <RoleIcon className="h-4 w-4" /> {user.role}
+                           <RoleIcon className="h-4 w-4" /> {roleDisplayNames[user.role]}
                         </CardDescription>
                     </div>
                 </div>
@@ -105,4 +106,3 @@ export function UserProfileCard({ user }: UserProfileCardProps) {
         </Card>
     );
 }
-

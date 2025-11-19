@@ -1,3 +1,4 @@
+
 'use client';
 import { useState } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -51,7 +52,13 @@ export function PaymentHistoryCard() {
     })
     .sort((a, b) => b.date.getTime() - a.date.getTime());
     
-    const userForPayment = (userId: string) => users.find(u => u.id === userId)?.name || 'Unknown';
+    const userForPayment = (userId: string) => {
+        const paymentUser = users.find(u => u.id === userId);
+        if (!paymentUser) return 'Unknown';
+        if (paymentUser.role === 'Apartment') return `${paymentUser.name} (Apartment Owner)`;
+        if (paymentUser.role === 'Contractor') return `${paymentUser.name} (Utility Contractor)`;
+        return `${paymentUser.name} (${paymentUser.role})`;
+    };
   
     return (
       <Card>
@@ -147,6 +154,12 @@ export function PaymentsCard() {
             setIsSubmitting(false);
         }, 1000);
       }
+    
+    const getUserDisplay = (u: (typeof users)[0]) => {
+      if (u.role === 'Apartment') return `${u.name} (Apartment Owner)`;
+      if (u.role === 'Contractor') return `${u.name} (Utility Contractor)`;
+      return `${u.name} (${u.role})`;
+    }
   
     return (
         <Card>
@@ -175,7 +188,7 @@ export function PaymentsCard() {
                                 <SelectContent>
                                     {users.map((u) => (
                                         <SelectItem key={u.id} value={u.id}>
-                                            {u.name} ({u.role})
+                                            {getUserDisplay(u)}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>

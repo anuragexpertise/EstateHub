@@ -55,10 +55,10 @@ const formSchema = z
   );
   
 const roleLabels = {
-    Admin: { id: 'Admin ID', name: 'Admin Name' },
-    Apartment: { id: 'Apartment ID', name: 'Resident Name' },
-    Contractor: { id: 'Work ID', name: 'Contractor Name' },
-    Security: { id: 'Security ID', name: 'Security Name' },
+    Admin: { id: 'Admin ID', name: 'Admin Name', displayName: 'Admin' },
+    Apartment: { id: 'Apartment ID', name: 'Resident Name', displayName: 'Apartment Owner' },
+    Contractor: { id: 'Work ID', name: 'Contractor Name', displayName: 'Utility Contractor' },
+    Security: { id: 'Security ID', name: 'Security Name', displayName: 'Security' },
 };
 
 export default function EnrollPage() {
@@ -81,7 +81,7 @@ export default function EnrollPage() {
   function onSubmit(values: z.infer<typeof formSchema>) {
     toast({
       title: 'Entity Enrolled',
-      description: `${values.name} (${values.role}) has been successfully enrolled.`,
+      description: `${values.name} (${roleLabels[values.role].displayName}) has been successfully enrolled.`,
     });
     form.reset();
   }
@@ -113,7 +113,7 @@ export default function EnrollPage() {
                       <SelectContent>
                         {(['Admin', 'Apartment', 'Contractor', 'Security'] as UserRole[]).map((role) => (
                           <SelectItem key={role} value={role}>
-                            {role}
+                            {roleLabels[role].displayName}
                           </SelectItem>
                         ))}
                       </SelectContent>

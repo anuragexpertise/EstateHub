@@ -1,3 +1,4 @@
+
 import type { User, Payment, Transaction, Shift, UserRole, NavItem } from '@/types';
 import {
   LayoutDashboard,
@@ -66,11 +67,18 @@ export const allNavItems: NavItem[] = [
   { href: '/customize', label: 'Customize', icon: Brush, roles: ['Admin'] },
 ];
 
-export const roles: { role: UserRole; icon: React.ElementType }[] = [
-  { role: 'Admin', icon: UserCog },
-  { role: 'Apartment', icon: Building2 },
-  { role: 'Contractor', icon: Wrench },
-  { role: 'Security', icon: Shield },
+export const roleDisplayNames: Record<UserRole, string> = {
+    Admin: 'Admin',
+    Apartment: 'Apartment Owner',
+    Contractor: 'Utility Contractor',
+    Security: 'Security',
+};
+
+export const roles: { role: UserRole; icon: React.ElementType, displayName: string }[] = [
+  { role: 'Admin', icon: UserCog, displayName: roleDisplayNames['Admin'] },
+  { role: 'Apartment', icon: Building2, displayName: roleDisplayNames['Apartment'] },
+  { role: 'Contractor', icon: Wrench, displayName: roleDisplayNames['Contractor'] },
+  { role: 'Security', icon: Shield, displayName: roleDisplayNames['Security'] },
 ];
 
 

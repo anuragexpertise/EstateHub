@@ -1,3 +1,4 @@
+
 'use client';
 import { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
@@ -42,8 +43,8 @@ export function AdminDashboard() {
   const completedPaymentsCount = totalPayments - pendingPaymentsCount;
 
   const kpiData: { title: string; value: { total: number; withDues?: number; noDues?: number; active?: number; inactive?: number; pending?: number; completed?: number; }; icon: React.ElementType; role: UserRole | 'All' | 'Payments' }[] = [
-    { title: "Apartments", value: { total: totalApartments, withDues: apartmentsWithDues, noDues: apartmentsNoDues }, icon: Building2, role: 'Apartment' },
-    { title: "Contractors", value: { total: totalContractors, withDues: contractorsWithDues, noDues: contractorsNoDues }, icon: Wrench, role: 'Contractor' },
+    { title: "Apartment Owners", value: { total: totalApartments, withDues: apartmentsWithDues, noDues: apartmentsNoDues }, icon: Building2, role: 'Apartment' },
+    { title: "Utility Contractors", value: { total: totalContractors, withDues: contractorsWithDues, noDues: contractorsNoDues }, icon: Wrench, role: 'Contractor' },
     { title: "Security Staff", value: { total: totalSecurity, active: activeSecurity, inactive: inactiveSecurity }, icon: Shield, role: 'Security' },
     { title: "Payments", value: { total: totalPayments, pending: pendingPaymentsCount, completed: completedPaymentsCount }, icon: CreditCard, role: 'Payments' },
   ];
@@ -246,8 +247,8 @@ export function AdminDashboard() {
   };
 
   if (view === 'userList') {
-    const isApartmentList = listTitle.includes('Apartments');
-    const isContractorList = listTitle.includes('Contractors');
+    const isApartmentList = listTitle.includes('Apartment');
+    const isContractorList = listTitle.includes('Contractor');
 
     if (selectedUser) {
         const passStatus = checkPassStatus(selectedUser.id);
