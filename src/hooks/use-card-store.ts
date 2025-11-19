@@ -43,6 +43,7 @@ export const useCardStore = create<CardState>()(
       layouts: defaultLayouts,
       getLayout: (role) => {
         const state = get();
+        // If a layout for the role doesn't exist in the persisted state, use the default.
         return state.layouts[role] || defaultLayouts[role];
       },
       setLayout: (role, layout) =>
@@ -56,6 +57,21 @@ export const useCardStore = create<CardState>()(
     {
       name: 'card-layout-storage', 
       storage: createJSONStorage(() => localStorage),
+       onRehydrateStorage: () => (state, error) => {
+        if (state) {
+          // This ensures that new default cards are added for existing users
+          // without wiping their customizations for existing cards.
+          Object.keys(defaultLayouts).forEach(role => {
+            const r = role as UserRole;
+            const currentLayout = state.layouts[r] || [];
+            const defaultLayout = defaultLayouts[r];
+            const newCards = defaultLayout.filter(card => !currentLayout.includes(card));
+            if (newCards.length > 0) {
+              state.layouts[r] = [...currentLayout, ...newCards];
+            }
+          });
+        }
+      }
     }
   )
 );
