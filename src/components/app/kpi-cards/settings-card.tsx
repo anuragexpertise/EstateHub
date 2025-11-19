@@ -261,28 +261,32 @@ export function ApartmentRateManagementCard() {
 
     const handleSaveRates = () => {
         console.log("Saving apartment rates:", rates);
-        toast({ title: "Success", description: "Apartment rates have been updated." });
+        toast({ title: "Success", description: "Apartment maintenance rates have been updated." });
     }
     return (
         <Card>
         <CardHeader>
             <CardTitle>Apartment Rate Management</CardTitle>
             <CardDescription>
-            Manage the rates for apartment passes (per sqft).
+            Manage monthly maintenance charge (MMC) rates per square foot.
             </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
             <div className="space-y-2">
-                <Label htmlFor="1day">1-Day Pass Rate</Label>
-                <Input id="1day" type="number" value={rates['1day']} onChange={e => handleRateChange('1day', e.target.value)} />
-            </div>
-            <div className="space-y-2">
-                <Label htmlFor="7day">7-Day Pass Rate</Label>
-                <Input id="7day" type="number" value={rates['7day']} onChange={e => handleRateChange('7day', e.target.value)} />
-            </div>
-            <div className="space-y-2">
-                <Label htmlFor="1month">1-Month Pass Rate</Label>
+                <Label htmlFor="1month">1-Month Rate (per sqft)</Label>
                 <Input id="1month" type="number" value={rates['1month']} onChange={e => handleRateChange('1month', e.target.value)} />
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="3month">3-Month Rate (per sqft)</Label>
+                <Input id="3month" type="number" value={rates['3month']} onChange={e => handleRateChange('3month', e.target.value)} />
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="6month">6-Month Rate (per sqft)</Label>
+                <Input id="6month" type="number" value={rates['6month']} onChange={e => handleRateChange('6month', e.target.value)} />
+            </div>
+             <div className="space-y-2">
+                <Label htmlFor="12month">1-Year (AMC) Rate (per sqft)</Label>
+                <Input id="12month" type="number" value={rates['12month']} onChange={e => handleRateChange('12month', e.target.value)} />
             </div>
             <Button onClick={handleSaveRates}>Save Rates</Button>
         </CardContent>
@@ -300,7 +304,7 @@ export function UtilityContractorRateManagementCard() {
 
     const handleSaveRates = () => {
         console.log("Saving contractor rates:", rates);
-        toast({ title: "Success", description: "Utility Contractor rates have been updated." });
+        toast({ title: "Success", description: "Utility Contractor pass rates have been updated." });
     }
     return (
         <Card>
@@ -324,6 +328,42 @@ export function UtilityContractorRateManagementCard() {
                 <Input id="contractor-1month" type="number" value={rates['1month']} onChange={e => handleRateChange('1month', e.target.value)} />
             </div>
             <Button onClick={handleSaveRates}>Save Rates</Button>
+        </CardContent>
+        </Card>
+    );
+}
+
+export function FineManagementCard() {
+    const { toast } = useToast();
+    const [rates, setRates] = useState(defaultRates.fines);
+
+    const handleRateChange = (key: keyof typeof rates, value: string) => {
+        setRates(prev => ({...prev, [key]: parseFloat(value) || 0 }));
+    }
+
+    const handleSaveRates = () => {
+        console.log("Saving fine rates:", rates);
+        toast({ title: "Success", description: "Fine rates have been updated." });
+    }
+
+    return (
+        <Card>
+        <CardHeader>
+            <CardTitle>Fine Management</CardTitle>
+            <CardDescription>
+            Manage late fees for apartment maintenance charges. No fines for contractors.
+            </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+            <div className="space-y-2">
+                <Label htmlFor="latePaymentFee">Late Payment Fine (Fixed Amount)</Label>
+                <Input id="latePaymentFee" type="number" value={rates.latePaymentFee} onChange={e => handleRateChange('latePaymentFee', e.target.value)} />
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="finePercentPerDay">Fine Per Day (Percentage of due amount)</Label>
+                <Input id="finePercentPerDay" type="number" value={rates.finePercentPerDay} onChange={e => handleRateChange('finePercentPerDay', e.target.value)} />
+            </div>
+            <Button onClick={handleSaveRates}>Save Fine Rates</Button>
         </CardContent>
         </Card>
     );

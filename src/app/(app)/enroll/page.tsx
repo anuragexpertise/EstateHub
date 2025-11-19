@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import type { UserRole } from '@/types';
+import { roleDisplayNames, roles } from '@/lib/data';
 
 const formSchema = z
   .object({
@@ -55,10 +56,10 @@ const formSchema = z
   );
   
 const roleLabels = {
-    Admin: { id: 'Admin ID', name: 'Admin Name', displayName: 'Admin' },
-    Apartment: { id: 'Apartment ID', name: 'Resident Name', displayName: 'Apartment Owner' },
-    Contractor: { id: 'Work ID', name: 'Contractor Name', displayName: 'Utility Contractor' },
-    Security: { id: 'Security ID', name: 'Security Name', displayName: 'Security' },
+    Admin: { id: 'Admin ID', name: 'Admin Name' },
+    Apartment: { id: 'Apartment ID', name: 'Resident Name' },
+    Contractor: { id: 'Work ID', name: 'Contractor Name' },
+    Security: { id: 'Security ID', name: 'Security Name' },
 };
 
 export default function EnrollPage() {
@@ -81,7 +82,7 @@ export default function EnrollPage() {
   function onSubmit(values: z.infer<typeof formSchema>) {
     toast({
       title: 'Entity Enrolled',
-      description: `${values.name} (${roleLabels[values.role].displayName}) has been successfully enrolled.`,
+      description: `${values.name} (${roleDisplayNames[values.role]}) has been successfully enrolled.`,
     });
     form.reset();
   }
@@ -111,9 +112,9 @@ export default function EnrollPage() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {(['Admin', 'Apartment', 'Contractor', 'Security'] as UserRole[]).map((role) => (
-                          <SelectItem key={role} value={role}>
-                            {roleLabels[role].displayName}
+                        {roles.map((role) => (
+                          <SelectItem key={role.role} value={role.role}>
+                            {role.displayName}
                           </SelectItem>
                         ))}
                       </SelectContent>

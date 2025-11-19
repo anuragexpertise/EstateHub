@@ -8,9 +8,9 @@ import * as z from 'zod';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { users, payments as initialPayments } from "@/lib/data";
+import { users, payments as initialPayments, roleDisplayNames } from "@/lib/data";
 import type { UserRole, Payment } from '@/types';
-import { CreditCard, ArrowRightLeft, Check, PlusCircle, Loader2 } from 'lucide-react';
+import { Receipt, Check, PlusCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -46,8 +46,7 @@ export function PaymentHistoryCard() {
 
     const userPayments = payments
     .filter(p => {
-        if (role === 'Admin') return true;
-        if (role === 'Security') return p.status === 'Due' || p.status === 'Pending Verification';
+        if (role === 'Admin' || role === 'Security') return true;
         return p.userId === user.id;
     })
     .sort((a, b) => b.date.getTime() - a.date.getTime());
@@ -55,17 +54,15 @@ export function PaymentHistoryCard() {
     const userForPayment = (userId: string) => {
         const paymentUser = users.find(u => u.id === userId);
         if (!paymentUser) return 'Unknown';
-        if (paymentUser.role === 'Apartment') return `${paymentUser.name} (Apartment Owner)`;
-        if (paymentUser.role === 'Contractor') return `${paymentUser.name} (Utility Contractor)`;
-        return `${paymentUser.name} (${paymentUser.role})`;
+        return `${paymentUser.name} (${roleDisplayNames[paymentUser.role]})`;
     };
   
     return (
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <CreditCard className="h-5 w-5" />
-            Payment Records
+            <Receipt className="h-5 w-5" />
+            {(role === 'Admin' || role === 'Security') ? 'Receipts' : 'Payment History'}
           </CardTitle>
           <CardDescription>
             {role === 'Admin' ? 'A complete log of all payments in the system.' : 'Your personal payment history.'}
@@ -156,9 +153,7 @@ export function PaymentsCard() {
       }
     
     const getUserDisplay = (u: (typeof users)[0]) => {
-      if (u.role === 'Apartment') return `${u.name} (Apartment Owner)`;
-      if (u.role === 'Contractor') return `${u.name} (Utility Contractor)`;
-      return `${u.name} (${u.role})`;
+      return `${u.name} (${roleDisplayNames[u.role]})`;
     }
   
     return (
@@ -166,7 +161,7 @@ export function PaymentsCard() {
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <PlusCircle className="h-5 w-5" />
-                    Enter New Payment
+                    Enter New Receipt
                 </CardTitle>
                 <CardDescription>Record a new payment received.</CardDescription>
             </CardHeader>
@@ -204,7 +199,7 @@ export function PaymentsCard() {
                             <FormItem>
                                 <FormLabel>Description</FormLabel>
                                 <FormControl>
-                                <Input placeholder="e.g., Monthly Dues" {...field} />
+                                <Input placeholder="e.g., Monthly Maintenance" {...field} />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
@@ -225,7 +220,7 @@ export function PaymentsCard() {
                         />
                             <Button type="submit" disabled={isSubmitting}>
                             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Add Payment
+                            Add Receipt
                         </Button>
                     </form>
                 </Form>

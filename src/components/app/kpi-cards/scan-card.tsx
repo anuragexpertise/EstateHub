@@ -49,7 +49,6 @@ export function ScanCard() {
     setScannedUser(null);
     if(isScanning) {
         setIsScanning(false);
-        stopCamera();
     }
 
     setTimeout(() => {
@@ -73,16 +72,61 @@ export function ScanCard() {
         }
 
         setScannedUser(`${user.name} (${user.role})`);
-        const userPayments = payments.filter(p => p.userId === user.id);
-        const hasDues = userPayments.some(p => p.status === 'Due' || p.status === 'Overdue');
         
-        if (hasDues) {
-          setVerdict('FAIL');
-          toast({ variant: 'destructive', title: 'Evaluation Failed', description: `${user.name} has outstanding payments.` });
+        // For Apartment owners, check for advance payment
+        if (user.role === 'Apartment') {
+            const lastPayment = payments
+                .filter(p => p.userId === user.id && p.status === 'Paid' && p.description.includes('Maintenance'))
+                .sort((a,b) => b.date.getTime() - a.date.getTime())[0];
+
+            if (!lastPayment) {
+                 setVerdict('FAIL');
+                 toast({ variant: 'destructive', title: 'Evaluation Failed', description: `${user.name} has no maintenance payment record.` });
+                 return;
+            }
+            
+            const expiryDate = new Date(lastPayment.date);
+            if(lastPayment.description.includes('1-Month')) expiryDate.setMonth(expiryDate.getMonth() + 1);
+            if(lastPayment.description.includes('3-Month')) expiryDate.setMonth(expiryDate.getMonth() + 3);
+            if(lastPayment.description.includes('6-Month')) expiryDate.setMonth(expiryDate.getMonth() + 6);
+            if(lastPayment.description.includes('1-Year')) expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+
+            if (expiryDate < new Date()) {
+                setVerdict('FAIL');
+                toast({ variant: 'destructive', title: 'Evaluation Failed', description: `${user.name}'s maintenance has expired.` });
+            } else {
+                setVerdict('PASS');
+                toast({ title: 'Evaluation Passed', description: `${user.name} is cleared for entry.` });
+            }
+
+        } else if (user.role === 'Contractor') {
+            // For contractors, check for a valid pass
+            const passPayments = payments.filter(p => p.userId === user.id && p.description.includes('Pass') && p.status === 'Paid');
+            if (passPayments.length === 0) {
+                setVerdict('FAIL');
+                toast({ variant: 'destructive', title: 'Evaluation Failed', description: `${user.name} does not have a valid pass.` });
+                return;
+            }
+
+            const lastPass = passPayments.sort((a, b) => b.date.getTime() - a.date.getTime())[0];
+            const expiryDate = new Date(lastPass.date);
+            if (lastPass.description.includes('1-Day')) expiryDate.setDate(expiryDate.getDate() + 1);
+            else if (lastPass.description.includes('7-Day')) expiryDate.setDate(expiryDate.getDate() + 7);
+            else if (lastPass.description.includes('1-Month')) expiryDate.setMonth(expiryDate.getMonth() + 1);
+
+            if (expiryDate < new Date()) {
+                setVerdict('FAIL');
+                toast({ variant: 'destructive', title: 'Evaluation Failed', description: `${user.name}'s pass has expired.` });
+            } else {
+                setVerdict('PASS');
+                toast({ title: 'Evaluation Passed', description: `${user.name} is cleared for entry.` });
+            }
         } else {
-          setVerdict('PASS');
-          toast({ title: 'Evaluation Passed', description: `${user.name} is cleared for entry.` });
+            // For Admin and Security, always pass
+            setVerdict('PASS');
+            toast({ title: 'Evaluation Passed', description: `${user.name} is cleared for entry.` });
         }
+
 
       } catch (error) {
         setVerdict('FAIL');
@@ -98,7 +142,7 @@ export function ScanCard() {
             setManualInput('');
             setVerdict(null);
             setScannedUser(null);
-            setIsScanning(true);
+            if (!isScanning) setIsScanning(true);
         }, 5000);
       }
     }, 1000);
@@ -176,9 +220,7 @@ export function ScanCard() {
   
    const getInitialDevices = useCallback(async () => {
     try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-        stream.getTracks().forEach(track => track.stop()); // We only need it to get permission and device list
-
+        await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
         const mediaDevices = await navigator.mediaDevices.enumerateDevices();
         const videoDevices = mediaDevices.filter((device) => device.kind === 'videoinput');
         setDevices(videoDevices);

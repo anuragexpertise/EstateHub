@@ -10,14 +10,16 @@ import {
   SettingsCard,
   ApartmentRateManagementCard,
   UtilityContractorRateManagementCard,
+  FineManagementCard,
   WorkShiftsCard
 } from '@/components/app/kpi-cards/settings-card';
 
 const AdminSettings = () => (
     <TabsContent value="admin" className="space-y-4">
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <ApartmentRateManagementCard />
             <UtilityContractorRateManagementCard />
+            <FineManagementCard />
         </div>
         <WorkShiftsCard />
     </TabsContent>

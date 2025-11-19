@@ -1,3 +1,4 @@
+
 'use client';
 import { useSearchParams } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
@@ -44,7 +45,7 @@ export function ApartmentDashboard() {
              <div className="flex items-center space-x-4 rounded-md border p-4">
               <CreditCard className="h-8 w-8 text-primary" />
               <div className="flex-1 space-y-1">
-                <p className="text-sm font-medium leading-none">Next Payment Due</p>
+                <p className="text-sm font-medium leading-none">Next Maintenance Due</p>
                 <p className="text-2xl font-semibold text-muted-foreground">
                   {nextPaymentDate ? dateFormatter.format(nextPaymentDate).replace(/ /g, '-') : 'N/A'}
                 </p>

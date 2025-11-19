@@ -14,6 +14,7 @@ import { SettingsCard, ApartmentRateManagementCard, UtilityContractorRateManagem
 import { useCardStore } from '@/hooks/use-card-store';
 import { InfoCard } from '@/components/app/kpi-cards/info-card';
 import { ProfileCard } from '@/components/app/kpi-cards/profile-card';
+import { allNavItems } from '@/lib/data';
 
 const cardComponents: { [key: string]: React.ReactNode } = {
     'Enrollment': <EnrollCard />,
@@ -43,8 +44,8 @@ export default function PaymentsPage() {
   const pathname = usePathname();
   const role = searchParams.get('role') as UserRole | null;
   const { getLayout } = useCardStore();
-
-  const pageKey = pathname.split('/').pop() || 'payments';
+  const navItem = allNavItems.find(item => item.href === pathname && item.roles.includes(role || 'Admin'));
+  const pageKey = navItem?.label.toLowerCase().replace(/ /g, '-') || pathname.split('/').pop() || 'payments';
 
   if (!role) {
       return (
@@ -69,7 +70,7 @@ export default function PaymentsPage() {
             {layout.length === 0 && (
                 <Card>
                     <CardHeader>
-                        <CardTitle>Payments</CardTitle>
+                        <CardTitle>{navItem?.label || "Page"}</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <p>This page is empty. Go to the 'Customize' page to add some cards!</p>

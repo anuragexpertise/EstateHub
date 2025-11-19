@@ -10,7 +10,7 @@ import { EnrollCard } from '@/components/app/kpi-cards/enroll-card';
 import { PaymentsCard, PaymentHistoryCard } from '@/components/app/kpi-cards/payments-card';
 import { ScanCard } from '@/components/app/kpi-cards/scan-card';
 import { PersonnelCard, SalaryHistoryCard } from '@/components/app/kpi-cards/personnel-card';
-import { SettingsCard, ApartmentRateManagementCard, UtilityContractorRateManagementCard, WorkShiftsCard } from '@/components/app/kpi-cards/settings-card';
+import { SettingsCard, ApartmentRateManagementCard, UtilityContractorRateManagementCard, WorkShiftsCard, FineManagementCard } from '@/components/app/kpi-cards/settings-card';
 import { useCardStore } from '@/hooks/use-card-store';
 import { useToast } from '@/hooks/use-toast';
 import { InfoCard } from '@/components/app/kpi-cards/info-card';
@@ -31,6 +31,7 @@ const allCardComponents: { [key: string]: React.ReactNode } = {
     'User Settings': <SettingsCard />,
     'Apartment Rate Management': <ApartmentRateManagementCard />,
     'Utility Contractor Rate Management': <UtilityContractorRateManagementCard />,
+    'Fine Management': <FineManagementCard />,
     'Shift Management': <WorkShiftsCard />,
     'Info': <InfoCard />,
     'Profile': <ProfileCard />,
@@ -49,7 +50,7 @@ export default function CustomizePage() {
   const roleNavItems = selectedRole ? allNavItems.filter(item => item.roles.includes(selectedRole)) : [];
 
   const getPageKey = (option: string) => {
-    const navItem = allNavItems.find(item => item.label === option);
+    const navItem = roleNavItems.find(item => item.label === option);
     return navItem ? navItem.label.toLowerCase().replace(/ /g, '-') : option.toLowerCase().replace(/ /g, '-');
   };
 
@@ -61,7 +62,7 @@ export default function CustomizePage() {
     } else {
       setActiveLayout([]);
     }
-  }, [selectedRole, selectedOption, getLayout]);
+  }, [selectedRole, selectedOption, getLayout, roleNavItems]);
   
   useEffect(() => {
     setSelectedOption(null);

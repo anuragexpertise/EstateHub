@@ -1,7 +1,6 @@
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import type { UserRole } from '@/types';
 
 type CardLayout = string[];
 
@@ -15,25 +14,25 @@ interface CardState {
 const defaultLayouts: { [key: string]: CardLayout } = {
   // Admin
   'Admin-dashboard': ['Info', 'Profile'],
-  'Admin-payments': ['Payment History', 'New Payment'],
+  'Admin-receipts': ['Payment History', 'New Payment'],
   'Admin-evaluate-pass': ['Scan Pass'],
-  'Admin-settings': ['User Settings', 'Apartment Rate Management', 'Utility Contractor Rate Management', 'Shift Management'],
+  'Admin-settings': [], // Settings page has its own layout
   'Admin-customize': [],
 
   // Apartment
   'Apartment-dashboard': ['Profile', 'Payment History'],
   'Apartment-payments': ['Payment History'],
-  'Apartment-settings': ['User Settings'],
+  'Apartment-settings': [],
 
   // Contractor
   'Contractor-dashboard': ['Profile', 'Payment History'],
   'Contractor-payments': ['Payment History'],
-  'Contractor-settings': ['User Settings'],
+  'Contractor-settings': [],
   
   // Security
   'Security-dashboard': ['Scan Pass', 'Work Shift'],
-  'Security-payments': ['Payment History'],
-  'Security-settings': ['User Settings'],
+  'Security-receipts': ['Payment History'],
+  'Security-settings': [],
 };
 
 export const useCardStore = create<CardState>()(
@@ -53,12 +52,10 @@ export const useCardStore = create<CardState>()(
         })),
     }),
     {
-      name: 'card-layout-storage-v2', // Changed name to prevent conflicts with old structure
+      name: 'card-layout-storage-v3', 
       storage: createJSONStorage(() => localStorage),
        onRehydrateStorage: () => (state, error) => {
         if (state) {
-          // This ensures that new default layouts are added for existing users
-          // without wiping their customizations for existing pages.
           Object.keys(defaultLayouts).forEach(key => {
             if (!state.layouts[key]) {
               state.layouts[key] = defaultLayouts[key];
