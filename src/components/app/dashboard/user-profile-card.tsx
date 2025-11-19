@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { User, UserRole } from "@/types";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { Building2, Wrench, Shield, Mail, Phone, Hash } from 'lucide-react';
+import { useAvatarStore } from "@/hooks/use-avatar-store";
 
 interface UserProfileCardProps {
     user: User;
@@ -18,6 +19,7 @@ const roleIcons: Record<UserRole, React.ElementType> = {
 };
 
 export function UserProfileCard({ user }: UserProfileCardProps) {
+    const avatarVersion = useAvatarStore((state) => state.version);
     const avatarImage = PlaceHolderImages.find(img => img.id === user.avatarId);
     const RoleIcon = roleIcons[user.role];
 
@@ -59,8 +61,8 @@ export function UserProfileCard({ user }: UserProfileCardProps) {
         <Card>
             <CardHeader>
                 <div className="flex items-center gap-4">
-                    <Avatar className="h-16 w-16">
-                        {avatarImage && <AvatarImage src={avatarImage.imageUrl} alt={user.name} />}
+                    <Avatar className="h-16 w-16" key={avatarVersion}>
+                        {avatarImage && <AvatarImage src={`${avatarImage.imageUrl}?v=${avatarVersion}`} alt={user.name} />}
                         <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <div>
