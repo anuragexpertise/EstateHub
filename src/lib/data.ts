@@ -45,9 +45,9 @@ export const transactions: Transaction[] = [
 ];
 
 export const shifts: Shift[] = [
-    { id: 'shift-1', personnel: 'Mike Guard', shift: 'Day (6am - 6pm)', status: 'Active' },
-    { id: 'shift-2', personnel: 'Susan Watch', shift: 'Night (6pm - 6am)', status: 'Active' },
-    { id: 'shift-3', personnel: 'Tom Patrol', shift: 'Day (6am - 6pm)', status: 'Inactive' },
+    { id: 'shift-01', personnel: 'Mike Guard', shift: 'Day (6am - 6pm)', status: 'Active' },
+    { id: 'shift-02', personnel: 'Susan Watch', shift: 'Night (6pm - 6am)', status: 'Active' },
+    { id: 'shift-03', personnel: 'Tom Patrol', shift: 'Day (6am - 6pm)', status: 'Inactive' },
 ]
 
 export const rates = {
