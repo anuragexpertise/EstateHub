@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import type { UserRole } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Brush, GripVertical, PlusCircle } from 'lucide-react';
+import { Brush, GripVertical, PlusCircle, XCircle } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 
 import { EnrollCard } from '@/components/app/kpi-cards/enroll-card';
