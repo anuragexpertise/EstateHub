@@ -60,11 +60,13 @@ export function SettingsCard() {
     const searchParams = useSearchParams();
     const role = searchParams.get('role') as UserRole | null;
     const user = role ? findUserByRole(role) : null;
-    const avatarImage = user ? PlaceHolderImages.find(img => img.id === user.avatarId) : null;
-
+    
+    const [avatarFile, setAvatarFile] = useState<File | null>(null);
     const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
     const avatarInputRef = React.useRef<HTMLInputElement>(null);
 
+    const initialAvatar = user ? PlaceHolderImages.find(img => img.id === user.avatarId) : null;
+    
     const passwordForm = useForm<z.infer<typeof passwordFormSchema>>({
         resolver: zodResolver(passwordFormSchema),
         defaultValues: {
@@ -104,19 +106,51 @@ export function SettingsCard() {
     const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+            if (!allowedTypes.includes(file.type)) {
+                toast({
+                    variant: 'destructive',
+                    title: 'Invalid File Type',
+                    description: 'Please upload a JPG, PNG, or WEBP image.',
+                });
+                return;
+            }
+
+            if (file.size > 100 * 1024) { // 100 KB
+                toast({
+                    variant: 'destructive',
+                    title: 'File Too Large',
+                    description: 'Please upload an image smaller than 100KB.',
+                });
+                return;
+            }
+            
+            setAvatarFile(file);
             setAvatarPreview(URL.createObjectURL(file));
         }
     }
 
     const handleAvatarSave = () => {
-        if (!avatarPreview) return;
-        console.log("New avatar selected, saving...");
-        // In a real app, you'd upload the file and update the user's avatar URL
+        if (!avatarFile || !avatarPreview || !user) return;
+
+        // In a real app, you'd upload the file and get a new URL
+        console.log("New avatar selected, saving...", avatarFile.name);
+
+        // For this demo, we'll simulate updating the user's avatar.
+        // We find the placeholder and update its URL to the local blob URL.
+        const userAvatarPlaceholder = PlaceHolderImages.find(p => p.id === user.avatarId);
+        if (userAvatarPlaceholder) {
+            userAvatarPlaceholder.imageUrl = avatarPreview;
+        }
+        
         toast({
             title: "Avatar Updated",
             description: "Your profile picture has been changed successfully."
         });
-        // Here we'd update the user's avatarId in the data, but we'll just log it for now
+        
+        // Clear the file and preview after "saving"
+        setAvatarFile(null);
+        // We keep the preview to show the new image until the component re-renders
     }
 
     return (
@@ -131,7 +165,7 @@ export function SettingsCard() {
                     <Label className='text-base font-medium'>Profile Picture</Label>
                     <div className='flex items-center gap-6'>
                          <Avatar className="h-24 w-24">
-                            <AvatarImage src={avatarPreview || avatarImage?.imageUrl} alt={user?.name} />
+                            <AvatarImage src={avatarPreview || initialAvatar?.imageUrl} alt={user?.name} />
                             <AvatarFallback>{user?.name.charAt(0)}</AvatarFallback>
                         </Avatar>
                         <div className='flex flex-col gap-2'>
@@ -144,7 +178,7 @@ export function SettingsCard() {
                                 className='hidden' 
                                 ref={avatarInputRef} 
                                 onChange={handleAvatarChange}
-                                accept="image/png, image/jpeg" 
+                                accept="image/png, image/jpeg, image/webp" 
                             />
                             <Button onClick={handleAvatarSave} disabled={!avatarPreview}>Save Avatar</Button>
                         </div>
