@@ -54,7 +54,8 @@ export default function PaymentsPage() {
       );
   }
 
-  const layout = getLayout(pageKey);
+  const layoutKey = `${role}-${pageKey}`;
+  const layout = getLayout(layoutKey);
 
   return (
     <React.Suspense fallback={<PageSkeleton />}>

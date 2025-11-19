@@ -43,7 +43,7 @@ export default function ScanPage() {
   const role = searchParams.get('role') as UserRole | null;
   const { getLayout } = useCardStore();
 
-  const pageKey = pathname.replace('/','');
+  const pageKey = pathname.split('/').pop() || 'scan';
 
   if (!role) {
       return (
@@ -53,8 +53,9 @@ export default function ScanPage() {
           </Card>
       );
   }
-
-  const layout = getLayout(pageKey);
+  
+  const layoutKey = `${role}-${pageKey}`;
+  const layout = getLayout(layoutKey);
 
   return (
     <React.Suspense fallback={<PageSkeleton />}>
@@ -64,7 +65,7 @@ export default function ScanPage() {
                     {cardComponents[cardId]}
                 </div>
             ))}
-            {layout.length === 0 && (
+            {layout.length ===  0 && (
                 <Card>
                     <CardHeader>
                         <CardTitle>Evaluate Pass</CardTitle>

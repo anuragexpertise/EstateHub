@@ -60,7 +60,8 @@ export default function DashboardPage() {
       );
   }
 
-  const layout = getLayout(pageKey);
+  const layoutKey = `${role}-${pageKey}`;
+  const layout = getLayout(layoutKey);
 
   return (
     <React.Suspense fallback={<DashboardSkeleton />}>

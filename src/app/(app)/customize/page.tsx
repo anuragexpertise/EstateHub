@@ -39,7 +39,7 @@ const allCardIds = Object.keys(allCardComponents);
 
 export default function CustomizePage() {
   const { toast } = useToast();
-  const { layouts, getLayout, setLayout } = useCardStore();
+  const { getLayout, setLayout } = useCardStore();
   
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
@@ -47,13 +47,17 @@ export default function CustomizePage() {
   
   const roleNavItems = selectedRole ? allNavItems.filter(item => item.roles.includes(selectedRole)) : [];
 
+  const getPageKey = (option: string) => option.toLowerCase().replace(/ /g, '-');
+
   useEffect(() => {
-    if (selectedOption) {
-      setActiveLayout(getLayout(selectedOption.toLowerCase().replace(/ /g, '-')));
+    if (selectedRole && selectedOption) {
+      const pageKey = getPageKey(selectedOption);
+      const layoutKey = `${selectedRole}-${pageKey}`;
+      setActiveLayout(getLayout(layoutKey));
     } else {
       setActiveLayout([]);
     }
-  }, [selectedOption, getLayout]);
+  }, [selectedRole, selectedOption, getLayout]);
   
   useEffect(() => {
     setSelectedOption(null);
@@ -98,11 +102,13 @@ export default function CustomizePage() {
   };
   
   const handleSaveChanges = () => {
-    if(selectedOption) {
-        setLayout(selectedOption.toLowerCase().replace(/ /g, '-'), activeLayout);
+    if(selectedRole && selectedOption) {
+        const pageKey = getPageKey(selectedOption);
+        const layoutKey = `${selectedRole}-${pageKey}`;
+        setLayout(layoutKey, activeLayout);
         toast({
             title: 'Layout Saved',
-            description: `Your layout for the ${selectedOption} page has been saved.`,
+            description: `Layout for ${selectedRole} - ${selectedOption} has been saved.`,
         });
     }
   }
