@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { useSearchParams } from 'next/navigation';
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -31,8 +32,14 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { useToast } from "@/hooks/use-toast";
-import { rates as defaultRates, shifts } from "@/lib/data";
+import { rates as defaultRates, shifts, users, findUserByRole } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
+import type { UserRole } from '@/types';
+import { Separator } from '@/components/ui/separator';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { Upload } from 'lucide-react';
+
 
 const passwordFormSchema = z.object({
     currentPassword: z.string().min(1, { message: 'Please enter your current password.' }),
@@ -43,8 +50,19 @@ const passwordFormSchema = z.object({
     path: ["confirmPassword"],
   });
 
+const phoneFormSchema = z.object({
+    phone: z.string().min(10, { message: 'Please enter a valid phone number.' }),
+});
+
 export function SettingsCard() {
     const { toast } = useToast();
+    const searchParams = useSearchParams();
+    const role = searchParams.get('role') as UserRole | null;
+    const user = role ? findUserByRole(role) : null;
+    const avatarImage = user ? PlaceHolderImages.find(img => img.id === user.avatarId) : null;
+
+    const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+    const avatarInputRef = React.useRef<HTMLInputElement>(null);
 
     const passwordForm = useForm<z.infer<typeof passwordFormSchema>>({
         resolver: zodResolver(passwordFormSchema),
@@ -52,6 +70,13 @@ export function SettingsCard() {
             currentPassword: '',
             newPassword: '',
             confirmPassword: '',
+        },
+    });
+
+    const phoneForm = useForm<z.infer<typeof phoneFormSchema>>({
+        resolver: zodResolver(phoneFormSchema),
+        defaultValues: {
+            phone: user?.phone || '',
         },
     });
 
@@ -64,16 +89,97 @@ export function SettingsCard() {
         passwordForm.reset();
     };
 
+    const handlePhoneSubmit = (values: z.infer<typeof phoneFormSchema>) => {
+        console.log('Changing phone number...', values);
+        if(user) {
+            user.phone = values.phone;
+        }
+        toast({
+            title: "Phone Number Updated",
+            description: "Your phone number has been changed successfully."
+        });
+    }
+
+    const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            setAvatarPreview(URL.createObjectURL(file));
+        }
+    }
+
+    const handleAvatarSave = () => {
+        if (!avatarPreview) return;
+        console.log("New avatar selected, saving...");
+        // In a real app, you'd upload the file and update the user's avatar URL
+        toast({
+            title: "Avatar Updated",
+            description: "Your profile picture has been changed successfully."
+        });
+        // Here we'd update the user's avatarId in the data, but we'll just log it for now
+    }
+
     return (
         <Card>
             <CardHeader>
                 <CardTitle>User Settings</CardTitle>
-                <CardDescription>Update your account's password here.</CardDescription>
+                <CardDescription>Update your account details and password.</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-8">
+                {/* Avatar Upload */}
+                <div className='space-y-4'>
+                    <Label className='text-base font-medium'>Profile Picture</Label>
+                    <div className='flex items-center gap-6'>
+                         <Avatar className="h-24 w-24">
+                            <AvatarImage src={avatarPreview || avatarImage?.imageUrl} alt={user?.name} />
+                            <AvatarFallback>{user?.name.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <div className='flex flex-col gap-2'>
+                             <Button variant="outline" onClick={() => avatarInputRef.current?.click()}>
+                                <Upload className='mr-2 h-4 w-4' />
+                                Upload Image
+                            </Button>
+                            <Input 
+                                type="file" 
+                                className='hidden' 
+                                ref={avatarInputRef} 
+                                onChange={handleAvatarChange}
+                                accept="image/png, image/jpeg" 
+                            />
+                            <Button onClick={handleAvatarSave} disabled={!avatarPreview}>Save Avatar</Button>
+                        </div>
+                    </div>
+                </div>
+
+                <Separator />
+
+                {/* Phone Number Change */}
+                <Form {...phoneForm}>
+                    <form onSubmit={phoneForm.handleSubmit(handlePhoneSubmit)} className="space-y-4 max-w-md">
+                        <Label className='text-base font-medium'>Contact Information</Label>
+                        <FormField
+                            control={phoneForm.control}
+                            name="phone"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Phone Number</FormLabel>
+                                <FormControl>
+                                <Input placeholder="+1 (555) 555-5555" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                        <Button type="submit">Update Phone</Button>
+                    </form>
+                </Form>
+
+                <Separator />
+
+                {/* Password Change */}
                 <Form {...passwordForm}>
-                    <form onSubmit={passwordForm.handleSubmit(handlePasswordSubmit)} className="space-y-6 max-w-md">
-                            <FormField
+                    <form onSubmit={passwordForm.handleSubmit(handlePasswordSubmit)} className="space-y-4 max-w-md">
+                        <Label className='text-base font-medium'>Security</Label>
+                        <FormField
                             control={passwordForm.control}
                             name="currentPassword"
                             render={({ field }) => (
