@@ -10,7 +10,7 @@ import { EnrollCard } from '@/components/app/kpi-cards/enroll-card';
 import { PaymentsCard, PaymentHistoryCard } from '@/components/app/kpi-cards/payments-card';
 import { ScanCard } from '@/components/app/kpi-cards/scan-card';
 import { PersonnelCard, SalaryHistoryCard } from '@/components/app/kpi-cards/personnel-card';
-import { SettingsCard, RateManagementCard, WorkShiftsCard } from '@/components/app/kpi-cards/settings-card';
+import { SettingsCard, ApartmentRateManagementCard, UtilityContractorRateManagementCard, WorkShiftsCard } from '@/components/app/kpi-cards/settings-card';
 import { useCardStore } from '@/hooks/use-card-store';
 import { InfoCard } from '@/components/app/kpi-cards/info-card';
 import { ProfileCard } from '@/components/app/kpi-cards/profile-card';
@@ -24,7 +24,8 @@ const cardComponents: { [key: string]: React.ReactNode } = {
     'Work Shift': <PersonnelCard />,
     'Salary History': <SalaryHistoryCard />,
     'User Settings': <SettingsCard />,
-    'Rate Management': <RateManagementCard />,
+    'Apartment Rate Management': <ApartmentRateManagementCard />,
+    'Utility Contractor Rate Management': <UtilityContractorRateManagementCard />,
     'Shift Management': <WorkShiftsCard />,
     'Info': <InfoCard />,
     'Profile': <ProfileCard />,

@@ -17,7 +17,7 @@ const defaultLayouts: { [key: string]: CardLayout } = {
   'Admin-dashboard': ['Info', 'Profile'],
   'Admin-payments': ['Payment History', 'New Payment'],
   'Admin-evaluate-pass': ['Scan Pass'],
-  'Admin-settings': ['User Settings', 'Rate Management', 'Shift Management'],
+  'Admin-settings': ['User Settings', 'Apartment Rate Management', 'Utility Contractor Rate Management', 'Shift Management'],
   'Admin-customize': [],
 
   // Apartment
