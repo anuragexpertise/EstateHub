@@ -40,6 +40,7 @@ import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Upload } from 'lucide-react';
+import { useAvatarStore } from '@/hooks/use-avatar-store';
 
 
 const passwordFormSchema = z.object({
@@ -60,6 +61,7 @@ export function SettingsCard() {
     const searchParams = useSearchParams();
     const role = searchParams.get('role') as UserRole | null;
     const user = role ? findUserByRole(role) : null;
+    const { refreshAvatar } = useAvatarStore();
     
     const [avatarFile, setAvatarFile] = useState<File | null>(null);
     const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -148,9 +150,7 @@ export function SettingsCard() {
             description: "Your profile picture has been changed successfully."
         });
         
-        // Clear the file and preview after "saving"
-        setAvatarFile(null);
-        // We keep the preview to show the new image until the component re-renders
+        refreshAvatar();
     }
 
     return (
@@ -180,7 +180,7 @@ export function SettingsCard() {
                                 onChange={handleAvatarChange}
                                 accept="image/png, image/jpeg, image/webp" 
                             />
-                            <Button onClick={handleAvatarSave} disabled={!avatarPreview}>Save Avatar</Button>
+                            <Button onClick={handleAvatarSave} disabled={!avatarFile}>Save Avatar</Button>
                         </div>
                     </div>
                 </div>

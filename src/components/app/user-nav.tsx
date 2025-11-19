@@ -17,22 +17,15 @@ import { QrCodeDisplay } from './qr-code';
 import { Separator } from '../ui/separator';
 import { LogOut } from 'lucide-react';
 import React from 'react';
+import { useAvatarStore } from '@/hooks/use-avatar-store';
 
 export function UserNav() {
   const searchParams = useSearchParams();
   const role = searchParams.get('role') as UserRole | null;
   const user = users.find((u) => u.role === role);
   
-  // This is a simple trick to force re-render when avatar changes.
-  // In a real app, this would likely be part of a global state management.
-  const [key, setKey] = React.useState(0);
-  React.useEffect(() => {
-    const interval = setInterval(() => {
-        setKey(prev => prev + 1);
-    }, 1000);
-    return () => clearInterval(interval);
-  },[]);
-
+  // Subscribe to avatar updates
+  const avatarVersion = useAvatarStore((state) => state.version);
 
   if (!user || !role) return null;
 
@@ -43,9 +36,9 @@ export function UserNav() {
     <Popover>
       <PopoverTrigger asChild>
         <Button variant="outline" size="icon" className="overflow-hidden rounded-full">
-          <Avatar key={key}>
+          <Avatar key={avatarVersion}>
             {avatarImage && (
-              <AvatarImage src={avatarImage.imageUrl} alt={user.name} data-ai-hint={avatarImage.imageHint} />
+              <AvatarImage src={`${avatarImage.imageUrl}?v=${avatarVersion}`} alt={user.name} data-ai-hint={avatarImage.imageHint} />
             )}
             <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
           </Avatar>
@@ -54,9 +47,9 @@ export function UserNav() {
       <PopoverContent className="w-80" align="end">
         <div className="p-4">
             <div className="flex items-center gap-4">
-                 <Avatar className="h-12 w-12" key={key}>
+                 <Avatar className="h-12 w-12" key={avatarVersion}>
                     {avatarImage && (
-                    <AvatarImage src={avatarImage.imageUrl} alt={user.name} data-ai-hint={avatarImage.imageHint} />
+                    <AvatarImage src={`${avatarImage.imageUrl}?v=${avatarVersion}`} alt={user.name} data-ai-hint={avatarImage.imageHint} />
                     )}
                     <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                 </Avatar>
