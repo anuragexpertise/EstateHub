@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from '@/hooks/use-toast';
 import { UserProfileCard } from '@/components/app/dashboard/user-profile-card';
 
-type ListFilter = 'all' | 'withDues' | 'noDues' | 'active' | 'inactive' | 'pending' | 'paid';
+type ListFilter = 'all' | 'withDues' | 'noDues' | 'active' | 'inactive' | 'pending' | 'verified';
 
 export function InfoCard() {
   const searchParams = useSearchParams();
@@ -41,15 +41,15 @@ export function InfoCard() {
   const activeSecurity = shifts.filter(s => s.status === 'Active' && securityUsers.some(u => u.name === s.personnel)).length;
   const inactiveSecurity = totalSecurity - activeSecurity;
 
-  const totalPayments = payments.length;
-  const pendingPaymentsCount = payments.filter(p => p.status === 'Pending Verification').length;
-  const paidPaymentsCount = payments.filter(p => p.status === 'Paid').length;
+  const totalPayments = initialPayments.length;
+  const pendingPaymentsCount = initialPayments.filter(p => p.status === 'Pending Verification').length;
+  const verifiedPaymentsCount = totalPayments - pendingPaymentsCount;
 
-  const kpiData: { title: string; value: { total: number; withDues?: number; noDues?: number; active?: number; inactive?: number; pending?: number; paid?: number; }; icon: React.ElementType; role: UserRole | 'All' | 'Payments' }[] = [
+  const kpiData: { title: string; value: { total: number; withDues?: number; noDues?: number; active?: number; inactive?: number; pending?: number; verified?: number; }; icon: React.ElementType; role: UserRole | 'All' | 'Payments' }[] = [
     { title: "Apartment Owners", value: { total: totalApartments, withDues: apartmentsWithDues, noDues: apartmentsNoDues }, icon: Building2, role: 'Apartment' },
     { title: "Utility Contractors", value: { total: totalContractors, withDues: contractorsWithDues, noDues: contractorsNoDues }, icon: Wrench, role: 'Contractor' },
     { title: "Security", value: { total: totalSecurity, active: activeSecurity, inactive: inactiveSecurity }, icon: Shield, role: 'Security' },
-    { title: "Payments", value: { total: totalPayments, pending: pendingPaymentsCount, paid: paidPaymentsCount }, icon: CreditCard, role: 'Payments' },
+    { title: "Payments", value: { total: totalPayments, pending: pendingPaymentsCount, verified: verifiedPaymentsCount }, icon: CreditCard, role: 'Payments' },
   ];
   
   const handleKpiClick = (role: UserRole | 'Payments', title: string, filter: ListFilter) => {
@@ -61,8 +61,8 @@ export function InfoCard() {
         if (filter === 'pending') {
             paymentList = initialPayments.filter(p => p.status === 'Pending Verification');
             newTitle = 'Pending Payments';
-        } else if (filter === 'paid') {
-            paymentList = initialPayments.filter(p => p.status === 'Paid');
+        } else if (filter === 'verified') {
+            paymentList = initialPayments.filter(p => p.status !== 'Pending Verification');
             newTitle = 'Verified Payments';
         } else {
             paymentList = initialPayments;
@@ -188,7 +188,7 @@ export function InfoCard() {
     const passPayments = payments.filter(p => p.userId === userId && p.description.includes('Pass') && p.status === 'Paid');
     if (passPayments.length === 0) return { active: false, expires: null };
 
-    const sortedPasses = passPayments.sort((a, b) => b.date.getTime() - a.date.getTime());
+    const sortedPasses = passPayments.sort((a, b) => b.date.getTime() - a.getTime());
     const lastPass = sortedPasses[0];
 
     const expiryDate = new Date(lastPass.date);
@@ -363,9 +363,9 @@ export function InfoCard() {
                                         <p className="text-xs text-red-500">Pending</p>
                                         <div className="text-2xl font-bold text-red-500">{kpi.value.pending}</div>
                                     </div>
-                                    <div className="hover:bg-muted/50 cursor-pointer p-2 rounded-md" onClick={() => handleKpiClick(kpi.role, kpi.title, 'paid')}>
+                                    <div className="hover:bg-muted/50 cursor-pointer p-2 rounded-md" onClick={() => handleKpiClick(kpi.role, kpi.title, 'verified')}>
                                         <p className="text-xs text-green-700">Verified</p>
-                                        <div className="text-2xl font-bold text-green-700">{kpi.value.paid}</div>
+                                        <div className="text-2xl font-bold text-green-700">{kpi.value.verified}</div>
                                     </div>
                                 </>
                             ) : kpi.role === 'Security' ? (
@@ -404,5 +404,3 @@ export function InfoCard() {
     </Card>
   );
 }
-
-    
