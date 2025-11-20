@@ -14,10 +14,13 @@ import { SettingsCard, ApartmentRateManagementCard, UtilityContractorRateManagem
 import { useCardStore } from '@/hooks/use-card-store';
 import { InfoCard } from '@/components/app/kpi-cards/info-card';
 import { ProfileCard } from '@/components/app/kpi-cards/profile-card';
+import { roleDisplayNames } from '@/lib/data';
+import { ChargesAndPaymentHistoryCard } from '@/components/app/kpi-cards/charges-payment-history-card';
 
 const cardComponents: { [key: string]: React.ReactNode } = {
     'Enrollment': <EnrollCard />,
     'Payment History': <PaymentHistoryCard />,
+    'Charges and Payment History': <ChargesAndPaymentHistoryCard />,
     'New Payment': <PaymentsCard />,
     'Scan Pass': <ScanCard />,
     'Work Shift': <PersonnelCard />,

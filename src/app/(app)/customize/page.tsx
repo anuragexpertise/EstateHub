@@ -21,10 +21,12 @@ import { ProfileCard } from '@/components/app/kpi-cards/profile-card';
 import { allNavItems, roles } from '@/lib/data';
 import type { UserRole } from '@/types';
 import { ApplicationSettingsCard } from '@/components/app/kpi-cards/application-settings-card';
+import { ChargesAndPaymentHistoryCard } from '@/components/app/kpi-cards/charges-payment-history-card';
 
 const allCardComponents: { [key: string]: React.ReactNode } = {
     'Enrollment': <EnrollCard />,
     'Payment History': <PaymentHistoryCard />,
+    'Charges and Payment History': <ChargesAndPaymentHistoryCard />,
     'New Payment': <PaymentsCard />,
     'Scan Pass': <ScanCard />,
     'Work Shift': <PersonnelCard />,

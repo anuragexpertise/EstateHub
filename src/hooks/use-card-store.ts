@@ -20,8 +20,8 @@ const defaultLayouts: { [key: string]: CardLayout } = {
   'Admin-customize': [],
 
   // Apartment
-  'Apartment-dashboard': ['Profile', 'Payment History'],
-  'Apartment-payments': ['Payment History'],
+  'Apartment-dashboard': ['Profile', 'Charges and Payment History'],
+  'Apartment-payments': ['Charges and Payment History'],
   'Apartment-settings': [],
 
   // Contractor
