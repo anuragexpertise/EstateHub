@@ -2,13 +2,14 @@
 'use client';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { User, UserRole } from "@/types";
 import { roleDisplayNames } from "@/lib/data";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
-import { Building2, Wrench, Shield, Mail, Phone, Hash } from 'lucide-react';
+import { Building2, Wrench, Shield, Mail, Phone, Hash, Copy } from 'lucide-react';
 import { useAvatarStore } from "@/hooks/use-avatar-store";
 import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 interface UserProfileCardProps {
     user: User;
@@ -25,6 +26,7 @@ export function UserProfileCard({ user }: UserProfileCardProps) {
     const { version, newAvatarUrl, lastUpdatedAvatarId } = useAvatarStore();
     const initialAvatar = PlaceHolderImages.find(img => img.id === user.avatarId);
     const [currentAvatarUrl, setCurrentAvatarUrl] = useState(initialAvatar?.imageUrl);
+    const { toast } = useToast();
     
     useEffect(() => {
         if (lastUpdatedAvatarId === user.avatarId && newAvatarUrl) {
@@ -36,6 +38,14 @@ export function UserProfileCard({ user }: UserProfileCardProps) {
     }, [version, newAvatarUrl, lastUpdatedAvatarId, user.avatarId]);
 
     const RoleIcon = roleIcons[user.role];
+    
+    const handleCopyId = () => {
+        navigator.clipboard.writeText(user.id);
+        toast({
+        title: 'ID Copied',
+        description: `${user.id} has been copied to your clipboard.`,
+        });
+    }
 
     const renderDetails = () => {
         switch (user.role) {
@@ -89,7 +99,14 @@ export function UserProfileCard({ user }: UserProfileCardProps) {
             </CardHeader>
             <CardContent className="space-y-4">
                  <div className="space-y-2 text-sm text-foreground">
-                    <div className="flex items-center gap-3">
+                    <div className="flex w-full items-center justify-between rounded-md border bg-muted/50 px-3 py-2">
+                        <code className="text-sm font-mono">{user.id}</code>
+                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={handleCopyId}>
+                            <Copy className="h-4 w-4" />
+                            <span className="sr-only">Copy ID</span>
+                        </Button>
+                    </div>
+                    <div className="flex items-center gap-3 pt-2">
                         <Mail className="h-4 w-4 text-muted-foreground" />
                         <span>{user.email}</span>
                     </div>
@@ -101,7 +118,6 @@ export function UserProfileCard({ user }: UserProfileCardProps) {
                     )}
                      {renderDetails()}
                 </div>
-                <Badge variant="secondary">{user.id}</Badge>
             </CardContent>
         </Card>
     );
