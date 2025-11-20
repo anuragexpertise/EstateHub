@@ -28,8 +28,8 @@ export const users: User[] = [
 const now = new Date();
 
 export const payments: Payment[] = [
-  { id: 'pay-001', userId: 'user-apt-101', amount: 1200, date: new Date(now.getFullYear(), now.getMonth() - 1, 15), status: 'Paid', description: '1-Month Maintenance' },
-  { id: 'pay-002', userId: 'user-apt-101', amount: 1200, date: new Date(now.getFullYear(), now.getMonth(), 15), status: 'Due', description: '1-Month Maintenance' },
+  { id: 'pay-001', userId: 'user-apt-101', amount: 1200, date: new Date(now.getFullYear(), now.getMonth() - 2, 10), status: 'Paid', description: '1-Month Maintenance' },
+  { id: 'pay-002', userId: 'user-apt-101', amount: 1200, date: new Date(now.getFullYear(), now.getMonth(), 5), status: 'Paid', description: '1-Month Maintenance' },
   { id: 'pay-003', userId: 'user-apt-204', amount: 950, date: new Date(now.getFullYear(), now.getMonth() - 1, 15), status: 'Paid', description: '1-Month Maintenance' },
   { id: 'pay-004', userId: 'user-apt-204', amount: 950, date: new Date(now.getFullYear(), now.getMonth(), 1), status: 'Paid', description: '1-Month Maintenance' },
   { id: 'pay-005', userId: 'user-con-elec', amount: 500, date: new Date(now.getFullYear(), now.getMonth() - 2, 20), status: 'Paid', description: 'Vendor Pass' },
