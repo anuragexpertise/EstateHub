@@ -8,7 +8,7 @@ import { useGlobalStore } from '@/hooks/use-global-store';
 import { useEffect, useState } from 'react';
 
 export default function LoginPage() {
-  const { societyName, loginHeroUrl, updateLoginHeroUrl } = useGlobalStore();
+  const { societyName } = useGlobalStore();
   const loginHeroPlaceholder = PlaceHolderImages.find((img) => img.id === 'login-hero');
   const [heroImage, setHeroImage] = useState(loginHeroPlaceholder?.imageUrl);
 
@@ -23,9 +23,18 @@ export default function LoginPage() {
 
 
   return (
-    <div className="w-full min-h-screen lg:grid lg:grid-cols-2">
-      <div className="flex items-center justify-center py-12">
-        <div className="mx-auto grid w-[350px] gap-6">
+    <div className="relative w-full min-h-screen">
+      {heroImage && (
+          <Image
+            src={heroImage}
+            alt={loginHeroPlaceholder?.description || 'Login hero image'}
+            fill
+            className="object-cover dark:brightness-[0.3]"
+            data-ai-hint={loginHeroPlaceholder?.imageHint}
+          />
+        )}
+      <div className="relative z-10 flex items-center justify-center w-full min-h-screen p-4">
+        <div className="mx-auto grid w-[380px] gap-6 bg-card/80 dark:bg-card/70 backdrop-blur-sm p-8 rounded-xl shadow-2xl border border-white/20">
           <div className="grid gap-2 text-center">
             <div className="flex justify-center items-center gap-2 mb-4">
               <Logo className="h-8 w-8 text-primary" />
@@ -43,17 +52,6 @@ export default function LoginPage() {
             </a>
           </div>
         </div>
-      </div>
-      <div className="hidden bg-muted lg:block relative">
-        {heroImage && (
-          <Image
-            src={heroImage}
-            alt={loginHeroPlaceholder?.description || 'Login hero image'}
-            fill
-            className="object-cover dark:brightness-[0.3]"
-            data-ai-hint={loginHeroPlaceholder?.imageHint}
-          />
-        )}
       </div>
     </div>
   );
