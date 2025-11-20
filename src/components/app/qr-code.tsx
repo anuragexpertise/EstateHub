@@ -1,3 +1,4 @@
+
 'use client';
 import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,9 +10,10 @@ interface QrCodeProps {
   data: { id: string, [key: string]: any };
   title: string;
   description: string;
+  showFooter?: boolean;
 }
 
-export function QrCodeDisplay({ data, title, description }: QrCodeProps) {
+export function QrCodeDisplay({ data, title, description, showFooter = true }: QrCodeProps) {
   const { toast } = useToast();
   const stringData = JSON.stringify(data);
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(stringData)}`;
@@ -59,16 +61,18 @@ export function QrCodeDisplay({ data, title, description }: QrCodeProps) {
             />
         </div>
       </CardContent>
-      <CardFooter className="flex-col items-start gap-2 border-t pt-4">
-        <p className="text-sm font-medium text-muted-foreground">Entity ID</p>
-        <div className="flex w-full items-center justify-between rounded-md border bg-muted/50 px-3 py-2">
-            <code className="text-sm font-mono">{data.id}</code>
-            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={handleCopyId}>
-                <Copy className="h-4 w-4" />
-                <span className="sr-only">Copy ID</span>
-            </Button>
-        </div>
-      </CardFooter>
+      {showFooter && (
+        <CardFooter className="flex-col items-start gap-2 border-t pt-4">
+          <p className="text-sm font-medium text-muted-foreground">Entity ID</p>
+          <div className="flex w-full items-center justify-between rounded-md border bg-muted/50 px-3 py-2">
+              <code className="text-sm font-mono">{data.id}</code>
+              <Button size="icon" variant="ghost" className="h-7 w-7" onClick={handleCopyId}>
+                  <Copy className="h-4 w-4" />
+                  <span className="sr-only">Copy ID</span>
+              </Button>
+          </div>
+        </CardFooter>
+      )}
     </Card>
   );
 }

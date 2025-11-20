@@ -15,12 +15,14 @@ import type { UserRole } from '@/types';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { QrCodeDisplay } from './qr-code';
 import { Separator } from '../ui/separator';
-import { LogOut } from 'lucide-react';
+import { LogOut, Copy } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useAvatarStore } from '@/hooks/use-avatar-store';
+import { useToast } from '@/hooks/use-toast';
 
 export function UserNav() {
   const searchParams = useSearchParams();
+  const { toast } = useToast();
   const role = searchParams.get('role') as UserRole | null;
   const user = users.find((u) => u.role === role);
   
@@ -41,6 +43,14 @@ export function UserNav() {
   if (!user || !role) return null;
 
   const qrData = { id: user.id, type: user.role, name: user.name };
+  
+  const handleCopyId = () => {
+    navigator.clipboard.writeText(user.id);
+    toast({
+      title: 'ID Copied',
+      description: `${user.id} has been copied to your clipboard.`,
+    });
+  }
 
   return (
     <Popover>
@@ -65,7 +75,13 @@ export function UserNav() {
                 </Avatar>
                 <div className="grid gap-1">
                     <p className="font-semibold">{user.name}</p>
-                    <p className="text-sm text-muted-foreground">{user.id}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm text-muted-foreground">{user.id}</p>
+                      <Button size="icon" variant="ghost" className="h-6 w-6" onClick={handleCopyId}>
+                          <Copy className="h-3 w-3" />
+                          <span className="sr-only">Copy ID</span>
+                      </Button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -75,6 +91,7 @@ export function UserNav() {
                 data={qrData}
                 title="Your Pass"
                 description="Personal identification QR code."
+                showFooter={false}
             />
         </div>
         <Separator />
