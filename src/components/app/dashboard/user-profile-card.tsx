@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useGlobalStore } from "@/hooks/use-global-store";
-import { differenceInMonths, endOfMonth, format, isAfter } from 'date-fns';
+import { differenceInMonths, endOfMonth, format, isAfter, startOfMonth, eachMonthOfInterval, differenceInDays } from 'date-fns';
 
 interface UserProfileCardProps {
     user: User;
@@ -40,48 +40,61 @@ const NoticeCard = ({ user }: { user: User }) => {
         title = 'Maintenance Status';
 
         if (calculationStartDate && user.details?.sqft) {
-            const startDate = new Date(calculationStartDate);
+            const startDate = startOfMonth(new Date(calculationStartDate));
             const today = new Date();
-            const monthsToCharge = differenceInMonths(today, startDate) + 1;
-
             const monthlyCharge = user.details.sqft * rates.apartment['1month'];
-            const totalCharged = monthsToCharge * monthlyCharge;
+            const userPayments = payments
+                .filter(p => p.userId === user.id && p.description.includes('Maintenance') && p.status === 'Paid')
+                .sort((a, b) => a.date.getTime() - b.date.getTime());
 
-            const totalPaid = payments
-                .filter(p => p.userId === user.id && p.status === 'Paid' && p.description.includes('Maintenance'))
-                .reduce((sum, p) => sum + p.amount, 0);
-            
-            const balance = totalCharged - totalPaid;
-            
+            const monthsToProcess = eachMonthOfInterval({ start: startDate, end: today });
+            let balance = 0;
+            let paymentsIndex = 0;
+            let lastPaidMonth: Date | null = null;
+
+            for (const month of monthsToProcess) {
+                balance += monthlyCharge;
+                const endOfMonthForDues = endOfMonth(month);
+
+                // Apply payments to balance
+                while (paymentsIndex < userPayments.length && balance > 0) {
+                    const payment = userPayments[paymentsIndex];
+                    balance -= payment.amount;
+                    
+                    // Check if payment was late
+                    if (isAfter(payment.date, endOfMonthForDues)) {
+                        balance += rates.fines.latePaymentFee; // One-time late fine
+                        const lateDays = differenceInDays(payment.date, endOfMonthForDues);
+                        const dailyFine = monthlyCharge * (rates.fines.finePercentPerDay / 100);
+                        balance += lateDays * dailyFine; // Daily fine
+                    }
+                    paymentsIndex++;
+                }
+
+                if (balance <= 0) {
+                   lastPaidMonth = month;
+                }
+            }
+             // Apply remaining payments if any
+            while(paymentsIndex < userPayments.length) {
+                balance -= userPayments[paymentsIndex].amount;
+                paymentsIndex++;
+            }
+
+
             if (balance > 0) {
                 noticeType = 'due';
-                let totalFine = 0;
-                // Check if any payment is overdue to apply fixed late fee
-                const hasOverdue = payments.some(p => p.userId === user.id && p.status === 'Overdue');
-                if(hasOverdue) {
-                    totalFine += rates.fines.latePaymentFee;
-                }
-                
-                // Note: a more complex daily fine calculation would be needed for a real app
-                // For this demo, we'll just add the fixed fee if any payment is marked 'Overdue'
-                amountDue = balance + totalFine;
+                amountDue = balance;
                 validUpto = `Payments overdue`;
             } else {
                 noticeType = 'paid';
-                validUpto = format(endOfMonth(today), 'dd-MMM-yyyy');
+                validUpto = lastPaidMonth ? format(endOfMonth(lastPaidMonth), 'dd-MMM-yyyy') : 'All clear';
             }
+
         } else {
-            // Fallback for when calculation start date isn't set
-            const duePayment = payments.find(p => p.userId === user.id && (p.status === 'Due' || p.status === 'Overdue'));
-             if (duePayment) {
-                amountDue = duePayment.amount;
-                noticeType = 'due';
-            } else {
-                noticeType = 'paid';
-            }
+            noticeType = 'info';
             validUpto = 'Calculation date not set';
         }
-
 
     } else if (user.role === 'Contractor') {
         title = 'Pass Status';
@@ -96,10 +109,10 @@ const NoticeCard = ({ user }: { user: User }) => {
             
             if (expiryDate > new Date()) {
                 noticeType = 'paid';
-                validUpto = dateTimeFormatter.format(expiryDate).replace(',', '');
+                validUpto = dateTimeFormatter.format(expiryDate).replace(',', ' ');
             } else {
                 noticeType = 'due';
-                amountDue = 50; // Default to 1-day pass
+                amountDue = rates.contractor['1day']; // Default to 1-day pass
                 validUpto = `Expired on ${dateFormatter.format(expiryDate).replace(/ /g, '-')}`;
             }
         } else {
@@ -145,7 +158,7 @@ const NoticeCard = ({ user }: { user: User }) => {
                 <div>
                      <p className="font-medium">Status</p>
                      <p className={cn("font-semibold", isDue ? "text-destructive" : noticeType === 'paid' ? "text-green-700 dark:text-green-500" : "text-muted-foreground")}>
-                         {amountDue ? `₹${amountDue.toLocaleString()} Due` : noticeType === 'info' ? 'Not Applicable' : 'No Dues'}
+                         {amountDue ? `₹${amountDue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Due` : noticeType === 'info' ? 'Not Applicable' : 'No Dues'}
                      </p>
                 </div>
                 <div>
@@ -259,3 +272,5 @@ export function UserProfileCard({ user }: UserProfileCardProps) {
         </Card>
     );
 }
+
+    
