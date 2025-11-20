@@ -45,10 +45,12 @@ export function ApplicationSettingsCard() {
         societyName, 
         logoUrl, 
         loginHeroUrl, 
+        receiptQrUrl,
         calculationStartDate,
         setSocietyName,
         setLogoUrl,
         setLoginHeroUrl,
+        setReceiptQrUrl,
         setCalculationStartDate,
     } = useGlobalStore();
 
@@ -58,8 +60,13 @@ export function ApplicationSettingsCard() {
     const [heroFile, setHeroFile] = React.useState<File | null>(null);
     const [heroPreview, setHeroPreview] = React.useState<string | null>(loginHeroUrl);
 
+    const [qrFile, setQrFile] = React.useState<File | null>(null);
+    const [qrPreview, setQrPreview] = React.useState<string | null>(receiptQrUrl);
+
     const logoInputRef = React.useRef<HTMLInputElement>(null);
     const heroInputRef = React.useRef<HTMLInputElement>(null);
+    const qrInputRef = React.useRef<HTMLInputElement>(null);
+
 
     const form = useForm<z.infer<typeof appSettingsSchema>>({
         resolver: zodResolver(appSettingsSchema),
@@ -81,24 +88,38 @@ export function ApplicationSettingsCard() {
         event: React.ChangeEvent<HTMLInputElement>, 
         setFile: React.Dispatch<React.SetStateAction<File | null>>, 
         setPreview: React.Dispatch<React.SetStateAction<string | null>>,
-        isHeroImage: boolean = false
+        options: { isHeroImage?: boolean, isQrCode?: boolean } = {}
     ) => {
         const file = event.target.files?.[0];
         if (file) {
-            const allowedTypes = isHeroImage 
+            const allowedTypes = options.isHeroImage || options.isQrCode
                 ? ['image/jpeg', 'image/png', 'image/webp']
                 : ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'];
+            
+            const allowedTypesText = options.isHeroImage || options.isQrCode
+                ? 'JPG, PNG, or WEBP'
+                : 'JPG, PNG, WEBP or SVG';
+
             if (!allowedTypes.includes(file.type)) {
                 toast({
                     variant: 'destructive',
                     title: 'Invalid File Type',
-                    description: `Please upload a ${isHeroImage ? 'JPG, PNG, or WEBP' : 'JPG, PNG, WEBP or SVG'} image.`,
+                    description: `Please upload a ${allowedTypesText} image.`,
                 });
                 return;
             }
 
-            const sizeLimit = isHeroImage ? 800 * 1024 : 200 * 1024; // 800KB for hero, 200KB for logo
-            const sizeLimitText = isHeroImage ? '800KB' : '200KB';
+            let sizeLimit = 200 * 1024; // 200KB default
+            let sizeLimitText = '200KB';
+
+            if (options.isHeroImage) {
+                sizeLimit = 800 * 1024; // 800KB
+                sizeLimitText = '800KB';
+            } else if (options.isQrCode) {
+                sizeLimit = 200 * 1024; // 200KB
+                sizeLimitText = '200KB';
+            }
+
 
             if (file.size > sizeLimit) {
                 toast({
@@ -129,6 +150,9 @@ export function ApplicationSettingsCard() {
         }
         if(heroPreview) {
             setLoginHeroUrl(heroPreview);
+        }
+        if(qrPreview){
+            setReceiptQrUrl(qrPreview);
         }
         
         toast({
@@ -211,10 +235,41 @@ export function ApplicationSettingsCard() {
                                         type="file" 
                                         className='hidden' 
                                         ref={heroInputRef} 
-                                        onChange={(e) => handleFileChange(e, setHeroFile, setHeroPreview, true)}
+                                        onChange={(e) => handleFileChange(e, setHeroFile, setHeroPreview, { isHeroImage: true })}
                                         accept="image/png, image/jpeg, image/webp" 
                                     />
                                      <p className='text-xs text-muted-foreground'>Recommended: 16:9 ratio, &lt;800KB</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <Separator />
+
+                        {/* Receipt QR Code Upload */}
+                        <div className='space-y-4'>
+                            <FormLabel>Receipt QR Code</FormLabel>
+                            <div className='flex items-center gap-6'>
+                                <div className='w-24 h-24 rounded-md border flex items-center justify-center overflow-hidden bg-white'>
+                                    {qrPreview ? (
+                                        <Image src={qrPreview} alt="receipt qr code preview" width={96} height={96} className='object-contain'/>
+                                    ) : (
+                                        <p className='text-xs text-muted-foreground'>Preview</p>
+                                    )}
+                                </div>
+
+                                <div className='flex flex-col gap-2'>
+                                    <Button type='button' variant="outline" onClick={() => qrInputRef.current?.click()}>
+                                        <Upload className='mr-2 h-4 w-4' />
+                                        Upload QR Code
+                                    </Button>
+                                    <Input 
+                                        type="file" 
+                                        className='hidden' 
+                                        ref={qrInputRef} 
+                                        onChange={(e) => handleFileChange(e, setQrFile, setQrPreview, { isQrCode: true })}
+                                        accept="image/png, image/jpeg, image/webp" 
+                                    />
+                                     <p className='text-xs text-muted-foreground'>E.g., UPI QR code. Square image, &lt;200KB</p>
                                 </div>
                             </div>
                         </div>
@@ -274,3 +329,5 @@ export function ApplicationSettingsCard() {
         </Card>
     )
 }
+
+    
