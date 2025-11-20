@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useGlobalStore } from "@/hooks/use-global-store";
-import { differenceInMonths, endOfMonth, format, isAfter, startOfMonth, eachMonthOfInterval, differenceInDays } from 'date-fns';
+import { differenceInMonths, endOfMonth, format, isAfter, startOfMonth, eachMonthOfInterval, differenceInDays, addDays } from 'date-fns';
 
 interface UserProfileCardProps {
     user: User;
@@ -40,50 +40,76 @@ const NoticeCard = ({ user }: { user: User }) => {
         title = 'Maintenance Status';
 
         if (calculationStartDate && user.details?.sqft) {
+            let runningBalance = 0;
+            let lastPaidMonth: Date | null = null;
+
             const startDate = startOfMonth(new Date(calculationStartDate));
             const today = new Date();
             const monthlyCharge = user.details.sqft * rates.apartment['1month'];
             const userPayments = payments
                 .filter(p => p.userId === user.id && p.description.includes('Maintenance') && p.status === 'Paid')
-                .sort((a, b) => a.date.getTime() - b.date.getTime());
+                .map(p => ({ ...p, type: 'payment' as const }));
 
-            const monthsToProcess = eachMonthOfInterval({ start: startDate, end: today });
-            let balance = 0;
-            let paymentsIndex = 0;
-            let lastPaidMonth: Date | null = null;
+            const monthlyCharges = eachMonthOfInterval({ start: startDate, end: today }).map(month => ({
+                date: startOfMonth(month),
+                dueDate: endOfMonth(month),
+                amount: monthlyCharge,
+                type: 'charge' as const,
+                description: `${format(month, 'MMMM yyyy')} Maintenance`,
+                month: month,
+            }));
 
-            for (const month of monthsToProcess) {
-                balance -= monthlyCharge; // Charge is a negative on the balance
-                const endOfMonthForDues = endOfMonth(month);
+            const combined = [...userPayments, ...monthlyCharges].sort((a, b) => a.date.getTime() - b.date.getTime());
+            const processedFines = new Set<string>();
 
-                // Apply payments to balance
-                while (paymentsIndex < userPayments.length && balance < 0) {
-                    const payment = userPayments[paymentsIndex];
-                    balance += payment.amount; // Payment is a positive
-                    
-                    if (isAfter(payment.date, endOfMonthForDues)) {
-                        balance -= rates.fines.latePaymentFee; // Fine is a negative
-                        const lateDays = differenceInDays(payment.date, endOfMonthForDues);
-                        const dailyFine = monthlyCharge * (rates.fines.finePercentPerDay / 100);
-                        balance -= lateDays * dailyFine; // Daily fine is a negative
+            let currentBalanceForMonthCheck = 0;
+
+            monthlyCharges.forEach(charge => {
+                currentBalanceForMonthCheck -= charge.amount;
+
+                const paymentsForMonth = userPayments.filter(p => isAfter(p.date, charge.date) && (!lastPaidMonth || isAfter(p.date, lastPaidMonth)));
+                
+                let paymentApplied = false;
+                paymentsForMonth.forEach(payment => {
+                    currentBalanceForMonthCheck += payment.amount;
+                    if(isAfter(payment.date, charge.dueDate)) {
+                         currentBalanceForMonthCheck -= rates.fines.latePaymentFee;
                     }
-                    paymentsIndex++;
+                    paymentApplied = true;
+                });
+                
+                if(currentBalanceForMonthCheck >= 0){
+                    lastPaidMonth = charge.month;
                 }
+            });
 
-                if (balance >= 0) {
-                   lastPaidMonth = month;
+            // Recalculate final balance for display
+            let finalBalance = 0;
+            const allCharges = monthlyCharges.reduce((acc, charge) => acc + charge.amount, 0);
+            const allPayments = userPayments.reduce((acc, payment) => acc + payment.amount, 0);
+            let totalFines = 0;
+
+            monthlyCharges.forEach(charge => {
+                const paymentForThisCycle = userPayments.find(p => p.date >= charge.date && p.date <= endOfMonth(charge.month));
+                if (!paymentForThisCycle) {
+                     const anyPaymentAfterDueDate = userPayments.some(p => p.date > charge.dueDate);
+                     if(anyPaymentAfterDueDate) {
+                         const fineKey = format(charge.month, 'yyyy-MM');
+                         if(!processedFines.has(fineKey)){
+                            totalFines += rates.fines.latePaymentFee;
+                            processedFines.add(fineKey);
+                         }
+                     }
                 }
-            }
-             // Apply remaining payments if any
-            while(paymentsIndex < userPayments.length) {
-                balance += userPayments[paymentsIndex].amount;
-                paymentsIndex++;
-            }
+            });
 
 
-            if (balance < 0) {
+            finalBalance = allPayments - allCharges - totalFines;
+
+
+            if (finalBalance < 0) {
                 noticeType = 'due';
-                amountDue = -balance;
+                amountDue = -finalBalance;
                 validUpto = `Payments overdue`;
             } else {
                 noticeType = 'paid';
@@ -271,5 +297,3 @@ export function UserProfileCard({ user }: UserProfileCardProps) {
         </Card>
     );
 }
-
-    

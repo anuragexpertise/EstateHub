@@ -4,9 +4,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { users, payments, rates } from "@/lib/data";
 import { useGlobalStore } from "@/hooks/use-global-store";
-import { eachMonthOfInterval, startOfMonth, endOfMonth, format, isAfter } from 'date-fns';
+import { eachMonthOfInterval, startOfMonth, endOfMonth, format, isAfter, addDays } from 'date-fns';
 import { Receipt } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+type LedgerItem = {
+    date: Date;
+    description: string;
+    debit: number;
+    credit: number;
+    balance: number;
+    type: 'charge' | 'payment' | 'fine';
+};
 
 export function ChargesAndPaymentHistoryCard() {
     const { calculationStartDate } = useGlobalStore();
@@ -38,7 +47,7 @@ export function ChargesAndPaymentHistoryCard() {
         );
     }
     
-    const ledger: { date: Date; description: string; debit: number; credit: number; balance: number }[] = [];
+    const ledger: LedgerItem[] = [];
     let runningBalance = 0;
 
     const startDate = startOfMonth(new Date(calculationStartDate));
@@ -47,54 +56,77 @@ export function ChargesAndPaymentHistoryCard() {
     
     const userPayments = payments
         .filter(p => p.userId === user.id && p.description.includes('Maintenance') && p.status === 'Paid')
-        .sort((a, b) => a.date.getTime() - b.date.getTime());
-    let paymentIndex = 0;
+        .map(p => ({ ...p, type: 'payment' as const }));
 
-    const monthsToProcess = eachMonthOfInterval({ start: startDate, end: today });
+    const monthlyCharges = eachMonthOfInterval({ start: startDate, end: today }).map(month => ({
+        date: startOfMonth(month),
+        dueDate: endOfMonth(month),
+        amount: monthlyCharge,
+        type: 'charge' as const,
+        description: `${format(month, 'MMMM yyyy')} Maintenance`,
+        month: month
+    }));
 
-    for (const month of monthsToProcess) {
-        // Add monthly charge (debit for the user, so we subtract from balance)
-        runningBalance -= monthlyCharge;
-        ledger.push({
-            date: startOfMonth(month),
-            description: `${format(month, 'MMMM yyyy')} Maintenance`,
-            debit: monthlyCharge,
-            credit: 0,
-            balance: runningBalance
-        });
+    const combined = [...userPayments, ...monthlyCharges].sort((a, b) => a.date.getTime() - b.date.getTime());
+    const processedFines = new Set<string>(); // To track which months have had a fine applied
 
-        const endOfMonthForDues = endOfMonth(month);
-
-        // Check for payments made within the month (or for this month)
-        while (paymentIndex < userPayments.length) {
-            const payment = userPayments[paymentIndex];
-            
-            // Assuming payments are for the oldest outstanding debt
-            const isLate = payment.date > endOfMonthForDues;
-
-            // Apply payment (credit for the user, so we add to balance)
-            runningBalance += payment.amount;
-             ledger.push({
-                date: payment.date,
-                description: 'Payment Received',
-                debit: 0,
-                credit: payment.amount,
-                balance: runningBalance
-            });
-
-            // If a payment was made late while there was a due amount, apply a fine
-            if(isLate && runningBalance - payment.amount < 0) { 
+    for (const item of combined) {
+        // Before processing the current item, check if any previous months are overdue
+        for (const charge of monthlyCharges) {
+            const fineKey = format(charge.month, 'yyyy-MM');
+            if (!processedFines.has(fineKey) && runningBalance < 0 && isAfter(item.date, charge.dueDate)) {
+                // Apply one-time late fee
                 runningBalance -= rates.fines.latePaymentFee;
-                 ledger.push({
-                    date: payment.date,
-                    description: 'Late Payment Fine',
+                ledger.push({
+                    date: addDays(charge.dueDate, 1),
+                    description: `Late Fee for ${format(charge.month, 'MMMM yyyy')}`,
                     debit: rates.fines.latePaymentFee,
                     credit: 0,
-                    balance: runningBalance
+                    balance: runningBalance,
+                    type: 'fine'
                 });
+
+                processedFines.add(fineKey); 
             }
-            
-            paymentIndex++;
+        }
+        
+        if (item.type === 'charge') {
+            runningBalance -= item.amount;
+            ledger.push({
+                date: item.date,
+                description: item.description,
+                debit: item.amount,
+                credit: 0,
+                balance: runningBalance,
+                type: 'charge'
+            });
+        } else if (item.type === 'payment') {
+            runningBalance += item.amount;
+            ledger.push({
+                date: item.date,
+                description: 'Payment Received',
+                debit: 0,
+                credit: item.amount,
+                balance: runningBalance,
+                type: 'payment'
+            });
+        }
+    }
+    
+     // Final check for any overdue months up to today
+    for (const charge of monthlyCharges) {
+        const fineKey = format(charge.month, 'yyyy-MM');
+        if (!processedFines.has(fineKey) && runningBalance < 0 && isAfter(today, charge.dueDate)) {
+            runningBalance -= rates.fines.latePaymentFee;
+            ledger.push({
+                date: addDays(charge.dueDate, 1),
+                description: `Late Fee for ${format(charge.month, 'MMMM yyyy')}`,
+                debit: rates.fines.latePaymentFee,
+                credit: 0,
+                balance: runningBalance,
+                type: 'fine'
+            });
+            processedFines.add(fineKey);
         }
     }
 
