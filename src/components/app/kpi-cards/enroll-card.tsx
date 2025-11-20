@@ -1,6 +1,6 @@
 
 'use client';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -30,6 +30,8 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import type { UserRole } from '@/types';
+import { roleDisplayNames, roles } from '@/lib/data';
+import { Upload } from 'lucide-react';
 
 const formSchema = z
   .object({
@@ -63,6 +65,7 @@ const roleLabels = {
 
 export function EnrollCard() {
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -86,13 +89,65 @@ export function EnrollCard() {
     form.reset();
   }
 
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== 'text/csv') {
+      toast({
+        variant: 'destructive',
+        title: 'Invalid File Type',
+        description: 'Please upload a valid CSV file.',
+      });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result;
+      if (typeof text === 'string') {
+        // In a real app, you would parse the CSV and enroll entities.
+        // For this demo, we'll just show a success toast.
+        const lineCount = text.split('\n').filter(line => line.trim() !== '').length - 1; // -1 for header
+        toast({
+          title: 'Import Successful',
+          description: `Successfully processed ${lineCount > 0 ? lineCount : 0} records from ${file.name}.`,
+        });
+      }
+    };
+    reader.readAsText(file);
+    // Reset file input
+    if(event.target) event.target.value = '';
+  };
+
   return (
       <Card>
         <CardHeader>
-          <CardTitle>Enroll New Entity</CardTitle>
-          <CardDescription>
-            Add a new resident, contractor, security staff, or admin to the system.
-          </CardDescription>
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+            <div>
+              <CardTitle>Enroll New Entity</CardTitle>
+              <CardDescription>
+                Add a new resident, contractor, security staff, or admin to the system.
+              </CardDescription>
+            </div>
+             <div>
+                <Button variant="outline" onClick={handleImportClick}>
+                    <Upload className="mr-2 h-4 w-4" />
+                    Import CSV
+                </Button>
+                <Input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    className="hidden"
+                    accept=".csv"
+                />
+              </div>
+          </div>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -110,9 +165,9 @@ export function EnrollCard() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {(['Admin', 'Apartment', 'Contractor', 'Security'] as UserRole[]).map((role) => (
-                          <SelectItem key={role} value={role}>
-                            {roleLabels[role].displayName}
+                        {roles.map((role) => (
+                          <SelectItem key={role.role} value={role.role}>
+                            {role.displayName}
                           </SelectItem>
                         ))}
                       </SelectContent>
