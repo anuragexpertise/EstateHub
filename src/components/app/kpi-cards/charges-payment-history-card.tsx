@@ -132,7 +132,7 @@ export function ChargesAndPaymentHistoryCard() {
                                     {item.credit > 0 ? `₹${item.credit.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'}
                                 </TableCell>
                                 <TableCell className={cn("text-right font-semibold", item.balance > 0 ? "text-destructive" : "text-green-600")}>
-                                    ₹{item.balance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                     ₹{item.balance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </TableCell>
                             </TableRow>
                         ))}
