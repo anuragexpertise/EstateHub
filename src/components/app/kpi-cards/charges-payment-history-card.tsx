@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { users, payments, rates } from "@/lib/data";
 import { useGlobalStore } from "@/hooks/use-global-store";
-import { eachMonthOfInterval, startOfMonth, endOfMonth, format, isAfter, addDays } from 'date-fns';
+import { eachMonthOfInterval, startOfMonth, format, isAfter, differenceInDays } from 'date-fns';
 import { Receipt } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -47,8 +47,8 @@ export function ChargesAndPaymentHistoryCard() {
         );
     }
     
-    const ledger: LedgerItem[] = [];
     let runningBalance = 0;
+    const ledger: LedgerItem[] = [];
 
     const startDate = startOfMonth(new Date(calculationStartDate));
     const today = new Date();
@@ -56,42 +56,24 @@ export function ChargesAndPaymentHistoryCard() {
     
     const userPayments = payments
         .filter(p => p.userId === user.id && p.description.includes('Maintenance') && p.status === 'Paid')
-        .map(p => ({ ...p, type: 'payment' as const }));
+        .map(p => ({ date: p.date, amount: p.amount, type: 'payment' as const, description: 'Payment Received' }));
 
     const monthlyCharges = eachMonthOfInterval({ start: startDate, end: today }).map(month => ({
         date: startOfMonth(month),
-        dueDate: endOfMonth(month),
         amount: monthlyCharge,
         type: 'charge' as const,
         description: `${format(month, 'MMMM yyyy')} Maintenance`,
-        month: month
     }));
 
     const combined = [...userPayments, ...monthlyCharges].sort((a, b) => a.date.getTime() - b.date.getTime());
-    const processedFines = new Set<string>(); // To track which months have had a fine applied
+
+    let balanceBeforePayment = 0;
 
     for (const item of combined) {
-        // Before processing the current item, check if any previous months are overdue
-        for (const charge of monthlyCharges) {
-            const fineKey = format(charge.month, 'yyyy-MM');
-            if (!processedFines.has(fineKey) && runningBalance < 0 && isAfter(item.date, charge.dueDate)) {
-                // Apply one-time late fee
-                runningBalance -= rates.fines.latePaymentFee;
-                ledger.push({
-                    date: addDays(charge.dueDate, 1),
-                    description: `Late Fee for ${format(charge.month, 'MMMM yyyy')}`,
-                    debit: rates.fines.latePaymentFee,
-                    credit: 0,
-                    balance: runningBalance,
-                    type: 'fine'
-                });
-
-                processedFines.add(fineKey); 
-            }
-        }
-        
         if (item.type === 'charge') {
             runningBalance -= item.amount;
+            balanceBeforePayment = runningBalance + item.amount; // Balance right before this charge
+            
             ledger.push({
                 date: item.date,
                 description: item.description,
@@ -101,34 +83,58 @@ export function ChargesAndPaymentHistoryCard() {
                 type: 'charge'
             });
         } else if (item.type === 'payment') {
+            const chargeMonthStart = startOfMonth(item.date);
+            const correspondingCharge = monthlyCharges.find(c => c.date.getTime() === chargeMonthStart.getTime());
+            
+            // Check if this payment is late
+            if (correspondingCharge && isAfter(item.date, correspondingCharge.date)) {
+                
+                // 1. Add Fixed Late Fee if not already added for this month and balance was negative
+                const lateFeeDescription = `Late Fee for ${format(chargeMonthStart, 'MMMM yyyy')}`;
+                if (!ledger.some(l => l.description === lateFeeDescription) && balanceBeforePayment < 0) {
+                    runningBalance -= rates.fines.latePaymentFee;
+                    ledger.push({
+                        date: item.date, // Fine applied on payment date
+                        description: lateFeeDescription,
+                        debit: rates.fines.latePaymentFee,
+                        credit: 0,
+                        balance: runningBalance,
+                        type: 'fine'
+                    });
+                }
+                
+                // 2. Add Daily Fine
+                const lateDays = differenceInDays(item.date, correspondingCharge.date);
+                if (lateDays > 0) {
+                    const dailyFineRate = (correspondingCharge.amount * rates.fines.finePercentPerDay) / 100;
+                    const totalDailyFine = lateDays * dailyFineRate;
+                    runningBalance -= totalDailyFine;
+                     ledger.push({
+                        date: item.date, // Fine applied on payment date
+                        description: `Daily Fine for ${format(chargeMonthStart, 'MMMM yyyy')} (${lateDays} days)`,
+                        debit: totalDailyFine,
+                        credit: 0,
+                        balance: runningBalance,
+                        type: 'fine'
+                    });
+                }
+            }
+
+            // Finally, process the payment
             runningBalance += item.amount;
             ledger.push({
                 date: item.date,
-                description: 'Payment Received',
+                description: item.description,
                 debit: 0,
                 credit: item.amount,
                 balance: runningBalance,
                 type: 'payment'
             });
+             balanceBeforePayment = runningBalance;
         }
     }
     
-     // Final check for any overdue months up to today
-    for (const charge of monthlyCharges) {
-        const fineKey = format(charge.month, 'yyyy-MM');
-        if (!processedFines.has(fineKey) && runningBalance < 0 && isAfter(today, charge.dueDate)) {
-            runningBalance -= rates.fines.latePaymentFee;
-            ledger.push({
-                date: addDays(charge.dueDate, 1),
-                description: `Late Fee for ${format(charge.month, 'MMMM yyyy')}`,
-                debit: rates.fines.latePaymentFee,
-                credit: 0,
-                balance: runningBalance,
-                type: 'fine'
-            });
-            processedFines.add(fineKey);
-        }
-    }
+    const sortedLedger = ledger.sort((a,b) => a.date.getTime() - b.date.getTime());
 
 
     return (
@@ -154,17 +160,20 @@ export function ChargesAndPaymentHistoryCard() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {ledger.sort((a,b) => a.date.getTime() - b.date.getTime()).map((item, index) => (
+                        {sortedLedger.map((item, index) => (
                             <TableRow key={index}>
                                 <TableCell>{format(item.date, 'dd-MMM-yyyy')}</TableCell>
                                 <TableCell>{item.description}</TableCell>
-                                <TableCell className="text-right">
+                                <TableCell className="text-right text-red-600">
                                     {item.debit > 0 ? `₹${item.debit.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'}
                                 </TableCell>
-                                <TableCell className="text-right">
+                                <TableCell className="text-right text-green-600">
                                     {item.credit > 0 ? `₹${item.credit.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'}
                                 </TableCell>
-                                <TableCell className={cn("text-right font-semibold", item.balance < 0 ? "text-destructive" : "text-green-600")}>
+                                <TableCell className={cn(
+                                    "text-right font-semibold",
+                                    item.balance < 0 ? "text-destructive" : "text-green-600"
+                                )}>
                                      ₹{item.balance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </TableCell>
                             </TableRow>

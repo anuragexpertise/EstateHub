@@ -5,14 +5,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User, UserRole } from "@/types";
 import { roleDisplayNames, payments, shifts, rates } from "@/lib/data";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
-import { Building2, Wrench, Shield, Mail, Phone, Hash, Copy, AlertCircle, CheckCircle2, CalendarClock } from 'lucide-react';
+import { Building2, Wrench, Shield, Mail, Phone, Hash, Copy, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useAvatarStore } from "@/hooks/use-avatar-store";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useGlobalStore } from "@/hooks/use-global-store";
-import { differenceInMonths, endOfMonth, format, isAfter, startOfMonth, eachMonthOfInterval, differenceInDays, addDays } from 'date-fns';
+import { differenceInDays, endOfMonth, format, isAfter, startOfMonth, eachMonthOfInterval } from 'date-fns';
 
 interface UserProfileCardProps {
     user: User;
@@ -33,7 +33,6 @@ const NoticeCard = ({ user }: { user: User }) => {
     let validUpto: string | null = null;
     let noticeType: 'due' | 'paid' | 'info' = 'info';
 
-    const dateFormatter = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
     const dateTimeFormatter = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
 
     if (user.role === 'Apartment') {
@@ -46,70 +45,68 @@ const NoticeCard = ({ user }: { user: User }) => {
             const startDate = startOfMonth(new Date(calculationStartDate));
             const today = new Date();
             const monthlyCharge = user.details.sqft * rates.apartment['1month'];
+
             const userPayments = payments
                 .filter(p => p.userId === user.id && p.description.includes('Maintenance') && p.status === 'Paid')
                 .map(p => ({ ...p, type: 'payment' as const }));
 
             const monthlyCharges = eachMonthOfInterval({ start: startDate, end: today }).map(month => ({
                 date: startOfMonth(month),
-                dueDate: endOfMonth(month),
+                dueDate: startOfMonth(month),
                 amount: monthlyCharge,
                 type: 'charge' as const,
                 description: `${format(month, 'MMMM yyyy')} Maintenance`,
-                month: month,
+                month: month
             }));
 
             const combined = [...userPayments, ...monthlyCharges].sort((a, b) => a.date.getTime() - b.date.getTime());
-            const processedFines = new Set<string>();
-
-            let currentBalanceForMonthCheck = 0;
-
-            monthlyCharges.forEach(charge => {
-                currentBalanceForMonthCheck -= charge.amount;
-
-                const paymentsForMonth = userPayments.filter(p => isAfter(p.date, charge.date) && (!lastPaidMonth || isAfter(p.date, lastPaidMonth)));
-                
-                let paymentApplied = false;
-                paymentsForMonth.forEach(payment => {
-                    currentBalanceForMonthCheck += payment.amount;
-                    if(isAfter(payment.date, charge.dueDate)) {
-                         currentBalanceForMonthCheck -= rates.fines.latePaymentFee;
+            
+            for (const item of combined) {
+                if (item.type === 'charge') {
+                    runningBalance -= item.amount;
+                } else if (item.type === 'payment') {
+                    // Find the charge this payment is for
+                    const chargeMonth = startOfMonth(item.date);
+                    const correspondingCharge = monthlyCharges.find(c => c.month.getTime() === chargeMonth.getTime());
+                    
+                    if (correspondingCharge && isAfter(item.date, correspondingCharge.dueDate)) {
+                        // Apply one-time late fee
+                        runningBalance -= rates.fines.latePaymentFee;
+                        
+                        // Apply daily fine
+                        const lateDays = differenceInDays(item.date, correspondingCharge.dueDate);
+                        const dailyFine = (correspondingCharge.amount * rates.fines.finePercentPerDay) / 100;
+                        runningBalance -= (lateDays * dailyFine);
                     }
-                    paymentApplied = true;
-                });
-                
-                if(currentBalanceForMonthCheck >= 0){
-                    lastPaidMonth = charge.month;
+                    runningBalance += item.amount;
+                }
+            }
+             // Post-loop check for current month's dues if not paid yet
+            const currentMonthCharge = monthlyCharges.find(c => c.month.getTime() === startOfMonth(today).getTime());
+            if (currentMonthCharge && !userPayments.some(p => startOfMonth(p.date).getTime() === currentMonthCharge.month.getTime())) {
+                if (runningBalance < 0 && isAfter(today, currentMonthCharge.dueDate)) {
+                     const fineKey = format(currentMonthCharge.month, 'yyyy-MM');
+                     // This is a simplified check, the full ledger has the accurate fine application
+                }
+            }
+
+
+            let tempBalance = 0;
+            eachMonthOfInterval({ start: startDate, end: today }).forEach(month => {
+                tempBalance -= monthlyCharge;
+                const paymentForMonth = userPayments.find(p => startOfMonth(p.date).getTime() === month.getTime());
+                if (paymentForMonth) {
+                    tempBalance += paymentForMonth.amount;
+                }
+                if (tempBalance >= 0) {
+                    lastPaidMonth = month;
                 }
             });
 
-            // Recalculate final balance for display
-            let finalBalance = 0;
-            const allCharges = monthlyCharges.reduce((acc, charge) => acc + charge.amount, 0);
-            const allPayments = userPayments.reduce((acc, payment) => acc + payment.amount, 0);
-            let totalFines = 0;
 
-            monthlyCharges.forEach(charge => {
-                const paymentForThisCycle = userPayments.find(p => p.date >= charge.date && p.date <= endOfMonth(charge.month));
-                if (!paymentForThisCycle) {
-                     const anyPaymentAfterDueDate = userPayments.some(p => p.date > charge.dueDate);
-                     if(anyPaymentAfterDueDate) {
-                         const fineKey = format(charge.month, 'yyyy-MM');
-                         if(!processedFines.has(fineKey)){
-                            totalFines += rates.fines.latePaymentFee;
-                            processedFines.add(fineKey);
-                         }
-                     }
-                }
-            });
-
-
-            finalBalance = allPayments - allCharges - totalFines;
-
-
-            if (finalBalance < 0) {
+            if (runningBalance < 0) {
                 noticeType = 'due';
-                amountDue = -finalBalance;
+                amountDue = -runningBalance;
                 validUpto = `Payments overdue`;
             } else {
                 noticeType = 'paid';
@@ -137,8 +134,8 @@ const NoticeCard = ({ user }: { user: User }) => {
                 validUpto = dateTimeFormatter.format(expiryDate).replace(',', ' ');
             } else {
                 noticeType = 'due';
-                amountDue = rates.contractor['1day']; // Default to 1-day pass
-                validUpto = `Expired on ${dateFormatter.format(expiryDate).replace(/ /g, '-')}`;
+                amountDue = rates.contractor['1day'];
+                validUpto = `Expired on ${dateTimeFormatter.format(expiryDate).replace(',', ' ')}`;
             }
         } else {
              noticeType = 'due';
