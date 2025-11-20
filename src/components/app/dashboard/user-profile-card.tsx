@@ -3,7 +3,7 @@
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User, UserRole } from "@/types";
-import { roleDisplayNames, payments, shifts } from "@/lib/data";
+import { roleDisplayNames, payments, shifts, rates } from "@/lib/data";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { Building2, Wrench, Shield, Mail, Phone, Hash, Copy, AlertCircle, CheckCircle2, CalendarClock } from 'lucide-react';
 import { useAvatarStore } from "@/hooks/use-avatar-store";
@@ -11,6 +11,8 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { useGlobalStore } from "@/hooks/use-global-store";
+import { differenceInMonths, endOfMonth, format, isAfter } from 'date-fns';
 
 interface UserProfileCardProps {
     user: User;
@@ -24,6 +26,8 @@ const roleIcons: Record<UserRole, React.ElementType> = {
 };
 
 const NoticeCard = ({ user }: { user: User }) => {
+    const { calculationStartDate } = useGlobalStore();
+
     let title = 'Status';
     let amountDue: number | null = null;
     let validUpto: string | null = null;
@@ -34,32 +38,54 @@ const NoticeCard = ({ user }: { user: User }) => {
 
     if (user.role === 'Apartment') {
         title = 'Maintenance Status';
-        const userPayments = payments
-            .filter(p => p.userId === user.id && p.description.includes('Maintenance'))
-            .sort((a,b) => b.date.getTime() - a.date.getTime());
-        
-        const lastPaid = userPayments.find(p => p.status === 'Paid');
-        const duePayment = userPayments.find(p => p.status === 'Due' || p.status === 'Overdue');
 
-        if (duePayment) {
-            amountDue = duePayment.amount;
-            noticeType = 'due';
+        if (calculationStartDate && user.details?.sqft) {
+            const startDate = new Date(calculationStartDate);
+            const today = new Date();
+            const monthsToCharge = differenceInMonths(today, startDate) + 1;
+
+            const monthlyCharge = user.details.sqft * rates.apartment['1month'];
+            const totalCharged = monthsToCharge * monthlyCharge;
+
+            const totalPaid = payments
+                .filter(p => p.userId === user.id && p.status === 'Paid' && p.description.includes('Maintenance'))
+                .reduce((sum, p) => sum + p.amount, 0);
+            
+            const balance = totalCharged - totalPaid;
+            
+            if (balance > 0) {
+                noticeType = 'due';
+                let totalFine = 0;
+                // Check if any payment is overdue to apply fixed late fee
+                const hasOverdue = payments.some(p => p.userId === user.id && p.status === 'Overdue');
+                if(hasOverdue) {
+                    totalFine += rates.fines.latePaymentFee;
+                }
+                
+                // Note: a more complex daily fine calculation would be needed for a real app
+                // For this demo, we'll just add the fixed fee if any payment is marked 'Overdue'
+                amountDue = balance + totalFine;
+                validUpto = `Payments overdue`;
+            } else {
+                noticeType = 'paid';
+                validUpto = format(endOfMonth(today), 'dd-MMM-yyyy');
+            }
         } else {
-            noticeType = 'paid';
+            // Fallback for when calculation start date isn't set
+            const duePayment = payments.find(p => p.userId === user.id && (p.status === 'Due' || p.status === 'Overdue'));
+             if (duePayment) {
+                amountDue = duePayment.amount;
+                noticeType = 'due';
+            } else {
+                noticeType = 'paid';
+            }
+            validUpto = 'Calculation date not set';
         }
 
-        if(lastPaid) {
-            const expiryDate = new Date(lastPaid.date);
-            if(lastPaid.description.includes('1-Month')) expiryDate.setMonth(expiryDate.getMonth() + 1);
-            if(lastPaid.description.includes('3-Month')) expiryDate.setMonth(expiryDate.getMonth() + 3);
-            if(lastPaid.description.includes('6-Month')) expiryDate.setMonth(expiryDate.getMonth() + 6);
-            if(lastPaid.description.includes('1-Year')) expiryDate.setFullYear(expiryDate.getFullYear() + 1);
-            validUpto = dateFormatter.format(expiryDate).replace(/ /g, '-');
-        }
 
     } else if (user.role === 'Contractor') {
         title = 'Pass Status';
-        const passPayments = payments.filter(p => p.userId === user.id && p.description.includes('Pass'));
+        const passPayments = payments.filter(p => p.userId === user.id && p.description.includes('Pass') && p.status === 'Paid');
         const lastPass = passPayments.sort((a, b) => b.date.getTime() - a.date.getTime())[0];
         
         if (lastPass) {
@@ -78,7 +104,7 @@ const NoticeCard = ({ user }: { user: User }) => {
             }
         } else {
              noticeType = 'due';
-             amountDue = 50; // Default to 1-day pass
+             amountDue = rates.contractor['1day'];
         }
 
     } else if (user.role === 'Security') {
@@ -104,12 +130,12 @@ const NoticeCard = ({ user }: { user: User }) => {
     return (
          <Card className={cn(
              "mt-4",
-             isDue ? "bg-destructive/10 border-destructive/50" : "bg-green-600/10 border-green-600/50"
+             isDue ? "bg-destructive/10 border-destructive/50" : noticeType === 'paid' ? "bg-green-600/10 border-green-600/50" : "bg-muted/50"
          )}>
              <CardHeader>
                  <CardTitle className={cn(
                      "flex items-center gap-2 text-base",
-                     isDue ? "text-destructive" : "text-green-700 dark:text-green-500"
+                     isDue ? "text-destructive" : noticeType === 'paid' ? "text-green-700 dark:text-green-500" : "text-foreground"
                  )}>
                      <Icon className="h-5 w-5" />
                      {title}
@@ -118,7 +144,7 @@ const NoticeCard = ({ user }: { user: User }) => {
              <CardContent className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                      <p className="font-medium">Status</p>
-                     <p className={cn("font-semibold", isDue ? "text-destructive" : "text-green-700 dark:text-green-500")}>
+                     <p className={cn("font-semibold", isDue ? "text-destructive" : noticeType === 'paid' ? "text-green-700 dark:text-green-500" : "text-muted-foreground")}>
                          {amountDue ? `₹${amountDue.toLocaleString()} Due` : noticeType === 'info' ? 'Not Applicable' : 'No Dues'}
                      </p>
                 </div>
@@ -233,5 +259,3 @@ export function UserProfileCard({ user }: UserProfileCardProps) {
         </Card>
     );
 }
-
-    
