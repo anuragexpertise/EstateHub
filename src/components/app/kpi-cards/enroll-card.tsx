@@ -134,18 +134,21 @@ export function EnrollCard() {
                 Add a new resident, contractor, security staff, or admin to the system.
               </CardDescription>
             </div>
-             <div>
+             <div className="text-right">
                 <Button variant="outline" onClick={handleImportClick}>
                     <Upload className="mr-2 h-4 w-4" />
                     Import CSV
                 </Button>
-                <Input
+                 <Input
                     type="file"
                     ref={fileInputRef}
                     onChange={handleFileChange}
                     className="hidden"
                     accept=".csv"
                 />
+                 <p className="text-xs text-muted-foreground mt-2">
+                  Required fields: role, id, name, email, phone, password, size (for Apartment).
+                </p>
               </div>
           </div>
         </CardHeader>
