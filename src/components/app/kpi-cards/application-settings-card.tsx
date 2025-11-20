@@ -80,25 +80,31 @@ export function ApplicationSettingsCard() {
     const handleFileChange = (
         event: React.ChangeEvent<HTMLInputElement>, 
         setFile: React.Dispatch<React.SetStateAction<File | null>>, 
-        setPreview: React.Dispatch<React.SetStateAction<string | null>>
+        setPreview: React.Dispatch<React.SetStateAction<string | null>>,
+        isHeroImage: boolean = false
     ) => {
         const file = event.target.files?.[0];
         if (file) {
-            const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'];
+            const allowedTypes = isHeroImage 
+                ? ['image/jpeg', 'image/png', 'image/webp']
+                : ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'];
             if (!allowedTypes.includes(file.type)) {
                 toast({
                     variant: 'destructive',
                     title: 'Invalid File Type',
-                    description: 'Please upload a JPG, PNG, WEBP or SVG image.',
+                    description: `Please upload a ${isHeroImage ? 'JPG, PNG, or WEBP' : 'JPG, PNG, WEBP or SVG'} image.`,
                 });
                 return;
             }
 
-            if (file.size > 200 * 1024) { // 200 KB
+            const sizeLimit = isHeroImage ? 800 * 1024 : 200 * 1024; // 800KB for hero, 200KB for logo
+            const sizeLimitText = isHeroImage ? '800KB' : '200KB';
+
+            if (file.size > sizeLimit) {
                 toast({
                     variant: 'destructive',
                     title: 'File Too Large',
-                    description: 'Please upload an image smaller than 200KB.',
+                    description: `Please upload an image smaller than ${sizeLimitText}.`,
                 });
                 return;
             }
@@ -205,10 +211,10 @@ export function ApplicationSettingsCard() {
                                         type="file" 
                                         className='hidden' 
                                         ref={heroInputRef} 
-                                        onChange={(e) => handleFileChange(e, setHeroFile, setHeroPreview)}
+                                        onChange={(e) => handleFileChange(e, setHeroFile, setHeroPreview, true)}
                                         accept="image/png, image/jpeg, image/webp" 
                                     />
-                                     <p className='text-xs text-muted-foreground'>Recommended: 16:9 ratio, &lt;200KB</p>
+                                     <p className='text-xs text-muted-foreground'>Recommended: 16:9 ratio, &lt;800KB</p>
                                 </div>
                             </div>
                         </div>
