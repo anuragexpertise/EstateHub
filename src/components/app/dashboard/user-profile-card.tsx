@@ -33,7 +33,7 @@ const NoticeCard = ({ user }: { user: User }) => {
     let validUpto: string | null = null;
     let noticeType: 'due' | 'paid' | 'info' = 'info';
 
-    const dateTimeFormatter = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
+    const dateTimeFormatter = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
 
     if (user.role === 'Apartment') {
         title = 'Maintenance Status';
@@ -44,19 +44,17 @@ const NoticeCard = ({ user }: { user: User }) => {
 
             const startDate = startOfMonth(new Date(calculationStartDate));
             const today = new Date();
-            const monthlyCharge = user.details.sqft * rates.apartment['1month'];
+            const monthlyChargeAmount = user.details.sqft * rates.apartment['1month'];
 
             const userPayments = payments
                 .filter(p => p.userId === user.id && p.description.includes('Maintenance') && p.status === 'Paid')
-                .map(p => ({ ...p, type: 'payment' as const }));
+                .map(p => ({ date: p.date, amount: p.amount, type: 'payment' as const }));
 
             const monthlyCharges = eachMonthOfInterval({ start: startDate, end: today }).map(month => ({
                 date: startOfMonth(month),
-                dueDate: startOfMonth(month),
-                amount: monthlyCharge,
+                amount: monthlyChargeAmount,
                 type: 'charge' as const,
-                description: `${format(month, 'MMMM yyyy')} Maintenance`,
-                month: month
+                month: month,
             }));
 
             const combined = [...userPayments, ...monthlyCharges].sort((a, b) => a.date.getTime() - b.date.getTime());
@@ -65,39 +63,41 @@ const NoticeCard = ({ user }: { user: User }) => {
                 if (item.type === 'charge') {
                     runningBalance -= item.amount;
                 } else if (item.type === 'payment') {
-                    // Find the charge this payment is for
-                    const chargeMonth = startOfMonth(item.date);
-                    const correspondingCharge = monthlyCharges.find(c => c.month.getTime() === chargeMonth.getTime());
+                    const chargeMonthStart = startOfMonth(item.date);
+                    const correspondingCharge = monthlyCharges.find(c => c.month.getTime() === chargeMonthStart.getTime());
                     
-                    if (correspondingCharge && isAfter(item.date, correspondingCharge.dueDate)) {
+                    if (correspondingCharge && isAfter(item.date, correspondingCharge.date)) {
                         // Apply one-time late fee
                         runningBalance -= rates.fines.latePaymentFee;
                         
                         // Apply daily fine
-                        const lateDays = differenceInDays(item.date, correspondingCharge.dueDate);
-                        const dailyFine = (correspondingCharge.amount * rates.fines.finePercentPerDay) / 100;
-                        runningBalance -= (lateDays * dailyFine);
+                        const lateDays = differenceInDays(item.date, correspondingCharge.date);
+                        if (lateDays > 0) {
+                            const dailyFineRate = (correspondingCharge.amount * rates.fines.finePercentPerDay) / 100;
+                            const totalDailyFine = lateDays * dailyFineRate;
+                            runningBalance -= totalDailyFine;
+                        }
                     }
                     runningBalance += item.amount;
                 }
             }
-             // Post-loop check for current month's dues if not paid yet
-            const currentMonthCharge = monthlyCharges.find(c => c.month.getTime() === startOfMonth(today).getTime());
-            if (currentMonthCharge && !userPayments.some(p => startOfMonth(p.date).getTime() === currentMonthCharge.month.getTime())) {
-                if (runningBalance < 0 && isAfter(today, currentMonthCharge.dueDate)) {
-                     const fineKey = format(currentMonthCharge.month, 'yyyy-MM');
-                     // This is a simplified check, the full ledger has the accurate fine application
-                }
-            }
 
-
+            // Determine last paid month after all calculations
             let tempBalance = 0;
             eachMonthOfInterval({ start: startDate, end: today }).forEach(month => {
-                tempBalance -= monthlyCharge;
+                // Recalculate balance month by month just for validity check
+                tempBalance -= monthlyChargeAmount;
+
                 const paymentForMonth = userPayments.find(p => startOfMonth(p.date).getTime() === month.getTime());
                 if (paymentForMonth) {
+                    if (isAfter(paymentForMonth.date, month)) {
+                        tempBalance -= rates.fines.latePaymentFee;
+                        const lateDays = differenceInDays(paymentForMonth.date, month);
+                        tempBalance -= lateDays * (monthlyChargeAmount * rates.fines.finePercentPerDay / 100);
+                    }
                     tempBalance += paymentForMonth.amount;
                 }
+                
                 if (tempBalance >= 0) {
                     lastPaidMonth = month;
                 }
@@ -146,9 +146,14 @@ const NoticeCard = ({ user }: { user: User }) => {
         title = 'Shift Status';
         const userShift = shifts.find(s => s.personnel === user.name);
         if (userShift?.shift.includes('6am - 6pm')) {
-            validUpto = `Today, 6:00 PM`;
+            const shiftEnd = new Date();
+            shiftEnd.setHours(18, 0, 0, 0); // 6 PM today
+            validUpto = dateTimeFormatter.format(shiftEnd).replace(',', ' ');
         } else if (userShift?.shift.includes('6pm - 6am')) {
-             validUpto = `Tomorrow, 6:00 AM`;
+             const shiftEnd = new Date();
+             shiftEnd.setDate(shiftEnd.getDate() + 1);
+             shiftEnd.setHours(6, 0, 0, 0); // 6 AM tomorrow
+             validUpto = dateTimeFormatter.format(shiftEnd).replace(',', ' ');
         }
         noticeType = 'info';
 
@@ -294,3 +299,4 @@ export function UserProfileCard({ user }: UserProfileCardProps) {
         </Card>
     );
 }
+
