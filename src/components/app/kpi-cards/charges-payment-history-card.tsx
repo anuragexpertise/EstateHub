@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { users, payments, rates } from "@/lib/data";
 import { useGlobalStore } from "@/hooks/use-global-store";
-import { eachMonthOfInterval, startOfMonth, endOfMonth, format } from 'date-fns';
+import { eachMonthOfInterval, startOfMonth, endOfMonth, format, isAfter } from 'date-fns';
 import { Receipt } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -53,8 +53,8 @@ export function ChargesAndPaymentHistoryCard() {
     const monthsToProcess = eachMonthOfInterval({ start: startDate, end: today });
 
     for (const month of monthsToProcess) {
-        // Add monthly charge
-        runningBalance += monthlyCharge;
+        // Add monthly charge (debit for the user, so we subtract from balance)
+        runningBalance -= monthlyCharge;
         ledger.push({
             date: startOfMonth(month),
             description: `${format(month, 'MMMM yyyy')} Maintenance`,
@@ -72,8 +72,8 @@ export function ChargesAndPaymentHistoryCard() {
             // Assuming payments are for the oldest outstanding debt
             const isLate = payment.date > endOfMonthForDues;
 
-            // Apply payment
-            runningBalance -= payment.amount;
+            // Apply payment (credit for the user, so we add to balance)
+            runningBalance += payment.amount;
              ledger.push({
                 date: payment.date,
                 description: 'Payment Received',
@@ -82,8 +82,9 @@ export function ChargesAndPaymentHistoryCard() {
                 balance: runningBalance
             });
 
-            if(isLate && runningBalance + payment.amount > 0) { // Payment was late for a due amount
-                runningBalance += rates.fines.latePaymentFee;
+            // If a payment was made late while there was a due amount, apply a fine
+            if(isLate && runningBalance - payment.amount < 0) { 
+                runningBalance -= rates.fines.latePaymentFee;
                  ledger.push({
                     date: payment.date,
                     description: 'Late Payment Fine',
@@ -131,7 +132,7 @@ export function ChargesAndPaymentHistoryCard() {
                                 <TableCell className="text-right">
                                     {item.credit > 0 ? `₹${item.credit.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'}
                                 </TableCell>
-                                <TableCell className={cn("text-right font-semibold", item.balance > 0 ? "text-destructive" : "text-green-600")}>
+                                <TableCell className={cn("text-right font-semibold", item.balance < 0 ? "text-destructive" : "text-green-600")}>
                                      ₹{item.balance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </TableCell>
                             </TableRow>

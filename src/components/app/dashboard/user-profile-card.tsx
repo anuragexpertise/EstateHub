@@ -53,38 +53,37 @@ const NoticeCard = ({ user }: { user: User }) => {
             let lastPaidMonth: Date | null = null;
 
             for (const month of monthsToProcess) {
-                balance += monthlyCharge;
+                balance -= monthlyCharge; // Charge is a negative on the balance
                 const endOfMonthForDues = endOfMonth(month);
 
                 // Apply payments to balance
-                while (paymentsIndex < userPayments.length && balance > 0) {
+                while (paymentsIndex < userPayments.length && balance < 0) {
                     const payment = userPayments[paymentsIndex];
-                    balance -= payment.amount;
+                    balance += payment.amount; // Payment is a positive
                     
-                    // Check if payment was late
                     if (isAfter(payment.date, endOfMonthForDues)) {
-                        balance += rates.fines.latePaymentFee; // One-time late fine
+                        balance -= rates.fines.latePaymentFee; // Fine is a negative
                         const lateDays = differenceInDays(payment.date, endOfMonthForDues);
                         const dailyFine = monthlyCharge * (rates.fines.finePercentPerDay / 100);
-                        balance += lateDays * dailyFine; // Daily fine
+                        balance -= lateDays * dailyFine; // Daily fine is a negative
                     }
                     paymentsIndex++;
                 }
 
-                if (balance <= 0) {
+                if (balance >= 0) {
                    lastPaidMonth = month;
                 }
             }
              // Apply remaining payments if any
             while(paymentsIndex < userPayments.length) {
-                balance -= userPayments[paymentsIndex].amount;
+                balance += userPayments[paymentsIndex].amount;
                 paymentsIndex++;
             }
 
 
-            if (balance > 0) {
+            if (balance < 0) {
                 noticeType = 'due';
-                amountDue = balance;
+                amountDue = -balance;
                 validUpto = `Payments overdue`;
             } else {
                 noticeType = 'paid';
