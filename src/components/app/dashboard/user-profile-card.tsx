@@ -30,7 +30,7 @@ const NoticeCard = ({ user }: { user: User }) => {
     let noticeType: 'due' | 'paid' | 'info' = 'info';
 
     const dateFormatter = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-    const dateTimeFormatter = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    const dateTimeFormatter = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
 
     if (user.role === 'Apartment') {
         title = 'Maintenance Status';
@@ -70,7 +70,7 @@ const NoticeCard = ({ user }: { user: User }) => {
             
             if (expiryDate > new Date()) {
                 noticeType = 'paid';
-                validUpto = dateTimeFormatter.format(expiryDate).replace(/,/, ' at');
+                validUpto = dateTimeFormatter.format(expiryDate).replace(',', '');
             } else {
                 noticeType = 'due';
                 amountDue = 50; // Default to 1-day pass
@@ -123,7 +123,7 @@ const NoticeCard = ({ user }: { user: User }) => {
                      </p>
                 </div>
                 <div>
-                     <p className="font-medium">Validity</p>
+                     <p className="font-medium">Validity upto</p>
                      <p className="text-muted-foreground">{validUpto || 'Not Applicable'}</p>
                 </div>
              </CardContent>
