@@ -27,14 +27,24 @@ export const users: User[] = [
 
 const now = new Date();
 
+// Note: For deterministic calculations, especially with fines, we'll use specific dates.
+// Let's assume 'now' is sometime in July 2024 for calculation purposes in the UI.
+// And the calculation start date is Jan 2024.
+
 export const payments: Payment[] = [
-  { id: 'pay-001', userId: 'user-apt-101', amount: 1200, date: new Date(now.getFullYear(), now.getMonth() - 2, 10), status: 'Paid', description: '1-Month Maintenance' },
+  // John Doe's Payments (user-apt-101)
+  { id: 'pay-001', userId: 'user-apt-101', amount: 1200, date: new Date(2025, 9, 10), status: 'Paid', description: '1-Month Maintenance' },
+  
+  // Jane Smith's Payments (user-apt-204)
   { id: 'pay-003', userId: 'user-apt-204', amount: 950, date: new Date(now.getFullYear(), now.getMonth() - 1, 15), status: 'Paid', description: '1-Month Maintenance' },
   { id: 'pay-004', userId: 'user-apt-204', amount: 950, date: new Date(now.getFullYear(), now.getMonth(), 1), status: 'Paid', description: '1-Month Maintenance' },
+
+  // Other payments
   { id: 'pay-005', userId: 'user-con-elec', amount: 500, date: new Date(now.getFullYear(), now.getMonth() - 2, 20), status: 'Paid', description: 'Vendor Pass' },
   { id: 'pay-006', userId: 'user-sec-01', amount: 2500, date: new Date(now.getFullYear(), now.getMonth(), 5), status: 'Paid', description: 'Salary' },
   { id: 'pay-007', userId: 'user-sec-02', amount: 2500, date: new Date(now.getFullYear(), now.getMonth(), 5), status: 'Paid', description: 'Salary' },
 ];
+
 
 export const transactions: Transaction[] = [
   { id: 'txn-001', amount: 1200, date: new Date(now.getFullYear(), now.getMonth() - 1, 15, 9, 5), method: 'Card', user: 'John Doe (user-apt-101)' },
