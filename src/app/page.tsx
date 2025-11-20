@@ -8,7 +8,7 @@ import { useGlobalStore } from '@/hooks/use-global-store';
 import { useEffect, useState } from 'react';
 
 export default function LoginPage() {
-  const { societyName } = useGlobalStore();
+  const { societyName, logoUrl } = useGlobalStore();
   const loginHeroPlaceholder = PlaceHolderImages.find((img) => img.id === 'login-hero');
   const [heroImage, setHeroImage] = useState(loginHeroPlaceholder?.imageUrl);
 
@@ -37,7 +37,7 @@ export default function LoginPage() {
         <div className="mx-auto grid w-[380px] gap-6 bg-card/80 dark:bg-card/70 backdrop-blur-sm p-8 rounded-xl shadow-2xl border border-white/20">
           <div className="grid gap-2 text-center">
             <div className="flex justify-center items-center gap-2 mb-4">
-              <Logo className="h-8 w-8 text-primary" />
+              {logoUrl ? <Image src={logoUrl} alt={societyName} width={32} height={32} className="object-contain" /> : <Logo className="h-8 w-8 text-primary" />}
               <h1 className="text-3xl font-bold font-headline">{societyName}</h1>
             </div>
             <p className="text-balance text-muted-foreground">
