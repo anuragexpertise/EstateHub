@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import Image from 'next/image';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +17,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { useGlobalStore } from '@/hooks/use-global-store';
 
 const paymentFormSchema = z.object({
   userId: z.string({ required_error: 'Please select a user.' }),
@@ -120,6 +122,7 @@ export function PaymentsCard() {
     const role = searchParams.get('role') as UserRole | null;
     const [payments, setPayments] = useState<Payment[]>(initialPayments);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const { receiptQrUrl } = useGlobalStore();
   
     const form = useForm<z.infer<typeof paymentFormSchema>>({
       resolver: zodResolver(paymentFormSchema),
@@ -163,67 +166,82 @@ export function PaymentsCard() {
                     <PlusCircle className="h-5 w-5" />
                     Enter New Receipt
                 </CardTitle>
-                <CardDescription>Record a new payment received.</CardDescription>
+                <CardDescription>Record a new payment received. Users can scan the QR code to pay.</CardDescription>
             </CardHeader>
             <CardContent>
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(handleAddPayment)} className="space-y-6">
-                        <FormField
-                            control={form.control}
-                            name="userId"
-                            render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>User</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                    <SelectTrigger>
-                                    <SelectValue placeholder="Select a user to bill" />
-                                    </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    {users.map((u) => (
-                                        <SelectItem key={u.id} value={u.id}>
-                                            {getUserDisplay(u)}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                                </Select>
-                                <FormMessage />
-                            </FormItem>
-                            )}
-                        />
+                <div className="grid md:grid-cols-2 gap-8">
+                    <Form {...form}>
+                        <form onSubmit={form.handleSubmit(handleAddPayment)} className="space-y-6">
                             <FormField
-                            control={form.control}
-                            name="description"
-                            render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Description</FormLabel>
-                                <FormControl>
-                                <Input placeholder="e.g., Monthly Maintenance" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="amount"
-                            render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Amount (₹)</FormLabel>
-                                <FormControl>
-                                <Input type="number" placeholder="0.00" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                            )}
-                        />
-                            <Button type="submit" disabled={isSubmitting}>
-                            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Add Receipt
-                        </Button>
-                    </form>
-                </Form>
+                                control={form.control}
+                                name="userId"
+                                render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>User</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                        <SelectValue placeholder="Select a user to bill" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        {users.map((u) => (
+                                            <SelectItem key={u.id} value={u.id}>
+                                                {getUserDisplay(u)}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                                <FormField
+                                control={form.control}
+                                name="description"
+                                render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Description</FormLabel>
+                                    <FormControl>
+                                    <Input placeholder="e.g., Monthly Maintenance" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="amount"
+                                render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Amount (₹)</FormLabel>
+                                    <FormControl>
+                                    <Input type="number" placeholder="0.00" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                                <Button type="submit" disabled={isSubmitting}>
+                                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Add Receipt
+                            </Button>
+                        </form>
+                    </Form>
+                    {receiptQrUrl && (
+                        <div className="flex flex-col items-center justify-center space-y-4">
+                            <Label className="text-center text-muted-foreground">Scan to Pay</Label>
+                            <div className="p-4 bg-white rounded-lg shadow-md border">
+                                <Image 
+                                    src={receiptQrUrl}
+                                    alt="Receipt QR Code"
+                                    width={200}
+                                    height={200}
+                                />
+                            </div>
+                        </div>
+                    )}
+                </div>
             </CardContent>
         </Card>
     );
