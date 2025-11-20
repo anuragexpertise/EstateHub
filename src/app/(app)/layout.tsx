@@ -9,6 +9,8 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { PanelLeft } from 'lucide-react';
 import { SidebarNavHeader } from '@/components/app/sidebar-nav-header';
 import { DateTimeDisplay } from '@/components/app/date-time-display';
+import { useGlobalStore } from '@/hooks/use-global-store';
+import Image from 'next/image';
 
 export default function AppLayout({
   children,
@@ -16,6 +18,7 @@ export default function AppLayout({
   children: React.ReactNode;
 }) {
   const [isSheetOpen, setIsSheetOpen] = React.useState(false);
+  const { societyName, logoUrl } = useGlobalStore();
 
   const handleLinkClick = () => {
     setIsSheetOpen(false);
@@ -28,8 +31,8 @@ export default function AppLayout({
             href="#"
             className="hidden items-center gap-2 font-bold font-headline sm:flex"
           >
-            <Logo className="h-6 w-6 text-primary" />
-            <span>EstateHub</span>
+            {logoUrl ? <Image src={logoUrl} alt={societyName} width={24} height={24} className='object-contain' /> : <Logo className="h-6 w-6 text-primary" />}
+            <span>{societyName}</span>
           </a>
           
           <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
@@ -45,8 +48,8 @@ export default function AppLayout({
                   href="#"
                   className="group flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:text-base"
                 >
-                  <Logo className="h-5 w-5 transition-all group-hover:scale-110" />
-                  <span className="sr-only">EstateHub</span>
+                  {logoUrl ? <Image src={logoUrl} alt={societyName} width={20} height={20} className='object-contain' /> : <Logo className="h-5 w-5 transition-all group-hover:scale-110" />}
+                  <span className="sr-only">{societyName}</span>
                 </a>
                 <SidebarNav isMobile={true} onLinkClick={handleLinkClick} />
               </nav>

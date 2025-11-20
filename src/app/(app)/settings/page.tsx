@@ -13,6 +13,7 @@ import {
   FineManagementCard,
   WorkShiftsCard
 } from '@/components/app/kpi-cards/settings-card';
+import { ApplicationSettingsCard } from '@/components/app/kpi-cards/application-settings-card';
 
 const AdminSettings = () => (
     <TabsContent value="admin" className="space-y-4">
@@ -31,6 +32,12 @@ const GeneralSettings = () => (
     </TabsContent>
 )
 
+const GlobalSettings = () => (
+    <TabsContent value="global" className="space-y-4">
+        <ApplicationSettingsCard />
+    </TabsContent>
+)
+
 export default function SettingsPage() {
   const searchParams = useSearchParams();
   const role = searchParams.get('role') as UserRole | null;
@@ -38,7 +45,7 @@ export default function SettingsPage() {
   if (!role) {
       return (
           <Card>
-              <CardHeader><CardTitle>Welcome to EstateHub</CardTitle></CardHeader>
+              <CardHeader><CardTitle>Welcome</CardTitle></CardHeader>
               <CardContent><p>Please select a role from the login page to continue.</p></CardContent>
           </Card>
       );
@@ -59,9 +66,11 @@ export default function SettingsPage() {
             <TabsList>
                 <TabsTrigger value="general">General</TabsTrigger>
                 {role === 'Admin' && <TabsTrigger value="admin">Admin</TabsTrigger>}
+                {role === 'Admin' && <TabsTrigger value="global">Global</TabsTrigger>}
             </TabsList>
             <GeneralSettings />
             {role === 'Admin' && <AdminSettings />}
+            {role === 'Admin' && <GlobalSettings />}
         </Tabs>
     </div>
   );

@@ -20,6 +20,7 @@ import { Label } from '@/components/ui/label';
 import { ProfileCard } from '@/components/app/kpi-cards/profile-card';
 import { allNavItems, roles } from '@/lib/data';
 import type { UserRole } from '@/types';
+import { ApplicationSettingsCard } from '@/components/app/kpi-cards/application-settings-card';
 
 const allCardComponents: { [key: string]: React.ReactNode } = {
     'Enrollment': <EnrollCard />,
@@ -35,6 +36,7 @@ const allCardComponents: { [key: string]: React.ReactNode } = {
     'Shift Management': <WorkShiftsCard />,
     'Info': <InfoCard />,
     'Profile': <ProfileCard />,
+    'Application Settings': <ApplicationSettingsCard />,
 };
 
 const allCardIds = Object.keys(allCardComponents);
