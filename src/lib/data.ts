@@ -13,6 +13,7 @@ import {
   Wrench,
   Shield,
   Receipt,
+  Book,
 } from 'lucide-react';
 
 export const users: User[] = [
@@ -27,13 +28,9 @@ export const users: User[] = [
 
 const now = new Date();
 
-// Note: For deterministic calculations, especially with fines, we'll use specific dates.
-// Let's assume 'now' is sometime in July 2024 for calculation purposes in the UI.
-// And the calculation start date is Jan 2024.
-
 export const payments: Payment[] = [
   // John Doe's Payments (user-apt-101)
-  { id: 'pay-001', userId: 'user-apt-101', amount: 1200, date: new Date(2025, 9, 10), status: 'Paid', description: '1-Month Maintenance' },
+  { id: 'pay-002', userId: 'user-apt-101', amount: 1200, date: new Date(2025, 9, 10), status: 'Paid', description: '1-Month Maintenance' },
   
   // Jane Smith's Payments (user-apt-204)
   { id: 'pay-003', userId: 'user-apt-204', amount: 950, date: new Date(now.getFullYear(), now.getMonth() - 1, 15), status: 'Paid', description: '1-Month Maintenance' },
@@ -81,6 +78,7 @@ export const rates = {
 
 export const allNavItems: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['Admin', 'Apartment', 'Contractor', 'Security'] },
+  { href: '/cashbook', label: 'Cashbook', icon: Book, roles: ['Admin'] },
   { href: '/payments', label: 'Receipts', icon: Receipt, roles: ['Admin', 'Security'] },
   { href: '/payments', label: 'Payments', icon: CreditCard, roles: ['Apartment', 'Contractor'] },
   { href: '/enroll', label: 'Enroll Entities', icon: UserPlus, roles: [] },

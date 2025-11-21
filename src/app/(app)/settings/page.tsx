@@ -14,6 +14,7 @@ import {
   WorkShiftsCard
 } from '@/components/app/kpi-cards/settings-card';
 import { ApplicationSettingsCard } from '@/components/app/kpi-cards/application-settings-card';
+import { AccountSettingsCard } from '@/components/app/kpi-cards/account-settings-card';
 
 const AdminSettings = () => (
     <TabsContent value="admin" className="space-y-4">
@@ -35,6 +36,12 @@ const GeneralSettings = () => (
 const GlobalSettings = () => (
     <TabsContent value="global" className="space-y-4">
         <ApplicationSettingsCard />
+    </TabsContent>
+)
+
+const AccountSettings = () => (
+     <TabsContent value="accounts" className="space-y-4">
+        <AccountSettingsCard />
     </TabsContent>
 )
 
@@ -66,10 +73,12 @@ export default function SettingsPage() {
             <TabsList>
                 <TabsTrigger value="general">General</TabsTrigger>
                 {role === 'Admin' && <TabsTrigger value="admin">Admin</TabsTrigger>}
+                {role === 'Admin' && <TabsTrigger value="accounts">Accounts</TabsTrigger>}
                 {role === 'Admin' && <TabsTrigger value="global">Global</TabsTrigger>}
             </TabsList>
             <GeneralSettings />
             {role === 'Admin' && <AdminSettings />}
+            {role === 'Admin' && <AccountSettings />}
             {role === 'Admin' && <GlobalSettings />}
         </Tabs>
     </div>

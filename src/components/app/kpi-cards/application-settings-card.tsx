@@ -36,7 +36,6 @@ import { Calendar } from '@/components/ui/calendar';
 
 const appSettingsSchema = z.object({
     societyName: z.string().min(2, { message: 'Society name must be at least 2 characters.' }),
-    calculationStartDate: z.date().optional(),
 });
 
 export function ApplicationSettingsCard() {
@@ -45,13 +44,9 @@ export function ApplicationSettingsCard() {
         societyName, 
         logoUrl, 
         loginHeroUrl, 
-        receiptQrUrl,
-        calculationStartDate,
         setSocietyName,
         setLogoUrl,
         setLoginHeroUrl,
-        setReceiptQrUrl,
-        setCalculationStartDate,
     } = useGlobalStore();
 
     const [logoFile, setLogoFile] = React.useState<File | null>(null);
@@ -60,43 +55,35 @@ export function ApplicationSettingsCard() {
     const [heroFile, setHeroFile] = React.useState<File | null>(null);
     const [heroPreview, setHeroPreview] = React.useState<string | null>(loginHeroUrl);
 
-    const [qrFile, setQrFile] = React.useState<File | null>(null);
-    const [qrPreview, setQrPreview] = React.useState<string | null>(receiptQrUrl);
-
     const logoInputRef = React.useRef<HTMLInputElement>(null);
     const heroInputRef = React.useRef<HTMLInputElement>(null);
-    const qrInputRef = React.useRef<HTMLInputElement>(null);
 
 
     const form = useForm<z.infer<typeof appSettingsSchema>>({
         resolver: zodResolver(appSettingsSchema),
         defaultValues: {
             societyName: societyName,
-            calculationStartDate: calculationStartDate ? new Date(calculationStartDate) : undefined,
         },
     });
 
     React.useEffect(() => {
         form.setValue('societyName', societyName);
-        if (calculationStartDate) {
-            form.setValue('calculationStartDate', new Date(calculationStartDate));
-        }
-    }, [societyName, calculationStartDate, form]);
+    }, [societyName, form]);
 
 
     const handleFileChange = (
         event: React.ChangeEvent<HTMLInputElement>, 
         setFile: React.Dispatch<React.SetStateAction<File | null>>, 
         setPreview: React.Dispatch<React.SetStateAction<string | null>>,
-        options: { isHeroImage?: boolean, isQrCode?: boolean } = {}
+        options: { isHeroImage?: boolean } = {}
     ) => {
         const file = event.target.files?.[0];
         if (file) {
-            const allowedTypes = options.isHeroImage || options.isQrCode
+            const allowedTypes = options.isHeroImage
                 ? ['image/jpeg', 'image/png', 'image/webp']
                 : ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'];
             
-            const allowedTypesText = options.isHeroImage || options.isQrCode
+            const allowedTypesText = options.isHeroImage
                 ? 'JPG, PNG, or WEBP'
                 : 'JPG, PNG, WEBP or SVG';
 
@@ -115,9 +102,6 @@ export function ApplicationSettingsCard() {
             if (options.isHeroImage) {
                 sizeLimit = 800 * 1024; // 800KB
                 sizeLimitText = '800KB';
-            } else if (options.isQrCode) {
-                sizeLimit = 200 * 1024; // 200KB
-                sizeLimitText = '200KB';
             }
 
 
@@ -141,18 +125,12 @@ export function ApplicationSettingsCard() {
 
     const handleSave = (values: z.infer<typeof appSettingsSchema>) => {
         setSocietyName(values.societyName);
-        if(values.calculationStartDate){
-            setCalculationStartDate(values.calculationStartDate.toISOString());
-        }
-
+        
         if(logoPreview) {
             setLogoUrl(logoPreview);
         }
         if(heroPreview) {
             setLoginHeroUrl(heroPreview);
-        }
-        if(qrPreview){
-            setReceiptQrUrl(qrPreview);
         }
         
         toast({
@@ -165,7 +143,7 @@ export function ApplicationSettingsCard() {
         <Card>
             <CardHeader>
                 <CardTitle>Application Settings</CardTitle>
-                <CardDescription>Manage global settings for the application.</CardDescription>
+                <CardDescription>Manage global settings for the application like name and logos.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-8">
                 <Form {...form}>
@@ -245,83 +223,6 @@ export function ApplicationSettingsCard() {
 
                         <Separator />
 
-                        {/* Receipt QR Code Upload */}
-                        <div className='space-y-4'>
-                            <FormLabel>Receipt QR Code</FormLabel>
-                            <div className='flex items-center gap-6'>
-                                <div className='w-24 h-24 rounded-md border flex items-center justify-center overflow-hidden bg-white'>
-                                    {qrPreview ? (
-                                        <Image src={qrPreview} alt="receipt qr code preview" width={96} height={96} className='object-contain'/>
-                                    ) : (
-                                        <p className='text-xs text-muted-foreground'>Preview</p>
-                                    )}
-                                </div>
-
-                                <div className='flex flex-col gap-2'>
-                                    <Button type='button' variant="outline" onClick={() => qrInputRef.current?.click()}>
-                                        <Upload className='mr-2 h-4 w-4' />
-                                        Upload QR Code
-                                    </Button>
-                                    <Input 
-                                        type="file" 
-                                        className='hidden' 
-                                        ref={qrInputRef} 
-                                        onChange={(e) => handleFileChange(e, setQrFile, setQrPreview, { isQrCode: true })}
-                                        accept="image/png, image/jpeg, image/webp" 
-                                    />
-                                     <p className='text-xs text-muted-foreground'>E.g., UPI QR code. Square image, &lt;200KB</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <Separator />
-
-                         {/* Calculation Start Date */}
-                        <FormField
-                            control={form.control}
-                            name="calculationStartDate"
-                            render={({ field }) => (
-                                <FormItem className="flex flex-col">
-                                <FormLabel>Arrears Calculation Start Date</FormLabel>
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                    <FormControl>
-                                        <Button
-                                        variant={"outline"}
-                                        className={cn(
-                                            "w-[240px] pl-3 text-left font-normal",
-                                            !field.value && "text-muted-foreground"
-                                        )}
-                                        >
-                                        {field.value ? (
-                                            format(field.value, "PPP")
-                                        ) : (
-                                            <span>Pick a date</span>
-                                        )}
-                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                        </Button>
-                                    </FormControl>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0" align="start">
-                                    <Calendar
-                                        mode="single"
-                                        selected={field.value}
-                                        onSelect={field.onChange}
-                                        disabled={(date) =>
-                                        date > new Date() || date < new Date("1900-01-01")
-                                        }
-                                        initialFocus
-                                    />
-                                    </PopoverContent>
-                                </Popover>
-                                <FormDescription>
-                                    The date from which to calculate arrears for all apartments.
-                                </FormDescription>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-
                         <Button type="submit">Save Global Settings</Button>
                     </form>
                 </Form>
@@ -329,5 +230,3 @@ export function ApplicationSettingsCard() {
         </Card>
     )
 }
-
-    
