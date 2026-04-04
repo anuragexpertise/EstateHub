@@ -16,6 +16,7 @@ import {
 import { ApplicationSettingsCard } from '@/components/app/kpi-cards/application-settings-card';
 import { AccountSettingsCard } from '@/components/app/kpi-cards/account-settings-card';
 import { AccountsTableCard } from '@/components/app/kpi-cards/accounts-table-card';
+import { CreateAccountCard } from '@/components/app/kpi-cards/create-account-card';
 
 const AdminSettings = () => (
     <TabsContent value="admin" className="space-y-4">
@@ -41,8 +42,9 @@ const GlobalSettings = () => (
 )
 
 const AccountSettings = () => (
-     <TabsContent value="accounts" className="space-y-4">
+     <TabsContent value="accounts" className="space-y-6">
         <AccountSettingsCard />
+        <CreateAccountCard />
         <AccountsTableCard />
     </TabsContent>
 )

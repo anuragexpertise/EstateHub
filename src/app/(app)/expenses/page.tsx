@@ -14,12 +14,13 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { accounts } from '@/lib/data';
-import type { Expense } from '@/types';
+import { accounts, users, roleDisplayNames } from '@/lib/data';
+import type { Expense, Account, UserRole } from '@/types';
 
 
 const expenseFormSchema = z.object({
   accountId: z.string({ required_error: 'Please select an account.' }),
+  userId: z.string().optional(),
   amount: z.coerce.number().min(1, 'Amount must be greater than 0.'),
   description: z.string().min(2, 'Description must be at least 2 characters.'),
 });
@@ -27,6 +28,7 @@ const expenseFormSchema = z.object({
 function NewExpenseCard({ onAddExpense }: { onAddExpense: (expense: Expense) => void }) {
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
   
     const form = useForm<z.infer<typeof expenseFormSchema>>({
       resolver: zodResolver(expenseFormSchema),
@@ -36,9 +38,18 @@ function NewExpenseCard({ onAddExpense }: { onAddExpense: (expense: Expense) => 
       },
     });
 
+    const accountId = form.watch('accountId');
+
+    useState(() => {
+        if(accountId) {
+            setSelectedAccount(accounts.find(a => a.id === accountId) || null);
+        } else {
+            setSelectedAccount(null);
+        }
+    }, [accountId]);
+
     const handleAddExpense = (values: z.infer<typeof expenseFormSchema>) => {
         setIsSubmitting(true);
-        // Simulate API call
         setTimeout(() => {
             const account = accounts.find(a => a.id === values.accountId);
             if (!account) {
@@ -49,7 +60,8 @@ function NewExpenseCard({ onAddExpense }: { onAddExpense: (expense: Expense) => 
 
             const newExpense: Expense = {
                 id: `exp-${Date.now()}`,
-                account: account.name,
+                accountId: values.accountId,
+                userId: values.userId,
                 amount: values.amount,
                 description: values.description,
                 date: new Date(),
@@ -66,6 +78,13 @@ function NewExpenseCard({ onAddExpense }: { onAddExpense: (expense: Expense) => 
             setIsSubmitting(false);
         }, 1000);
       }
+      
+    const getSubAccountUsers = () => {
+        if (!selectedAccount || !selectedAccount.subAccountOf || selectedAccount.subAccountOf.length === 0) {
+            return [];
+        }
+        return users.filter(u => selectedAccount.subAccountOf!.includes(u.role));
+    }
   
     return (
         <Card>
@@ -85,7 +104,11 @@ function NewExpenseCard({ onAddExpense }: { onAddExpense: (expense: Expense) => 
                             render={({ field }) => (
                             <FormItem>
                                 <FormLabel>Account</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <Select onValueChange={(value) => {
+                                    field.onChange(value);
+                                    setSelectedAccount(accounts.find(a => a.id === value) || null);
+                                    form.resetField('userId');
+                                }} defaultValue={field.value}>
                                 <FormControl>
                                     <SelectTrigger>
                                     <SelectValue placeholder="Select a debit account" />
@@ -103,6 +126,32 @@ function NewExpenseCard({ onAddExpense }: { onAddExpense: (expense: Expense) => 
                             </FormItem>
                             )}
                         />
+                        {selectedAccount && selectedAccount.subAccountOf && selectedAccount.subAccountOf.length > 0 && (
+                            <FormField
+                                control={form.control}
+                                name="userId"
+                                render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Entity</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                        <SelectValue placeholder={`Select a ${roleDisplayNames[selectedAccount.subAccountOf![0]]}`} />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        {getSubAccountUsers().map((u) => (
+                                            <SelectItem key={u.id} value={u.id}>
+                                                {u.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                        )}
                         <FormField
                             control={form.control}
                             name="description"
@@ -148,6 +197,8 @@ export default function ExpensesPage() {
     const handleAddExpense = (newExpense: Expense) => {
         setExpenses(prevExpenses => [newExpense, ...prevExpenses].sort((a, b) => b.date.getTime() - a.date.getTime()));
     }
+    
+    const accountName = (accountId: string) => accounts.find(a => a.id === accountId)?.name || 'N/A';
 
     return (
         <div className="space-y-6">
@@ -177,7 +228,7 @@ export default function ExpensesPage() {
                             {expenses.map(expense => (
                                 <TableRow key={expense.id}>
                                     <TableCell>{dateFormatter.format(expense.date).replace(/ /g, '-')}</TableCell>
-                                    <TableCell>{expense.account}</TableCell>
+                                    <TableCell>{accountName(expense.accountId)}</TableCell>
                                     <TableCell>{expense.description}</TableCell>
                                     <TableCell>
                                         <Badge variant={expense.status === 'Paid' ? 'secondary' : 'destructive'}>{expense.status}</Badge>

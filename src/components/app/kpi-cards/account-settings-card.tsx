@@ -22,7 +22,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from '@/components/ui/separator';
 import { Upload, Calendar as CalendarIcon } from 'lucide-react';
@@ -32,18 +31,10 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 
 const accountSettingsSchema = z.object({
     calculationStartDate: z.date().optional(),
-    acName: z.string().optional(),
-    acDesc: z.string().optional(),
-    acTab: z.string().optional(),
-    acType: z.enum(['Debit', 'Credit']).optional(),
-    acFormula: z.string().optional(),
-    acDepRate: z.coerce.number().optional(),
-    acBalFwd: z.coerce.number().optional(),
 });
 
 export function AccountSettingsCard() {
@@ -132,10 +123,10 @@ export function AccountSettingsCard() {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Account Settings</CardTitle>
-                <CardDescription>Manage financial accounts and calculation settings.</CardDescription>
+                <CardTitle>Account Configurations</CardTitle>
+                <CardDescription>Manage general account settings like QR codes and calculation dates.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-8">
+            <CardContent>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(handleSave)} className="space-y-8">
                         {/* Receipt QR Code Upload */}
@@ -214,104 +205,7 @@ export function AccountSettingsCard() {
                                 </FormItem>
                             )}
                         />
-
-                        <Separator />
-
-                        <div className='grid md:grid-cols-2 gap-8'>
-                            <div className="space-y-6">
-                                <FormField
-                                    control={form.control}
-                                    name="acName"
-                                    render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Account Name</FormLabel>
-                                        <FormControl>
-                                        <Input placeholder="e.g. Maintenance Fees" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="acDesc"
-                                    render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Account Description</FormLabel>
-                                        <FormControl>
-                                            <Textarea placeholder="Describe the purpose of this account." {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="acType"
-                                    render={({ field }) => (
-                                        <FormItem className="space-y-3">
-                                        <FormLabel>Account Type</FormLabel>
-                                        <FormControl>
-                                            <RadioGroup
-                                            onValueChange={field.onChange}
-                                            defaultValue={field.value}
-                                            className="flex space-x-4"
-                                            >
-                                            <FormItem className="flex items-center space-x-2 space-y-0">
-                                                <FormControl>
-                                                <RadioGroupItem value="Debit" />
-                                                </FormControl>
-                                                <FormLabel className="font-normal">
-                                                Debit
-                                                </FormLabel>
-                                            </FormItem>
-                                            <FormItem className="flex items-center space-x-2 space-y-0">
-                                                <FormControl>
-                                                <RadioGroupItem value="Credit" />
-                                                </FormControl>
-                                                <FormLabel className="font-normal">
-                                                Credit
-                                                </FormLabel>
-                                            </FormItem>
-                                            </RadioGroup>
-                                        </FormControl>
-                                        <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                            </div>
-                            <div className="space-y-6">
-                                <FormField
-                                    control={form.control}
-                                    name="acDepRate"
-                                    render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Depreciation Rate (%)</FormLabel>
-                                        <FormControl>
-                                        <Input type="number" placeholder="e.g. 10" {...field} />
-                                        </FormControl>
-                                        <FormDescription>Half depreciation applied if purchased after Sep 1st.</FormDescription>
-                                        <FormMessage />
-                                    </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="acBalFwd"
-                                    render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Account Balance Forward (₹)</FormLabel>
-                                        <FormControl>
-                                        <Input type="number" placeholder="0.00" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                    )}
-                                />
-                            </div>
-                        </div>
-
-                        <Button type="submit">Save Account Settings</Button>
+                        <Button type="submit">Save Configurations</Button>
                     </form>
                 </Form>
             </CardContent>

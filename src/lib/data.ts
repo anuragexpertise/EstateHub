@@ -32,22 +32,22 @@ const now = new Date();
 
 export const payments: Payment[] = [
   // John Doe's Payments (user-apt-101)
-  { id: 'pay-001', userId: 'user-apt-101', amount: 1200, date: new Date(now.getFullYear(), now.getMonth() - 2, 5), status: 'Paid', description: '1-Month Maintenance' },
-  { id: 'pay-002', userId: 'user-apt-101', amount: 1200, date: new Date(now.getFullYear(), now.getMonth(), 10), status: 'Pending Verification', description: '1-Month Maintenance' },
+  { id: 'pay-001', userId: 'user-apt-101', accountId: 'acc-01', amount: 1200, date: new Date(now.getFullYear(), now.getMonth() - 2, 5), status: 'Paid', description: '1-Month Maintenance' },
+  { id: 'pay-002', userId: 'user-apt-101', accountId: 'acc-01', amount: 1200, date: new Date(now.getFullYear(), now.getMonth(), 10), status: 'Pending Verification', description: '1-Month Maintenance' },
   
   // Jane Smith's Payments (user-apt-204)
-  { id: 'pay-003', userId: 'user-apt-204', amount: 950, date: new Date(now.getFullYear(), now.getMonth() - 1, 15), status: 'Paid', description: '1-Month Maintenance' },
-  { id: 'pay-004', userId: 'user-apt-204', amount: 950, date: new Date(now.getFullYear(), now.getMonth(), 1), status: 'Due', description: '1-Month Maintenance' },
+  { id: 'pay-003', userId: 'user-apt-204', accountId: 'acc-01', amount: 950, date: new Date(now.getFullYear(), now.getMonth() - 1, 15), status: 'Paid', description: '1-Month Maintenance' },
+  { id: 'pay-004', userId: 'user-apt-204', accountId: 'acc-01', amount: 950, date: new Date(now.getFullYear(), now.getMonth(), 1), status: 'Due', description: '1-Month Maintenance' },
 
   // Other payments
-  { id: 'pay-005', userId: 'user-con-elec', amount: 500, date: new Date(now.getFullYear(), now.getMonth() - 2, 20), status: 'Paid', description: 'Vendor Pass' },
-  { id: 'pay-006', userId: 'user-sec-01', amount: 2500, date: new Date(now.getFullYear(), now.getMonth(), 5), status: 'Paid', description: 'Salary Advance' },
+  { id: 'pay-005', userId: 'user-con-elec', accountId: 'acc-05', amount: 500, date: new Date(now.getFullYear(), now.getMonth() - 2, 20), status: 'Paid', description: 'Vendor Pass' },
+  { id: 'pay-006', userId: 'user-sec-01', accountId: 'acc-02', amount: 2500, date: new Date(now.getFullYear(), now.getMonth(), 5), status: 'Paid', description: 'Salary Advance' },
 ];
 
 export const expenses: Expense[] = [
-  { id: 'exp-001', account: 'Security Salaries', amount: 5000, date: new Date(now.getFullYear(), now.getMonth(), 5), status: 'Paid', description: 'Monthly salary for security staff' },
-  { id: 'exp-002', account: 'Capital Goods', amount: 15000, date: new Date(now.getFullYear(), now.getMonth() -1, 20), status: 'Paid', description: 'New lobby furniture' },
-  { id: 'exp-003', account: 'Utilities', amount: 2200, date: new Date(now.getFullYear(), now.getMonth(), 10), status: 'Pending', description: 'Electricity bill for common areas' },
+  { id: 'exp-001', accountId: 'acc-02', amount: 5000, date: new Date(now.getFullYear(), now.getMonth(), 5), status: 'Paid', description: 'Monthly salary for security staff' },
+  { id: 'exp-002', accountId: 'acc-03', amount: 15000, date: new Date(now.getFullYear(), now.getMonth() -1, 20), status: 'Paid', description: 'New lobby furniture' },
+  { id: 'exp-003', accountId: 'acc-06', amount: 2200, date: new Date(now.getFullYear(), now.getMonth(), 10), status: 'Pending', description: 'Electricity bill for common areas' },
 ];
 
 export const events: Event[] = [
@@ -137,8 +137,10 @@ export const findUserByRole = (role: UserRole) => users.find((user) => user.role
 
 
 export const accounts: Account[] = [
-  { id: 'acc-01', name: 'Maintenance Fees', type: 'Credit', balanceForward: 15000.00, description: 'Monthly maintenance collections' },
+  { id: 'acc-01', name: 'Maintenance Fees', type: 'Credit', balanceForward: 15000.00, description: 'Monthly maintenance collections', subAccountOf: ['Apartment'] },
   { id: 'acc-02', name: 'Security Salaries', type: 'Debit', balanceForward: 5000.00, description: 'Salaries for security personnel' },
   { id: 'acc-03', name: 'Capital Goods', type: 'Debit', balanceForward: 0.00, description: 'Assets and equipment', depreciationRate: 10 },
-  { id: 'acc-04', name: 'Fines Collected', type: 'Credit', balanceForward: 2500.00, description: 'Late payment fines' },
+  { id: 'acc-04', name: 'Fines Collected', type: 'Credit', balanceForward: 2500.00, description: 'Late payment fines', subAccountOf: ['Apartment'] },
+  { id: 'acc-05', name: 'Contractor Pass Fees', type: 'Credit', balanceForward: 1000.00, description: 'Fees collected for contractor passes', subAccountOf: ['Contractor'] },
+  { id: 'acc-06', name: 'Utilities', type: 'Debit', balanceForward: 800.00, description: 'Common area utilities' },
 ];

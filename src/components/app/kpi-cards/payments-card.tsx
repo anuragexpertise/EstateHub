@@ -1,6 +1,6 @@
 
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -9,8 +9,8 @@ import Image from 'next/image';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { users, payments as initialPayments, roleDisplayNames } from "@/lib/data";
-import type { UserRole, Payment } from '@/types';
+import { users, payments as initialPayments, roleDisplayNames, accounts } from "@/lib/data";
+import type { UserRole, Payment, Account } from '@/types';
 import { Receipt, Check, PlusCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -22,7 +22,8 @@ import { useGlobalStore } from '@/hooks/use-global-store';
 import { ChargesAndPaymentHistoryCard } from './charges-payment-history-card';
 
 const paymentFormSchema = z.object({
-  userId: z.string({ required_error: 'Please select a user.' }),
+  accountId: z.string({ required_error: 'Please select an account.' }),
+  userId: z.string().optional(),
   amount: z.coerce.number().min(1, 'Amount must be greater than 0.'),
   description: z.string().min(2, 'Description must be at least 2 characters.'),
 });
@@ -130,6 +131,7 @@ export function PaymentsCard() {
     const [payments, setPayments] = useState<Payment[]>(initialPayments);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { receiptQrUrl } = useGlobalStore();
+    const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
   
     const form = useForm<z.infer<typeof paymentFormSchema>>({
       resolver: zodResolver(paymentFormSchema),
@@ -139,13 +141,33 @@ export function PaymentsCard() {
       },
     });
 
+    const accountId = form.watch('accountId');
+
+    useEffect(() => {
+        if(accountId) {
+            setSelectedAccount(accounts.find(a => a.id === accountId) || null);
+        } else {
+            setSelectedAccount(null);
+        }
+    }, [accountId]);
+
+
     const handleAddPayment = (values: z.infer<typeof paymentFormSchema>) => {
+        if (selectedAccount?.subAccountOf?.length && !values.userId) {
+            toast({
+                variant: 'destructive',
+                title: "Validation Error",
+                description: `Please select an entity for the ${selectedAccount.name} account.`,
+            });
+            return;
+        }
+
         setIsSubmitting(true);
-        // Simulate API call
         setTimeout(() => {
             const newPayment: Payment = {
                 id: `pay-${Date.now()}`,
-                userId: values.userId,
+                accountId: values.accountId,
+                userId: values.userId || 'system',
                 amount: values.amount,
                 description: values.description,
                 date: new Date(),
@@ -155,15 +177,19 @@ export function PaymentsCard() {
             setPayments(prev => [newPayment, ...prev]);
             toast({
                 title: "Payment Recorded",
-                description: `Payment of ₹${values.amount} for ${users.find(u => u.id === values.userId)?.name} has been recorded.`,
+                description: `Payment of ₹${values.amount} for ${values.userId ? users.find(u => u.id === values.userId)?.name : 'system'} has been recorded.`,
             });
             form.reset();
+            setSelectedAccount(null);
             setIsSubmitting(false);
         }, 1000);
       }
     
-    const getUserDisplay = (u: (typeof users)[0]) => {
-      return `${u.name} (${roleDisplayNames[u.role]})`;
+    const getSubAccountUsers = () => {
+        if (!selectedAccount || !selectedAccount.subAccountOf || selectedAccount.subAccountOf.length === 0) {
+            return [];
+        }
+        return users.filter(u => selectedAccount.subAccountOf!.includes(u.role));
     }
   
     return (
@@ -179,22 +205,25 @@ export function PaymentsCard() {
                 <div className="grid md:grid-cols-2 gap-8">
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(handleAddPayment)} className="space-y-6">
-                            <FormField
+                             <FormField
                                 control={form.control}
-                                name="userId"
+                                name="accountId"
                                 render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>User</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormLabel>Account</FormLabel>
+                                    <Select onValueChange={(value) => {
+                                        field.onChange(value);
+                                        form.resetField('userId');
+                                    }} defaultValue={field.value}>
                                     <FormControl>
                                         <SelectTrigger>
-                                        <SelectValue placeholder="Select a user to bill" />
+                                        <SelectValue placeholder="Select a credit account" />
                                         </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
-                                        {users.map((u) => (
-                                            <SelectItem key={u.id} value={u.id}>
-                                                {getUserDisplay(u)}
+                                        {accounts.filter(a => a.type === 'Credit').map((a) => (
+                                            <SelectItem key={a.id} value={a.id}>
+                                                {a.name}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
@@ -203,7 +232,33 @@ export function PaymentsCard() {
                                 </FormItem>
                                 )}
                             />
+                            {selectedAccount && selectedAccount.subAccountOf && selectedAccount.subAccountOf.length > 0 && (
                                 <FormField
+                                    control={form.control}
+                                    name="userId"
+                                    render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Entity</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <FormControl>
+                                            <SelectTrigger>
+                                            <SelectValue placeholder={`Select a ${roleDisplayNames[selectedAccount.subAccountOf![0]]}`} />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            {getSubAccountUsers().map((u) => (
+                                                <SelectItem key={u.id} value={u.id}>
+                                                    {u.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                    )}
+                                />
+                            )}
+                            <FormField
                                 control={form.control}
                                 name="description"
                                 render={({ field }) => (
@@ -229,7 +284,7 @@ export function PaymentsCard() {
                                 </FormItem>
                                 )}
                             />
-                                <Button type="submit" disabled={isSubmitting}>
+                            <Button type="submit" disabled={isSubmitting}>
                                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 Add Receipt
                             </Button>

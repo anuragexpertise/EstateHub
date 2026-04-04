@@ -21,6 +21,7 @@ export type User = {
 export type Payment = {
   id: string;
   userId: string;
+  accountId: string;
   amount: number;
   date: Date;
   status: 'Paid' | 'Due' | 'Overdue' | 'Pending Verification';
@@ -29,7 +30,8 @@ export type Payment = {
 
 export type Expense = {
   id: string;
-  account: string;
+  accountId: string;
+  userId?: string;
   amount: number;
   date: Date;
   status: 'Pending' | 'Paid';
@@ -72,6 +74,7 @@ export type Account = {
   name: string;
   description?: string;
   type: 'Debit' | 'Credit';
+  subAccountOf?: UserRole[];
   balanceForward: number;
   depreciationRate?: number;
 };
