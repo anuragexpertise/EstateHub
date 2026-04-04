@@ -1,4 +1,3 @@
-
 'use client';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { users, events, payments } from "@/lib/data";
@@ -6,6 +5,7 @@ import { User, Building2, Wrench, Shield, CalendarDays, TrendingDown, CreditCard
 import { useSearchParams } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { ChargesAndPaymentHistoryCard } from "../kpi-cards/charges-payment-history-card";
+import { cn } from "@/lib/utils";
 
 export function ApartmentDashboard() {
   const searchParams = useSearchParams();
@@ -18,7 +18,7 @@ export function ApartmentDashboard() {
   
   const userCharges = payments.filter(p => p.userId === currentUser?.id).filter(p => p.status === 'Due' || p.status === 'Overdue').reduce((sum, p) => sum + p.amount, 0);
   const userPayments = payments.filter(p => p.userId === currentUser?.id).filter(p => p.status === 'Paid').reduce((sum, p) => sum + p.amount, 0);
-  const userDues = userCharges - userPayments > 0 ? userCharges - userPayments : 0;
+  const userDues = userCharges > 0 ? userCharges - userPayments : 0;
   
   const visibleEvents = role ? events.filter(e => e.audience.includes('Apartment') && e.status === 'Sent') : [];
 
@@ -26,9 +26,9 @@ export function ApartmentDashboard() {
     { title: "Apartment Owners", value: totalApartments, icon: Building2 },
     { title: "Utility Contractors", value: totalContractors, icon: Wrench },
     { title: "Security Staff", value: totalSecurity, icon: Shield },
-    { title: "Dues", value: `₹${userDues.toLocaleString()}`, icon: IndianRupee },
-    { title: "Total Charges", value: `₹${userCharges.toLocaleString()}`, icon: TrendingDown },
-    { title: "Total Payments", value: `₹${userPayments.toLocaleString()}`, icon: CreditCard },
+    { title: "Dues", value: `₹${userDues.toLocaleString()}`, icon: IndianRupee, color: userDues > 0 ? "text-destructive" : "text-green-600" },
+    { title: "Total Charges", value: `₹${userCharges.toLocaleString()}`, icon: TrendingDown, color: "text-destructive" },
+    { title: "Total Payments", value: `₹${userPayments.toLocaleString()}`, icon: CreditCard, color: "text-green-600" },
   ];
 
   return (
@@ -41,7 +41,7 @@ export function ApartmentDashboard() {
               <kpi.icon className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{kpi.value}</div>
+              <div className={cn("text-2xl font-bold", kpi.color)}>{kpi.value}</div>
             </CardContent>
           </Card>
         ))}

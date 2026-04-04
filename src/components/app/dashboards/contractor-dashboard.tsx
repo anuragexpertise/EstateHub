@@ -1,10 +1,10 @@
-
 'use client';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { users, events, payments } from "@/lib/data";
 import { useSearchParams } from 'next/navigation';
 import { Building2, CalendarDays, CreditCard } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 export function ContractorDashboard() {
   const searchParams = useSearchParams();
@@ -17,7 +17,7 @@ export function ContractorDashboard() {
 
   const kpis = [
     { title: "Apartment Owners", value: totalApartments, icon: Building2 },
-    { title: "Total Payments", value: `₹${userPayments.toLocaleString()}`, icon: CreditCard },
+    { title: "Total Payments", value: `₹${userPayments.toLocaleString()}`, icon: CreditCard, color: "text-green-600" },
   ];
 
   return (
@@ -30,7 +30,7 @@ export function ContractorDashboard() {
               <kpi.icon className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{kpi.value}</div>
+              <div className={cn("text-2xl font-bold", kpi.color)}>{kpi.value}</div>
             </CardContent>
           </Card>
         ))}

@@ -1,8 +1,8 @@
-
 'use client';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { users, payments, expenses, events } from "@/lib/data";
 import { Building2, Wrench, Shield, TrendingUp, TrendingDown, IndianRupee, CalendarDays } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export function AdminDashboard() {
 
@@ -27,13 +27,13 @@ export function AdminDashboard() {
   const draftEvents = events.filter(e => e.status === 'Draft').length;
 
   const kpis = [
-    { title: "Apartment Owners", icon: Building2, stats: [{ label: "With Dues", value: apartmentsWithDues }, { label: "No Dues", value: apartments.length - apartmentsWithDues }, { label: "Total", value: apartments.length }] },
-    { title: "Utility Contractors", icon: Wrench, stats: [{ label: "With Dues", value: contractorsWithDues }, { label: "No Dues", value: contractors.length - contractorsWithDues }, { label: "Total", value: contractors.length }] },
+    { title: "Apartment Owners", icon: Building2, stats: [{ label: "With Dues", value: apartmentsWithDues, color: "text-destructive" }, { label: "No Dues", value: apartments.length - apartmentsWithDues, color: "text-green-600" }, { label: "Total", value: apartments.length }] },
+    { title: "Utility Contractors", icon: Wrench, stats: [{ label: "With Dues", value: contractorsWithDues, color: "text-destructive" }, { label: "No Dues", value: contractors.length - contractorsWithDues, color: "text-green-600" }, { label: "Total", value: contractors.length }] },
     { title: "Security Staff", icon: Shield, stats: [{ label: "Total", value: security.length }] },
-    { title: "Balance", icon: IndianRupee, stats: [{ label: "Available", value: `₹${balance.toLocaleString()}` }, { label: "Credits", value: `₹${totalCredits.toLocaleString()}` }, { label: "Debits", value: `₹${totalDebits.toLocaleString()}` }] },
-    { title: "Credits (Receipts)", icon: TrendingUp, stats: [{ label: "Pending", value: `₹${pendingCredits.toLocaleString()}` }, { label: "Verified", value: `₹${totalCredits.toLocaleString()}` }] },
-    { title: "Debits (Expenses)", icon: TrendingDown, stats: [{ label: "Pending", value: `₹${pendingDebits.toLocaleString()}` }, { label: "Paid", value: `₹${totalDebits.toLocaleString()}` }] },
-    { title: "Events", icon: CalendarDays, stats: [{ label: "Upcoming", value: upcomingEvents }, { label: "Drafts", value: draftEvents }] },
+    { title: "Balance", icon: IndianRupee, stats: [{ label: "Available", value: `₹${balance.toLocaleString()}`, color: balance >= 0 ? "text-green-600" : "text-destructive" }, { label: "Credits", value: `₹${totalCredits.toLocaleString()}`, color: "text-green-600" }, { label: "Debits", value: `₹${totalDebits.toLocaleString()}`, color: "text-destructive" }] },
+    { title: "Credits (Receipts)", icon: TrendingUp, stats: [{ label: "Pending", value: `₹${pendingCredits.toLocaleString()}`, color: "text-amber-500" }, { label: "Verified", value: `₹${totalCredits.toLocaleString()}`, color: "text-green-600" }] },
+    { title: "Debits (Expenses)", icon: TrendingDown, stats: [{ label: "Pending", value: `₹${pendingDebits.toLocaleString()}`, color: "text-amber-500" }, { label: "Paid", value: `₹${totalDebits.toLocaleString()}`, color: "text-green-600" }] },
+    { title: "Events", icon: CalendarDays, stats: [{ label: "Upcoming", value: upcomingEvents }, { label: "Drafts", value: draftEvents, color: "text-amber-500" }] },
   ]
 
   return (
@@ -50,7 +50,7 @@ export function AdminDashboard() {
                 {kpi.stats.map(stat => (
                   <div key={stat.label}>
                     <p className="text-xs text-muted-foreground">{stat.label}</p>
-                    <div className="text-2xl font-bold">{stat.value}</div>
+                    <div className={cn("text-2xl font-bold", stat.color)}>{stat.value}</div>
                   </div>
                 ))}
               </div>
