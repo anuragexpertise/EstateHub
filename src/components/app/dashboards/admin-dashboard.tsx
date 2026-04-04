@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { users, payments as initialPayments, expenses as initialExpenses, events } from "@/lib/data";
+import { users, payments as initialPayments, expenses as initialExpenses, events, roleDisplayNames } from "@/lib/data";
 import type { User, Payment, Expense } from '@/types';
 import { ArrowLeft, Building2, Shield, Wrench, FileDown, Check, TrendingUp, TrendingDown, IndianRupee, CalendarDays, X, Mail, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -39,7 +39,7 @@ export function AdminDashboard() {
     const balance = totalCredits - totalDebits;
     const pendingCredits = initialPayments.filter(p => p.status === 'Pending Verification').reduce((sum, p) => sum + p.amount, 0);
     const verifiedCredits = totalCredits;
-    const pendingDebits = initialExpenses.filter(e => e.status === 'Pending').reduce((sum, e) => sum + e.amount, 0);
+    const pendingDebits = initialExpenses.filter(e => e.status === 'Pending').reduce((sum, p) => sum + p.amount, 0);
     const paidDebits = totalDebits;
     
     const upcomingEvents = events.filter(e => e.status === 'Sent' && e.dateTime > new Date()).length;
@@ -243,8 +243,6 @@ export function AdminDashboard() {
         });
     };
     
-    const userForId = (userId?: string) => users.find(u => u.id === userId)?.name || 'N/A';
-
     if (view === 'userList') {
         const isApartmentList = listTitle.includes('Apartment');
         
@@ -329,7 +327,7 @@ export function AdminDashboard() {
                  <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>User</TableHead>
+                      <TableHead>Entity</TableHead>
                       <TableHead>Email</TableHead>
                       <TableHead>Phone</TableHead>
                       <TableHead>Description</TableHead>
@@ -344,7 +342,9 @@ export function AdminDashboard() {
                       const paymentUser = users.find(u => u.id === payment.userId);
                       return (
                       <TableRow key={payment.id} className={cn(index % 2 === 0 && "bg-muted/50")}>
-                        <TableCell className="font-medium">{paymentUser?.name || 'Unknown'}</TableCell>
+                        <TableCell className="font-medium">
+                            {paymentUser ? `${paymentUser.name} (${roleDisplayNames[paymentUser.role]})` : 'Unknown'}
+                        </TableCell>
                          <TableCell>
                             {paymentUser?.email ? (
                                 <a href={`mailto:${paymentUser.email}`} className="flex items-center gap-2 text-primary hover:underline">
@@ -420,7 +420,7 @@ export function AdminDashboard() {
                  <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>User</TableHead>
+                      <TableHead>Entity</TableHead>
                       <TableHead>Description</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Date</TableHead>
@@ -429,9 +429,13 @@ export function AdminDashboard() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {expenses.map((expense, index) => (
+                    {expenses.map((expense, index) => {
+                      const expenseUser = expense.userId ? users.find(u => u.id === expense.userId) : null;
+                      return (
                       <TableRow key={expense.id} className={cn(index % 2 === 0 && "bg-muted/50")}>
-                        <TableCell className="font-medium">{userForId(expense.userId)}</TableCell>
+                        <TableCell className="font-medium">
+                            {expenseUser ? `${expenseUser.name} (${roleDisplayNames[expenseUser.role]})` : 'Common'}
+                        </TableCell>
                         <TableCell>{expense.description}</TableCell>
                         <TableCell>
                             <Badge 
@@ -458,7 +462,7 @@ export function AdminDashboard() {
                           )}
                         </TableCell>
                       </TableRow>
-                    ))}
+                    )})}
                     {expenses.length === 0 && (
                         <TableRow>
                             <TableCell colSpan={6} className="text-center text-muted-foreground py-4">
