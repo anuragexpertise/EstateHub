@@ -4,8 +4,8 @@ import { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { users, payments as initialPayments, expenses, events } from "@/lib/data";
-import type { User, Payment } from '@/types';
+import { users, payments as initialPayments, expenses as initialExpenses, events } from "@/lib/data";
+import type { User, Payment, Expense } from '@/types';
 import { ArrowLeft, Building2, Shield, Wrench, FileDown, Check, TrendingUp, TrendingDown, IndianRupee, CalendarDays, X, Mail, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { UserProfileCard } from '@/components/app/dashboard/user-profile-card';
@@ -15,9 +15,10 @@ import { cn } from '@/lib/utils';
 type ListFilter = 'all' | 'withDues' | 'noDues' | 'pending' | 'verified' | 'drafts' | 'sent';
 
 export function AdminDashboard() {
-    const [view, setView] = useState<'dashboard' | 'userList' | 'paymentList'>('dashboard');
+    const [view, setView] = useState<'dashboard' | 'userList' | 'paymentList' | 'expenseList'>('dashboard');
     const [selectedUserList, setSelectedUserList] = useState<User[]>([]);
     const [payments, setPayments] = useState<Payment[]>(initialPayments);
+    const [expenses, setExpenses] = useState<Expense[]>(initialExpenses);
     const [listTitle, setListTitle] = useState('');
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const { toast } = useToast();
@@ -34,11 +35,11 @@ export function AdminDashboard() {
     const security = users.filter(u => u.role === 'Security');
     
     const totalCredits = initialPayments.filter(p => p.status === 'Paid').reduce((sum, p) => sum + p.amount, 0);
-    const totalDebits = expenses.filter(e => e.status === 'Paid').reduce((sum, e) => sum + e.amount, 0);
+    const totalDebits = initialExpenses.filter(e => e.status === 'Paid').reduce((sum, e) => sum + e.amount, 0);
     const balance = totalCredits - totalDebits;
     const pendingCredits = initialPayments.filter(p => p.status === 'Pending Verification').reduce((sum, p) => sum + p.amount, 0);
     const verifiedCredits = totalCredits;
-    const pendingDebits = expenses.filter(e => e.status === 'Pending').reduce((sum, e) => sum + e.amount, 0);
+    const pendingDebits = initialExpenses.filter(e => e.status === 'Pending').reduce((sum, e) => sum + e.amount, 0);
     const paidDebits = totalDebits;
     
     const upcomingEvents = events.filter(e => e.status === 'Sent' && e.dateTime > new Date()).length;
@@ -78,6 +79,7 @@ export function AdminDashboard() {
     const handleKpiClick = (role: string, title: string, filter: ListFilter) => {
         let filteredUsers: User[] = [];
         let paymentList: Payment[] = [];
+        let expenseList: Expense[] = [];
         let newTitle = '';
 
         const roleUsers = users.filter(u => u.role === role);
@@ -118,6 +120,22 @@ export function AdminDashboard() {
                 setView('paymentList');
                 break;
             
+            case 'Expenses':
+                newTitle = 'All Expenses';
+                if (filter === 'pending') {
+                    expenseList = initialExpenses.filter(e => e.status === 'Pending');
+                    newTitle = 'Pending Expenses';
+                } else if (filter === 'verified') {
+                    expenseList = initialExpenses.filter(e => e.status === 'Paid');
+                    newTitle = 'Paid Expenses';
+                } else {
+                    expenseList = initialExpenses;
+                }
+                setExpenses(expenseList);
+                setListTitle(newTitle);
+                setView('expenseList');
+                break;
+
             default:
                 toast({ title: 'Info', description: 'This KPI detail view is not yet implemented.' });
                 return;
@@ -130,13 +148,14 @@ export function AdminDashboard() {
         setListTitle('');
         setSelectedUser(null);
         setPayments(initialPayments);
+        setExpenses(initialExpenses);
     };
     
     const handleBackToUserList = () => {
         setSelectedUser(null);
     };
 
-    const handleExportCsv = (dataType: 'users' | 'payments') => {
+    const handleExportCsv = (dataType: 'users' | 'payments' | 'expenses') => {
         let headers: string[];
         let csvRows: string[];
 
@@ -148,12 +167,20 @@ export function AdminDashboard() {
                 const row = [ user.id, user.name, user.email, user.phone || '', user.role, user.details?.unit || '', user.details?.sqft || '', user.details?.service || '', user.details?.shift || '' ];
                 csvRows.push(row.join(','));
             });
-        } else { 
+        } else if (dataType === 'payments') { 
             headers = ['id', 'userId', 'userName', 'description', 'amount', 'date', 'status'];
             csvRows = [headers.join(',')];
             payments.forEach(payment => {
                 const paymentUser = users.find(u => u.id === payment.userId);
                 const row = [ payment.id, payment.userId, paymentUser?.name || 'Unknown', payment.description, payment.amount, payment.date.toISOString(), payment.status ];
+                csvRows.push(row.join(','));
+            })
+        } else { // expenses
+            headers = ['id', 'userId', 'userName', 'accountId', 'description', 'amount', 'date', 'status'];
+            csvRows = [headers.join(',')];
+            expenses.forEach(expense => {
+                const expenseUser = expense.userId ? users.find(u => u.id === expense.userId) : null;
+                const row = [ expense.id, expense.userId || '', expenseUser?.name || 'N/A', expense.accountId, expense.description, expense.amount, expense.date.toISOString(), expense.status ];
                 csvRows.push(row.join(','));
             })
         }
@@ -194,25 +221,32 @@ export function AdminDashboard() {
         });
     };
     
-    const userForPayment = (userId: string) => users.find(u => u.id === userId)?.name || 'Unknown';
+    const handleVerifyExpense = (expenseId: string) => {
+        const expenseIndex = initialExpenses.findIndex(e => e.id === expenseId);
+        if (expenseIndex > -1) {
+            initialExpenses[expenseIndex].status = 'Paid';
+        }
+        setExpenses(prev => prev.filter(e => e.id !== expenseId));
+        toast({ title: "Expense Verified", description: "The expense has been marked as paid." });
+    };
+
+    const handleRejectExpense = (expenseId: string) => {
+        const expenseIndex = initialExpenses.findIndex(e => e.id === expenseId);
+        if (expenseIndex > -1) {
+            initialExpenses[expenseIndex].status = 'Rejected';
+        }
+        setExpenses(prev => prev.filter(e => e.id !== expenseId));
+        toast({
+            variant: "destructive",
+            title: "Expense Rejected",
+            description: "The expense has been marked as rejected.",
+        });
+    };
+    
+    const userForId = (userId?: string) => users.find(u => u.id === userId)?.name || 'N/A';
 
     if (view === 'userList') {
         const isApartmentList = listTitle.includes('Apartment');
-        const isContractorList = listTitle.includes('Contractor');
-    
-        if (selectedUser) {
-            return (
-                <div>
-                    <Button variant="outline" onClick={handleBackToUserList} className="mb-4">
-                        <ArrowLeft className="mr-2 h-4 w-4" />
-                        Back to List
-                    </Button>
-                    <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
-                        <UserProfileCard user={selectedUser} />
-                    </div>
-                </div>
-            )
-        }
         
         return (
           <div>
@@ -276,7 +310,7 @@ export function AdminDashboard() {
         );
       }
     
-      if (view === 'paymentList') {
+    if (view === 'paymentList') {
         return (
           <div>
             <Button variant="outline" onClick={handleBackToDashboard} className="mb-4">
@@ -296,17 +330,35 @@ export function AdminDashboard() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>User</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Phone</TableHead>
                       <TableHead>Description</TableHead>
-                       <TableHead>Status</TableHead>
+                      <TableHead>Status</TableHead>
                       <TableHead>Date</TableHead>
                       <TableHead className="text-right">Amount</TableHead>
                       <TableHead className="text-center">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {payments.map((payment, index) => (
+                    {payments.map((payment, index) => {
+                      const paymentUser = users.find(u => u.id === payment.userId);
+                      return (
                       <TableRow key={payment.id} className={cn(index % 2 === 0 && "bg-muted/50")}>
-                        <TableCell className="font-medium">{userForPayment(payment.userId)}</TableCell>
+                        <TableCell className="font-medium">{paymentUser?.name || 'Unknown'}</TableCell>
+                         <TableCell>
+                            {paymentUser?.email ? (
+                                <a href={`mailto:${paymentUser.email}`} className="flex items-center gap-2 text-primary hover:underline">
+                                    <Mail className="h-4 w-4" />
+                                </a>
+                            ) : <span className="text-muted-foreground">N/A</span>}
+                        </TableCell>
+                        <TableCell>
+                            {paymentUser?.phone ? (
+                                <a href={`tel:${paymentUser.phone}`} className="flex items-center gap-2 text-primary hover:underline">
+                                    <Phone className="h-4 w-4" />
+                                </a>
+                            ) : <span className="text-muted-foreground">N/A</span>}
+                        </TableCell>
                         <TableCell>{payment.description}</TableCell>
                         <TableCell>
                             <Badge 
@@ -333,11 +385,84 @@ export function AdminDashboard() {
                           )}
                         </TableCell>
                       </TableRow>
-                    ))}
+                    )})}
                     {payments.length === 0 && (
                         <TableRow>
-                            <TableCell colSpan={6} className="text-center text-muted-foreground py-4">
+                            <TableCell colSpan={8} className="text-center text-muted-foreground py-4">
                                 No receipts found for this filter.
+                            </TableCell>
+                        </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </div>
+        );
+    }
+      
+    if (view === 'expenseList') {
+        return (
+          <div>
+            <Button variant="outline" onClick={handleBackToDashboard} className="mb-4">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Dashboard
+            </Button>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>{listTitle}</CardTitle>
+                 <Button variant="outline" size="icon" onClick={() => handleExportCsv('expenses')}>
+                    <FileDown className="h-4 w-4" />
+                    <span className="sr-only">Export as CSV</span>
+                </Button>
+              </CardHeader>
+              <CardContent>
+                 <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>User</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead className="text-right">Amount</TableHead>
+                      <TableHead className="text-center">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {expenses.map((expense, index) => (
+                      <TableRow key={expense.id} className={cn(index % 2 === 0 && "bg-muted/50")}>
+                        <TableCell className="font-medium">{userForId(expense.userId)}</TableCell>
+                        <TableCell>{expense.description}</TableCell>
+                        <TableCell>
+                            <Badge 
+                                variant={expense.status === 'Paid' ? 'secondary' : expense.status === 'Rejected' ? 'destructive' : 'default'}
+                                className={cn(expense.status === 'Pending' && 'bg-amber-500 text-white hover:bg-amber-500/80', expense.status === 'Paid' && 'bg-green-600 text-white hover:bg-green-600/80')}
+                            >
+                                {expense.status}
+                            </Badge>
+                        </TableCell>
+                        <TableCell>{dateTimeFormatter.format(new Date(expense.date)).replace(',', '')}</TableCell>
+                        <TableCell className={cn("text-right font-semibold text-destructive" )}>₹{expense.amount.toLocaleString()}</TableCell>
+                        <TableCell className="text-center">
+                          {expense.status === 'Pending' && (
+                            <div className="flex items-center justify-center gap-2">
+                                <Button size="sm" onClick={() => handleVerifyExpense(expense.id)}>
+                                    <Check className="mr-2 h-4 w-4" />
+                                    Verify
+                                </Button>
+                                <Button size="sm" variant="destructive" onClick={() => handleRejectExpense(expense.id)}>
+                                    <X className="mr-2 h-4 w-4" />
+                                    Reject
+                                </Button>
+                            </div>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {expenses.length === 0 && (
+                        <TableRow>
+                            <TableCell colSpan={6} className="text-center text-muted-foreground py-4">
+                                No expenses found for this filter.
                             </TableCell>
                         </TableRow>
                     )}

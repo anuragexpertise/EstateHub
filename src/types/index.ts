@@ -34,7 +34,7 @@ export type Expense = {
   userId?: string;
   amount: number;
   date: Date;
-  status: 'Pending' | 'Paid';
+  status: 'Pending' | 'Paid' | 'Rejected';
   description: string;
 };
 
