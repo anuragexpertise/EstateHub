@@ -8,7 +8,7 @@ import * as z from 'zod';
 import type { UserRole, Event } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CalendarDays, PlusCircle, Loader2, ArrowLeft, Send, X } from 'lucide-react';
+import { CalendarDays, PlusCircle, Loader2, ArrowLeft, Send, X, FileDown } from 'lucide-react';
 import { events as initialEvents, roles, roleDisplayNames } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -259,41 +259,75 @@ function EventList() {
                 title = 'Draft Events';
             }
         } else if (role) {
-            eventsToFilter = eventsList.filter(e => e.audience.includes(role) && e.status === 'Sent');
+            eventsToFilter = eventsList.filter(e => e.audience.includes(role) && e.status === 'Sent' && e.dateTime > new Date());
         } else {
             eventsToFilter = [];
         }
 
-        return { visibleEvents: eventsToFilter, listTitle: title };
+        return { visibleEvents: eventsToFilter.sort((a,b) => a.dateTime.getTime() - b.dateTime.getTime()), listTitle: title };
     }, [role, status, eventsList]);
 
     const handleSendEvent = (eventId: string) => {
-        const event = initialEvents.find(e => e.id === eventId);
-        if (event) event.status = 'Sent';
-        setEventsList(prev => prev.filter(e => e.id !== eventId));
-        toast({ title: "Event Sent", description: `The event "${event?.name}" has been sent.` });
+        setEventsList(prev => prev.map(e => e.id === eventId ? { ...e, status: 'Sent' } : e).filter(e => e.status !== 'Draft' || e.id !== eventId));
+        toast({ title: "Event Sent", description: `The event has been sent.` });
     };
 
     const handleRejectEvent = (eventId: string) => {
-        const event = initialEvents.find(e => e.id === eventId);
-        if (event) event.status = 'Rejected';
-        setEventsList(prev => prev.filter(e => e.id !== eventId));
-        toast({ variant: "destructive", title: "Event Rejected", description: `The event "${event?.name}" has been rejected.` });
+        setEventsList(prev => prev.map(e => e.id === eventId ? { ...e, status: 'Rejected' } : e).filter(e => e.status !== 'Draft' || e.id !== eventId));
+        toast({ variant: "destructive", title: "Event Rejected", description: `The draft event has been rejected.` });
+    };
+
+    const handleExportCsv = () => {
+        const headers = ['id', 'name', 'description', 'dateTime', 'audience', 'status'];
+        const csvRows = [headers.join(',')];
+
+        visibleEvents.forEach(event => {
+            const row = [
+                event.id,
+                `"${event.name.replace(/"/g, '""')}"`,
+                `"${event.description.replace(/"/g, '""')}"`,
+                event.dateTime.toISOString(),
+                `"${event.audience.join(', ')}"`,
+                event.status
+            ];
+            csvRows.push(row.join(','));
+        });
+
+        const csvString = csvRows.join('\n');
+        const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        if (link.download !== undefined) {
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `${listTitle.toLowerCase().replace(/ /g, '_')}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
     };
     
     return (
         <Card>
             <CardHeader>
-                <div className='flex items-center gap-4'>
-                    {status && (
-                         <Button variant="outline" size="icon" onClick={() => router.push('/events?role=Admin')}>
-                            <ArrowLeft className="h-4 w-4" />
+                <div className='flex items-center justify-between'>
+                    <div className='flex items-center gap-4'>
+                        {status && (
+                             <Button variant="outline" size="icon" onClick={() => router.push('/dashboard?role=Admin')}>
+                                <ArrowLeft className="h-4 w-4" />
+                            </Button>
+                        )}
+                        <CardTitle className="flex items-center gap-2">
+                            <CalendarDays className="h-5 w-5" />
+                            {listTitle}
+                        </CardTitle>
+                    </div>
+                     {status && (
+                        <Button variant="outline" size="icon" onClick={handleExportCsv}>
+                            <FileDown className="h-4 w-4" />
+                            <span className="sr-only">Export as CSV</span>
                         </Button>
                     )}
-                    <CardTitle className="flex items-center gap-2">
-                        <CalendarDays className="h-5 w-5" />
-                        {listTitle}
-                    </CardTitle>
                 </div>
             </CardHeader>
             <CardContent>

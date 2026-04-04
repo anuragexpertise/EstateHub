@@ -49,16 +49,14 @@ export function AdminDashboard() {
         { title: "Security Staff", icon: Shield, role: 'Security', stats: [{ label: "Total", value: security.length, filter: 'all' }] },
         { title: "Balance", icon: IndianRupee, role: 'Financials', stats: [
             { label: "Available", value: `₹${balance.toLocaleString()}`, color: balance >= 0 ? "text-green-600" : "text-destructive", filter: 'all' }, 
-            { label: "Credits", value: `₹${totalCredits.toLocaleString()}`, color: "text-green-600", filter: 'all' }, 
-            { label: "Debits", value: `₹${totalDebits.toLocaleString()}`, color: "text-destructive", filter: 'all' }
         ]},
         { title: "Credits (Receipts)", icon: TrendingUp, role: 'Payments', stats: [
-            { label: "Pending", value: `₹${pendingCredits.toLocaleString()}`, color: "text-amber-500", filter: 'pending' }, 
-            { label: "Verified", value: `₹${verifiedCredits.toLocaleString()}`, color: "text-green-600", filter: 'verified' }
+            { label: "Pending", value: `${initialPayments.filter(p => p.status === 'Pending Verification').length}`, color: "text-amber-500", filter: 'pending' }, 
+            { label: "Verified", value: `${initialPayments.filter(p => p.status === 'Paid').length}`, color: "text-green-600", filter: 'verified' }
         ] },
         { title: "Debits (Expenses)", icon: TrendingDown, role: 'Expenses', stats: [
-            { label: "Pending", value: `₹${pendingDebits.toLocaleString()}`, color: "text-amber-500", filter: 'pending' }, 
-            { label: "Paid", value: `₹${paidDebits.toLocaleString()}`, color: "text-green-600", filter: 'paid' }
+            { label: "Pending", value: `${initialExpenses.filter(p => p.status === 'Pending').length}`, color: "text-amber-500", filter: 'pending' }, 
+            { label: "Paid", value: `${initialExpenses.filter(p => p.status === 'Paid').length}`, color: "text-green-600", filter: 'paid' }
         ] },
         { title: "Events", icon: CalendarDays, role: 'Events', stats: [
             { label: "Upcoming", value: upcomingEvents, filter: 'sent' }, 
