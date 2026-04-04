@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { accounts, users, roleDisplayNames } from '@/lib/data';
 import type { Expense, Account, UserRole } from '@/types';
+import { cn } from '@/lib/utils';
 
 
 const expenseFormSchema = z.object({
@@ -192,7 +193,7 @@ function NewExpenseCard({ onAddExpense }: { onAddExpense: (expense: Expense) => 
 
 export default function ExpensesPage() {
     const [expenses, setExpenses] = useState(initialExpenses);
-    const dateFormatter = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    const dateTimeFormatter = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
     
     const handleAddExpense = (newExpense: Expense) => {
         setExpenses(prevExpenses => [newExpense, ...prevExpenses].sort((a, b) => b.date.getTime() - a.date.getTime()));
@@ -225,15 +226,15 @@ export default function ExpensesPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {expenses.map(expense => (
-                                <TableRow key={expense.id}>
-                                    <TableCell>{dateFormatter.format(expense.date).replace(/ /g, '-')}</TableCell>
+                            {expenses.map((expense, index) => (
+                                <TableRow key={expense.id} className={cn(index % 2 === 0 && "bg-muted/50")}>
+                                    <TableCell>{dateTimeFormatter.format(expense.date).replace(',', '')}</TableCell>
                                     <TableCell>{accountName(expense.accountId)}</TableCell>
                                     <TableCell>{expense.description}</TableCell>
                                     <TableCell>
                                         <Badge variant={expense.status === 'Paid' ? 'secondary' : 'destructive'}>{expense.status}</Badge>
                                     </TableCell>
-                                    <TableCell className="text-right">₹{expense.amount.toLocaleString()}</TableCell>
+                                    <TableCell className="text-right text-red-600">₹{expense.amount.toLocaleString()}</TableCell>
                                 </TableRow>
                             ))}
                             {expenses.length === 0 && (

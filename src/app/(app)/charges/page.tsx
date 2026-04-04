@@ -15,9 +15,9 @@ function ContractorCharges() {
 
     // This is simplified logic. A real app would generate charges based on pass validity.
     const userCharges: Payment[] = [
-        { id: 'charge-con-1', userId: user.id, amount: rates.contractor['1day'], date: new Date(), status: 'Due', description: '1-Day Pass Fee' }
+        { id: 'charge-con-1', userId: user.id, accountId: 'acc-05', amount: rates.contractor['1day'], date: new Date(), status: 'Due', description: '1-Day Pass Fee' }
     ];
-    const dateFormatter = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    const dateTimeFormatter = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
     return (
         <Card>
@@ -41,10 +41,10 @@ function ContractorCharges() {
                     <TableBody>
                         {userCharges.map(charge => (
                              <TableRow key={charge.id}>
-                                <TableCell>{dateFormatter.format(charge.date).replace(/ /g, '-')}</TableCell>
+                                <TableCell>{dateTimeFormatter.format(charge.date).replace(',', '')}</TableCell>
                                 <TableCell>{charge.description}</TableCell>
                                 <TableCell><Badge variant="destructive">{charge.status}</Badge></TableCell>
-                                <TableCell className="text-right">₹{charge.amount.toLocaleString()}</TableCell>
+                                <TableCell className="text-right text-red-600">₹{charge.amount.toLocaleString()}</TableCell>
                             </TableRow>
                         ))}
                     </TableBody>

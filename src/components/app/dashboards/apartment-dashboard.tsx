@@ -1,6 +1,6 @@
 
 'use client';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { users, events, payments } from "@/lib/data";
 import { User, Building2, Wrench, Shield, CalendarDays, TrendingDown, CreditCard, IndianRupee } from "lucide-react";
 import { useSearchParams } from "next/navigation";
@@ -12,6 +12,7 @@ export function ApartmentDashboard() {
   const searchParams = useSearchParams();
   const role = searchParams.get('role');
   const currentUser = users.find(u => u.role === 'Apartment'); // Simplified for demo
+  const dateTimeFormatter = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
   
   const totalApartments = users.filter(u => u.role === 'Apartment').length;
   const totalContractors = users.filter(u => u.role === 'Contractor').length;
@@ -55,14 +56,14 @@ export function ApartmentDashboard() {
             </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-            {visibleEvents.length > 0 ? visibleEvents.slice(0, 3).map(event => (
-                  <div key={event.id} className="p-4 border rounded-lg">
+            {visibleEvents.length > 0 ? visibleEvents.slice(0, 3).map((event, index) => (
+                  <div key={event.id} className={cn("p-4 border rounded-lg", index % 2 !== 0 && "bg-muted/50")}>
                     <div className="flex justify-between items-start">
                         <div>
                             <h3 className="font-semibold">{event.name}</h3>
                             <p className="text-sm text-muted-foreground">{event.description}</p>
                         </div>
-                        <Badge variant="outline">{new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeStyle: 'short' }).format(event.dateTime)}</Badge>
+                        <Badge variant="outline">{dateTimeFormatter.format(event.dateTime)}</Badge>
                     </div>
                 </div>
             )) : (

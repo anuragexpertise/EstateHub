@@ -5,6 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { payments, users, shifts } from "@/lib/data";
 import { CreditCard, Users } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export function PersonnelCard() {
     const user = users.find(u => u.role === 'Security');
@@ -50,7 +51,7 @@ export function SalaryHistoryCard() {
         return null;
     }
     const userPayments = payments.filter(p => p.userId === user.id);
-    const dateFormatter = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    const dateTimeFormatter = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
     return (
         <Card>
@@ -71,11 +72,11 @@ export function SalaryHistoryCard() {
                 </TableRow>
                 </TableHeader>
                 <TableBody>
-                {userPayments.map((payment) => (
-                    <TableRow key={payment.id}>
+                {userPayments.map((payment, index) => (
+                    <TableRow key={payment.id} className={cn(index % 2 === 0 && "bg-muted/50")}>
                     <TableCell className="font-medium">{payment.description}</TableCell>
-                    <TableCell>{dateFormatter.format(payment.date).replace(/ /g, '-')}</TableCell>
-                    <TableCell className="text-right">₹{payment.amount.toLocaleString()}</TableCell>
+                    <TableCell>{dateTimeFormatter.format(payment.date).replace(',', '')}</TableCell>
+                    <TableCell className="text-right text-green-600">₹{payment.amount.toLocaleString()}</TableCell>
                     </TableRow>
                 ))}
                     {userPayments.length === 0 && (

@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { users, payments as initialPayments, expenses, events } from "@/lib/data";
 import type { User, Payment } from '@/types';
-import { ArrowLeft, Building2, Shield, Wrench, FileDown, Check, TrendingUp, TrendingDown, IndianRupee, CalendarDays } from "lucide-react";
+import { ArrowLeft, Building2, Shield, Wrench, FileDown, Check, TrendingUp, TrendingDown, IndianRupee, CalendarDays, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { UserProfileCard } from '@/components/app/dashboard/user-profile-card';
 import { useToast } from '@/hooks/use-toast';
@@ -22,7 +22,7 @@ export function AdminDashboard() {
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const { toast } = useToast();
 
-    const dateFormatter = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    const dateTimeFormatter = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
     // KPI Calculations
     const apartments = users.filter(u => u.role === 'Apartment');
@@ -173,13 +173,25 @@ export function AdminDashboard() {
     };
 
     const handleVerifyPayment = (paymentId: string) => {
-        const newPayments = payments.map(p => p.id === paymentId ? { ...p, status: 'Paid' } : p);
-        const allNewPayments = initialPayments.map(p => p.id === paymentId ? { ...p, status: 'Paid' } : p);
-        setPayments(newPayments);
-        initialPayments.length = 0;
-        Array.prototype.push.apply(initialPayments, allNewPayments);
-
+        const paymentIndex = initialPayments.findIndex(p => p.id === paymentId);
+        if (paymentIndex > -1) {
+            initialPayments[paymentIndex].status = 'Paid';
+        }
+        setPayments(prev => prev.filter(p => p.id !== paymentId));
         toast({ title: "Receipt Verified", description: "The payment has been marked as paid." });
+    };
+
+    const handleRejectPayment = (paymentId: string) => {
+        const paymentIndex = initialPayments.findIndex(p => p.id === paymentId);
+        if (paymentIndex > -1) {
+            initialPayments[paymentIndex].status = 'Rejected';
+        }
+        setPayments(prev => prev.filter(p => p.id !== paymentId));
+        toast({
+            variant: "destructive",
+            title: "Receipt Rejected",
+            description: "The payment has been marked as rejected.",
+        });
     };
     
     const userForPayment = (userId: string) => users.find(u => u.id === userId)?.name || 'Unknown';
@@ -220,14 +232,14 @@ export function AdminDashboard() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>{isApartmentList ? "Apartment ID" : isContractorList ? "Contractor ID" : "Staff ID"}</TableHead>
-                                <TableHead>{isApartmentList ? "Resident Name" : isContractorList ? "Contractor Name" : "Staff Name"}</TableHead>
+                                <TableHead>ID</TableHead>
+                                <TableHead>Name</TableHead>
                                 {isApartmentList && <TableHead>Size (sqft)</TableHead>}
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {selectedUserList.map(u => (
-                                <TableRow key={u.id} onClick={() => setSelectedUser(u)} className={"cursor-pointer"}>
+                            {selectedUserList.map((u, index) => (
+                                <TableRow key={u.id} onClick={() => setSelectedUser(u)} className={cn("cursor-pointer", index % 2 === 0 && "bg-muted/50")}>
                                     <TableCell className="font-medium">{u.id}</TableCell>
                                     <TableCell>{u.name}</TableCell>
                                     {isApartmentList && <TableCell>{u.details?.sqft}</TableCell>}
@@ -235,7 +247,7 @@ export function AdminDashboard() {
                             ))}
                             {selectedUserList.length === 0 && (
                                 <TableRow>
-                                    <TableCell colSpan={isApartmentList ? 3 : 2} className="text-center text-muted-foreground">No users found for this filter.</TableCell>
+                                    <TableCell colSpan={isApartmentList ? 3 : 2} className="text-center text-muted-foreground py-4">No users found for this filter.</TableCell>
                                 </TableRow>
                             )}
                         </TableBody>
@@ -274,33 +286,39 @@ export function AdminDashboard() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {payments.map((payment) => (
-                      <TableRow key={payment.id}>
+                    {payments.map((payment, index) => (
+                      <TableRow key={payment.id} className={cn(index % 2 === 0 && "bg-muted/50")}>
                         <TableCell className="font-medium">{userForPayment(payment.userId)}</TableCell>
                         <TableCell>{payment.description}</TableCell>
-                         <TableCell>
+                        <TableCell>
                             <Badge 
-                                variant={payment.status === 'Paid' ? 'secondary' : payment.status === 'Due' ? 'outline' : payment.status === 'Pending Verification' ? 'default' : 'destructive'}
-                                className={payment.status === 'Pending Verification' ? 'bg-amber-500 text-white' : ''}
+                                variant={payment.status === 'Paid' ? 'secondary' : payment.status === 'Due' || payment.status === 'Overdue' || payment.status === 'Rejected' ? 'destructive' : 'default'}
+                                className={cn(payment.status === 'Pending Verification' && 'bg-amber-500 text-white hover:bg-amber-500/80', payment.status === 'Paid' && 'bg-green-600 text-white hover:bg-green-600/80')}
                             >
                                 {payment.status}
                             </Badge>
                         </TableCell>
-                        <TableCell>{dateFormatter.format(new Date(payment.date)).replace(/ /g, '-')}</TableCell>
-                        <TableCell className="text-right">₹{payment.amount.toLocaleString()}</TableCell>
+                        <TableCell>{dateTimeFormatter.format(new Date(payment.date)).replace(',', '')}</TableCell>
+                        <TableCell className={cn("text-right font-semibold", payment.status === 'Paid' ? 'text-green-600' : 'text-foreground' )}>₹{payment.amount.toLocaleString()}</TableCell>
                         <TableCell className="text-center">
                           {payment.status === 'Pending Verification' && (
-                            <Button size="sm" onClick={() => handleVerifyPayment(payment.id)}>
-                                <Check className="mr-2 h-4 w-4" />
-                                Verify
-                            </Button>
+                            <div className="flex items-center justify-center gap-2">
+                                <Button size="sm" onClick={() => handleVerifyPayment(payment.id)}>
+                                    <Check className="mr-2 h-4 w-4" />
+                                    Verify
+                                </Button>
+                                <Button size="sm" variant="destructive" onClick={() => handleRejectPayment(payment.id)}>
+                                    <X className="mr-2 h-4 w-4" />
+                                    Reject
+                                </Button>
+                            </div>
                           )}
                         </TableCell>
                       </TableRow>
                     ))}
                     {payments.length === 0 && (
                         <TableRow>
-                            <TableCell colSpan={6} className="text-center text-muted-foreground">
+                            <TableCell colSpan={6} className="text-center text-muted-foreground py-4">
                                 No receipts found for this filter.
                             </TableCell>
                         </TableRow>

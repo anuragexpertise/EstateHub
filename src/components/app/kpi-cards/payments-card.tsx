@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { users, payments as initialPayments, roleDisplayNames, accounts } from "@/lib/data";
 import type { UserRole, Payment, Account } from '@/types';
-import { Receipt, Check, PlusCircle, Loader2 } from 'lucide-react';
+import { Receipt, Check, PlusCircle, Loader2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -20,6 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { useGlobalStore } from '@/hooks/use-global-store';
 import { ChargesAndPaymentHistoryCard } from './charges-payment-history-card';
+import { cn } from '@/lib/utils';
 
 const paymentFormSchema = z.object({
   accountId: z.string({ required_error: 'Please select an account.' }),
@@ -40,18 +41,24 @@ export function PaymentHistoryCard() {
     const user = users.find(u => u.role === role);
   
     const [payments, setPayments] = useState<Payment[]>(initialPayments);
-    const dateFormatter = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    const dateTimeFormatter = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   
     if (!user || !role) {
       return <Card><CardContent><p>User role not found.</p></CardContent></Card>;
     }
 
     const handleVerifyPayment = (paymentId: string) => {
+        const paymentIndex = initialPayments.findIndex(p => p.id === paymentId);
+        if (paymentIndex > -1) initialPayments[paymentIndex].status = 'Paid';
         setPayments(prev => prev.map(p => p.id === paymentId ? { ...p, status: 'Paid' } : p));
-        toast({
-            title: "Payment Verified",
-            description: "The payment has been marked as paid.",
-        });
+        toast({ title: "Payment Verified", description: "The payment has been marked as paid." });
+    }
+    
+    const handleRejectPayment = (paymentId: string) => {
+        const paymentIndex = initialPayments.findIndex(p => p.id === paymentId);
+        if (paymentIndex > -1) initialPayments[paymentIndex].status = 'Rejected';
+        setPayments(prev => prev.map(p => p.id === paymentId ? { ...p, status: 'Rejected' } : p));
+        toast({ variant: 'destructive', title: "Payment Rejected", description: "The payment has been marked as rejected." });
     }
 
     const userPayments = payments
@@ -91,32 +98,43 @@ export function PaymentHistoryCard() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {userPayments.map((payment) => (
-                <TableRow key={payment.id}>
+              {userPayments.map((payment, index) => (
+                <TableRow key={payment.id} className={cn(index % 2 === 0 && "bg-muted/50")}>
                   {(role === 'Admin' || role === 'Security') && <TableCell className="font-medium">{userForPayment(payment.userId)}</TableCell>}
                   <TableCell className="font-medium">{payment.description}</TableCell>
                   <TableCell>
                     <Badge 
-                      variant={payment.status === 'Paid' ? 'secondary' : payment.status === 'Due' ? 'outline' : payment.status === 'Pending Verification' ? 'default' : 'destructive'}
-                      className={payment.status === 'Pending Verification' ? 'bg-amber-500 text-white' : ''}
+                        variant={payment.status === 'Paid' ? 'secondary' : payment.status === 'Due' || payment.status === 'Overdue' || payment.status === 'Rejected' ? 'destructive' : 'default'}
+                        className={cn(payment.status === 'Pending Verification' && 'bg-amber-500 text-white hover:bg-amber-500/80', payment.status === 'Paid' && 'bg-green-600 text-white hover:bg-green-600/80')}
                     >
                       {payment.status}
                     </Badge>
                   </TableCell>
-                  <TableCell>{dateFormatter.format(payment.date).replace(/ /g, '-')}</TableCell>
+                  <TableCell>{dateTimeFormatter.format(payment.date).replace(',', '')}</TableCell>
                   <TableCell className="text-right">₹{payment.amount.toLocaleString()}</TableCell>
                   {role === 'Admin' && (
                       <TableCell className="text-center">
                           {payment.status === 'Pending Verification' && (
-                              <Button size="sm" onClick={() => handleVerifyPayment(payment.id)}>
-                                  <Check className="mr-2 h-4 w-4" />
-                                  Verify
-                              </Button>
+                              <div className="flex items-center justify-center gap-2">
+                                  <Button size="sm" onClick={() => handleVerifyPayment(payment.id)}>
+                                      <Check className="mr-2 h-4 w-4" />
+                                      Verify
+                                  </Button>
+                                  <Button size="sm" variant="destructive" onClick={() => handleRejectPayment(payment.id)}>
+                                    <X className="mr-2 h-4 w-4" />
+                                    Reject
+                                  </Button>
+                              </div>
                           )}
                       </TableCell>
                   )}
                 </TableRow>
               ))}
+              {userPayments.length === 0 && (
+                <TableRow>
+                    <TableCell colSpan={(role === 'Admin' || role === 'Security') ? (role === 'Admin' ? 6 : 5) : 4} className="text-center text-muted-foreground py-4">No payments found.</TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>

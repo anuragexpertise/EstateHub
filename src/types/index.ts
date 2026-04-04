@@ -24,7 +24,7 @@ export type Payment = {
   accountId: string;
   amount: number;
   date: Date;
-  status: 'Paid' | 'Due' | 'Overdue' | 'Pending Verification';
+  status: 'Paid' | 'Due' | 'Overdue' | 'Pending Verification' | 'Rejected';
   description: string;
 };
 

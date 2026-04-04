@@ -24,7 +24,8 @@ import { useToast } from '@/hooks/use-toast';
 const eventFormSchema = z.object({
   name: z.string().min(3, { message: 'Event name must be at least 3 characters.' }),
   description: z.string().min(10, { message: 'Description must be at least 10 characters.' }),
-  dateTime: z.date({ required_error: 'A date and time is required.' }),
+  dateTime: z.date({ required_error: 'A date is required.' }),
+  time: z.string({ required_error: 'A time is required.' }),
   audience: z.array(z.string()).refine((value) => value.some((item) => item), {
     message: 'You have to select at least one role.',
   }),
@@ -40,6 +41,7 @@ function CreateEventCard({ onAddEvent }: { onAddEvent: (event: Event) => void })
           name: '',
           description: '',
           audience: [],
+          time: '12:00',
         },
     });
     
@@ -47,11 +49,15 @@ function CreateEventCard({ onAddEvent }: { onAddEvent: (event: Event) => void })
         setIsSubmitting(true);
         // Simulate API call
         setTimeout(() => {
+            const [hours, minutes] = values.time.split(':').map(Number);
+            const combinedDateTime = new Date(values.dateTime);
+            combinedDateTime.setHours(hours, minutes, 0, 0);
+
             const newEvent: Event = {
                 id: `evt-${Date.now()}`,
                 name: values.name,
                 description: values.description,
-                dateTime: values.dateTime,
+                dateTime: combinedDateTime,
                 audience: values.audience as UserRole[],
                 status: 'Draft',
             };
@@ -102,41 +108,56 @@ function CreateEventCard({ onAddEvent }: { onAddEvent: (event: Event) => void })
                                 </FormItem>
                             )}
                         />
-                         <FormField
-                            control={form.control}
-                            name="dateTime"
-                            render={({ field }) => (
-                                <FormItem className="flex flex-col">
-                                <FormLabel>Date & Time</FormLabel>
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                    <FormControl>
-                                        <Button
-                                        variant={"outline"}
-                                        className={cn(
-                                            "w-[240px] pl-3 text-left font-normal",
-                                            !field.value && "text-muted-foreground"
-                                        )}
-                                        >
-                                        {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
-                                        <CalendarDays className="ml-auto h-4 w-4 opacity-50" />
-                                        </Button>
-                                    </FormControl>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0" align="start">
-                                    <Calendar
-                                        mode="single"
-                                        selected={field.value}
-                                        onSelect={field.onChange}
-                                        disabled={(date) => date < new Date()}
-                                        initialFocus
-                                    />
-                                    </PopoverContent>
-                                </Popover>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                         />
+                        <div className="flex flex-col sm:flex-row gap-4">
+                            <FormField
+                                control={form.control}
+                                name="dateTime"
+                                render={({ field }) => (
+                                    <FormItem className="flex flex-col">
+                                    <FormLabel>Date</FormLabel>
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                        <FormControl>
+                                            <Button
+                                            variant={"outline"}
+                                            className={cn(
+                                                "w-[240px] pl-3 text-left font-normal",
+                                                !field.value && "text-muted-foreground"
+                                            )}
+                                            >
+                                            {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+                                            <CalendarDays className="ml-auto h-4 w-4 opacity-50" />
+                                            </Button>
+                                        </FormControl>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-auto p-0" align="start">
+                                        <Calendar
+                                            mode="single"
+                                            selected={field.value}
+                                            onSelect={field.onChange}
+                                            disabled={(date) => date < new Date()}
+                                            initialFocus
+                                        />
+                                        </PopoverContent>
+                                    </Popover>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                             <FormField
+                                control={form.control}
+                                name="time"
+                                render={({ field }) => (
+                                    <FormItem className="flex flex-col">
+                                        <FormLabel>Time</FormLabel>
+                                        <FormControl>
+                                            <Input type="time" className="w-[240px]" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
                         <FormField
                             control={form.control}
                             name="audience"
@@ -148,39 +169,41 @@ function CreateEventCard({ onAddEvent }: { onAddEvent: (event: Event) => void })
                                             Select which roles will see this event.
                                         </p>
                                     </div>
-                                    {roles.map((item) => (
-                                        <FormField
-                                        key={item.role}
-                                        control={form.control}
-                                        name="audience"
-                                        render={({ field }) => {
-                                            return (
-                                            <FormItem
-                                                key={item.role}
-                                                className="flex flex-row items-start space-x-3 space-y-0"
-                                            >
-                                                <FormControl>
-                                                <Checkbox
-                                                    checked={field.value?.includes(item.role)}
-                                                    onCheckedChange={(checked) => {
-                                                    return checked
-                                                        ? field.onChange([...field.value, item.role])
-                                                        : field.onChange(
-                                                            field.value?.filter(
-                                                            (value) => value !== item.role
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                        {roles.map((item) => (
+                                            <FormField
+                                            key={item.role}
+                                            control={form.control}
+                                            name="audience"
+                                            render={({ field }) => {
+                                                return (
+                                                <FormItem
+                                                    key={item.role}
+                                                    className="flex flex-row items-start space-x-3 space-y-0"
+                                                >
+                                                    <FormControl>
+                                                    <Checkbox
+                                                        checked={field.value?.includes(item.role)}
+                                                        onCheckedChange={(checked) => {
+                                                        return checked
+                                                            ? field.onChange([...field.value, item.role])
+                                                            : field.onChange(
+                                                                field.value?.filter(
+                                                                (value) => value !== item.role
+                                                                )
                                                             )
-                                                        )
-                                                    }}
-                                                />
-                                                </FormControl>
-                                                <FormLabel className="font-normal">
-                                                    {item.displayName}
-                                                </FormLabel>
-                                            </FormItem>
-                                            )
-                                        }}
-                                        />
-                                    ))}
+                                                        }}
+                                                    />
+                                                    </FormControl>
+                                                    <FormLabel className="font-normal">
+                                                        {item.displayName}
+                                                    </FormLabel>
+                                                </FormItem>
+                                                )
+                                            }}
+                                            />
+                                        ))}
+                                    </div>
                                     <FormMessage />
                                 </FormItem>
                             )}
@@ -199,6 +222,7 @@ function CreateEventCard({ onAddEvent }: { onAddEvent: (event: Event) => void })
 function EventList() {
     const searchParams = useSearchParams();
     const role = searchParams.get('role') as UserRole | null;
+    const dateTimeFormatter = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
 
     const visibleEvents = role ? initialEvents.filter(e => e.audience.includes(role) && e.status === 'Sent') : [];
     
@@ -211,14 +235,14 @@ function EventList() {
                 </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-                {visibleEvents.length > 0 ? visibleEvents.map(event => (
-                     <div key={event.id} className="p-4 border rounded-lg">
+                {visibleEvents.length > 0 ? visibleEvents.map((event, index) => (
+                     <div key={event.id} className={cn("p-4 border rounded-lg", index % 2 !== 0 && "bg-muted/50")}>
                         <div className="flex justify-between items-start">
                             <div>
                                 <h3 className="font-semibold">{event.name}</h3>
                                 <p className="text-sm text-muted-foreground">{event.description}</p>
                             </div>
-                            <Badge variant="outline">{new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeStyle: 'short' }).format(event.dateTime)}</Badge>
+                            <Badge variant="outline">{dateTimeFormatter.format(event.dateTime)}</Badge>
                         </div>
                     </div>
                 )) : (
@@ -226,7 +250,7 @@ function EventList() {
                 )}
             </CardContent>
         </Card>
-    )
+    );
 }
 
 export default function EventsPage() {

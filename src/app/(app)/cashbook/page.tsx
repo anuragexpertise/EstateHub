@@ -7,6 +7,7 @@ import { payments, expenses, users } from "@/lib/data";
 import { useSearchParams } from "next/navigation";
 import { UserRole } from "@/types";
 import { ChargesAndPaymentHistoryCard } from "@/components/app/kpi-cards/charges-payment-history-card";
+import { cn } from "@/lib/utils";
 
 type LedgerEntry = {
     date: Date;
@@ -46,7 +47,7 @@ export default function CashbookPage() {
     const allPayments = expenses.filter(e => e.status === 'Paid').map(e => ({
         type: 'payment' as const,
         date: e.date,
-        account: e.account,
+        account: e.accountId,
         description: e.description,
         folio: e.id,
         amount: e.amount,
@@ -81,7 +82,7 @@ export default function CashbookPage() {
         }
     });
     
-    const dateFormatter = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    const dateTimeFormatter = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
     return (
         <div className="space-y-6">
@@ -133,27 +134,27 @@ export default function CashbookPage() {
                                     </TableRow>
                                 ) : (
                                     ledger.map((entry, index) => (
-                                        <TableRow key={index}>
+                                        <TableRow key={index} className={cn(index % 2 === 0 ? "bg-muted/50" : "")}>
                                             {/* Receipt Data */}
-                                            <TableCell>{entry.receiptAccount ? dateFormatter.format(entry.date).replace(/ /g, '-') : ''}</TableCell>
+                                            <TableCell>{entry.receiptAccount ? dateTimeFormatter.format(entry.date).replace(',', '') : ''}</TableCell>
                                             <TableCell>{entry.receiptAccount}</TableCell>
                                             <TableCell>{entry.receiptDescription}</TableCell>
                                             <TableCell>{entry.receiptFolio}</TableCell>
-                                            <TableCell className="text-right">{entry.receiptCash?.toLocaleString('en-IN')}</TableCell>
-                                            <TableCell className="text-right">{entry.receiptOther?.toLocaleString('en-IN')}</TableCell>
-                                            <TableCell className="text-right font-semibold">{entry.receiptTotal?.toLocaleString('en-IN')}</TableCell>
+                                            <TableCell className="text-right text-green-600">{entry.receiptCash?.toLocaleString('en-IN')}</TableCell>
+                                            <TableCell className="text-right text-green-600">{entry.receiptOther?.toLocaleString('en-IN')}</TableCell>
+                                            <TableCell className="text-right font-semibold text-green-700">{entry.receiptTotal?.toLocaleString('en-IN')}</TableCell>
                                             
                                             {/* Payment Data */}
-                                            <TableCell className="border-l">{entry.paymentAccount ? dateFormatter.format(entry.date).replace(/ /g, '-') : ''}</TableCell>
+                                            <TableCell className="border-l">{entry.paymentAccount ? dateTimeFormatter.format(entry.date).replace(',', '') : ''}</TableCell>
                                             <TableCell>{entry.paymentAccount}</TableCell>
                                             <TableCell>{entry.paymentDescription}</TableCell>
                                             <TableCell>{entry.paymentFolio}</TableCell>
-                                            <TableCell className="text-right">{entry.paymentCash?.toLocaleString('en-IN')}</TableCell>
-                                            <TableCell className="text-right">{entry.paymentOther?.toLocaleString('en-IN')}</TableCell>
-                                            <TableCell className="text-right font-semibold">{entry.paymentTotal?.toLocaleString('en-IN')}</TableCell>
+                                            <TableCell className="text-right text-red-600">{entry.paymentCash?.toLocaleString('en-IN')}</TableCell>
+                                            <TableCell className="text-right text-red-600">{entry.paymentOther?.toLocaleString('en-IN')}</TableCell>
+                                            <TableCell className="text-right font-semibold text-red-700">{entry.paymentTotal?.toLocaleString('en-IN')}</TableCell>
 
                                             {/* Balance */}
-                                            <TableCell className={`text-right font-semibold border-l ${entry.balance < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                            <TableCell className={cn("text-right font-bold border-l", entry.balance < 0 ? 'text-destructive' : 'text-green-600')}>
                                                 {entry.balance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                             </TableCell>
                                         </TableRow>
