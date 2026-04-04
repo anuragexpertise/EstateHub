@@ -27,6 +27,24 @@ export type Payment = {
   description: string;
 };
 
+export type Expense = {
+  id: string;
+  account: string;
+  amount: number;
+  date: Date;
+  status: 'Pending' | 'Paid';
+  description: string;
+};
+
+export type Event = {
+  id: string;
+  name: string;
+  description: string;
+  dateTime: Date;
+  audience: UserRole[];
+  status: 'Draft' | 'Sent';
+};
+
 export type Transaction = {
   id: string;
   date: Date;

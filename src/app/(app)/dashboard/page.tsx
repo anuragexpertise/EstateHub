@@ -1,37 +1,14 @@
 
 'use client';
 import * as React from 'react';
-import { useSearchParams, usePathname } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import type { UserRole } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-
-import { EnrollCard } from '@/components/app/kpi-cards/enroll-card';
-import { PaymentsCard, PaymentHistoryCard } from '@/components/app/kpi-cards/payments-card';
-import { ScanCard } from '@/components/app/kpi-cards/scan-card';
-import { PersonnelCard, SalaryHistoryCard } from '@/components/app/kpi-cards/personnel-card';
-import { SettingsCard, ApartmentRateManagementCard, UtilityContractorRateManagementCard, WorkShiftsCard } from '@/components/app/kpi-cards/settings-card';
-import { useCardStore } from '@/hooks/use-card-store';
-import { InfoCard } from '@/components/app/kpi-cards/info-card';
-import { ProfileCard } from '@/components/app/kpi-cards/profile-card';
-import { roleDisplayNames } from '@/lib/data';
-import { ChargesAndPaymentHistoryCard } from '@/components/app/kpi-cards/charges-payment-history-card';
-
-const cardComponents: { [key: string]: React.ReactNode } = {
-    'Enrollment': <EnrollCard />,
-    'Payment History': <PaymentHistoryCard />,
-    'Charges and Payment History': <ChargesAndPaymentHistoryCard />,
-    'New Payment': <PaymentsCard />,
-    'Scan Pass': <ScanCard />,
-    'Work Shift': <PersonnelCard />,
-    'Salary History': <SalaryHistoryCard />,
-    'User Settings': <SettingsCard />,
-    'Apartment Rate Management': <ApartmentRateManagementCard />,
-    'Utility Contractor Rate Management': <UtilityContractorRateManagementCard />,
-    'Shift Management': <WorkShiftsCard />,
-    'Info': <InfoCard />,
-    'Profile': <ProfileCard />,
-};
+import { AdminDashboard } from '@/components/app/dashboards/admin-dashboard';
+import { ApartmentDashboard } from '@/components/app/dashboards/apartment-dashboard';
+import { ContractorDashboard } from '@/components/app/dashboards/contractor-dashboard';
+import { SecurityDashboard } from '@/components/app/dashboards/security-dashboard';
 
 function DashboardSkeleton() {
     return (
@@ -47,14 +24,30 @@ function DashboardSkeleton() {
     )
 }
 
+const RoleSpecificDashboard = ({ role }: { role: UserRole }) => {
+    switch (role) {
+        case 'Admin':
+            return <AdminDashboard />;
+        case 'Apartment':
+            return <ApartmentDashboard />;
+        case 'Contractor':
+            return <ContractorDashboard />;
+        case 'Security':
+            return <SecurityDashboard />;
+        default:
+            return (
+                <Card>
+                    <CardHeader><CardTitle>Welcome</CardTitle></CardHeader>
+                    <CardContent><p>Your dashboard is being set up.</p></CardContent>
+                </Card>
+            );
+    }
+}
+
 export default function DashboardPage() {
   const searchParams = useSearchParams();
-  const pathname = usePathname();
   const role = searchParams.get('role') as UserRole | null;
-  const { getLayout } = useCardStore();
-
-  const pageKey = pathname.split('/').pop() || 'dashboard';
-
+  
   if (!role) {
       return (
           <Card>
@@ -64,28 +57,9 @@ export default function DashboardPage() {
       );
   }
 
-  const layoutKey = `${role}-${pageKey}`;
-  const layout = getLayout(layoutKey);
-
   return (
     <React.Suspense fallback={<DashboardSkeleton />}>
-        <div className="space-y-6">
-            {layout.map(cardId => (
-                <div key={cardId}>
-                    {cardComponents[cardId]}
-                </div>
-            ))}
-            {layout.length === 0 && (
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Welcome, {roleDisplayNames[role]}!</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p>This page is empty. Go to the 'Customize' page to add some cards!</p>
-                    </CardContent>
-                </Card>
-            )}
-        </div>
+        <RoleSpecificDashboard role={role} />
     </React.Suspense>
   );
 }

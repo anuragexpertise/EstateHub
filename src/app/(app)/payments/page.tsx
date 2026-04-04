@@ -5,33 +5,7 @@ import { useSearchParams, usePathname } from 'next/navigation';
 import type { UserRole } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-
-import { EnrollCard } from '@/components/app/kpi-cards/enroll-card';
 import { PaymentsCard, PaymentHistoryCard } from '@/components/app/kpi-cards/payments-card';
-import { ScanCard } from '@/components/app/kpi-cards/scan-card';
-import { PersonnelCard, SalaryHistoryCard } from '@/components/app/kpi-cards/personnel-card';
-import { SettingsCard, ApartmentRateManagementCard, UtilityContractorRateManagementCard, WorkShiftsCard } from '@/components/app/kpi-cards/settings-card';
-import { useCardStore } from '@/hooks/use-card-store';
-import { InfoCard } from '@/components/app/kpi-cards/info-card';
-import { ProfileCard } from '@/components/app/kpi-cards/profile-card';
-import { allNavItems } from '@/lib/data';
-import { ChargesAndPaymentHistoryCard } from '@/components/app/kpi-cards/charges-payment-history-card';
-
-const cardComponents: { [key: string]: React.ReactNode } = {
-    'Enrollment': <EnrollCard />,
-    'Payment History': <PaymentHistoryCard />,
-    'Charges and Payment History': <ChargesAndPaymentHistoryCard />,
-    'New Payment': <PaymentsCard />,
-    'Scan Pass': <ScanCard />,
-    'Work Shift': <PersonnelCard />,
-    'Salary History': <SalaryHistoryCard />,
-    'User Settings': <SettingsCard />,
-    'Apartment Rate Management': <ApartmentRateManagementCard />,
-    'Utility Contractor Rate Management': <UtilityContractorRateManagementCard />,
-    'Shift Management': <WorkShiftsCard />,
-    'Info': <InfoCard />,
-    'Profile': <ProfileCard />,
-};
 
 function PageSkeleton() {
     return (
@@ -43,43 +17,39 @@ function PageSkeleton() {
 
 export default function PaymentsPage() {
   const searchParams = useSearchParams();
-  const pathname = usePathname();
   const role = searchParams.get('role') as UserRole | null;
-  const { getLayout } = useCardStore();
-  const navItem = allNavItems.find(item => item.href === pathname && item.roles.includes(role || 'Admin'));
-  const pageKey = navItem?.label.toLowerCase().replace(/ /g, '-') || pathname.split('/').pop() || 'payments';
-
+  
   if (!role) {
       return (
           <Card>
-              <CardHeader><CardTitle>Welcome to EstateHub</CardTitle></CardHeader>
+              <CardHeader><CardTitle>Access Denied</CardTitle></CardHeader>
               <CardContent><p>Please select a role from the login page to continue.</p></CardContent>
           </Card>
       );
   }
 
-  const layoutKey = `${role}-${pageKey}`;
-  const layout = getLayout(layoutKey);
+  const renderContent = () => {
+    switch(role) {
+        case 'Admin':
+            return (
+                <div className="space-y-6">
+                    <PaymentsCard />
+                    <PaymentHistoryCard />
+                </div>
+            );
+        case 'Security':
+            return <PaymentsCard />;
+        case 'Apartment':
+        case 'Contractor':
+            return <PaymentHistoryCard />;
+        default:
+            return <p>No payment information available.</p>;
+    }
+  }
 
   return (
     <React.Suspense fallback={<PageSkeleton />}>
-        <div className="space-y-6">
-            {layout.map(cardId => (
-                <div key={cardId}>
-                    {cardComponents[cardId]}
-                </div>
-            ))}
-            {layout.length === 0 && (
-                <Card>
-                    <CardHeader>
-                        <CardTitle>{navItem?.label || "Page"}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p>This page is empty. Go to the 'Customize' page to add some cards!</p>
-                    </CardContent>
-                </Card>
-            )}
-        </div>
+        {renderContent()}
     </React.Suspense>
   );
 }

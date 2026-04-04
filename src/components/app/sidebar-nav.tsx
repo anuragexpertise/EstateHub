@@ -3,10 +3,19 @@
 
 import { useSearchParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import type { UserRole } from '@/types';
+import type { UserRole, NavItem } from '@/types';
 import { cn } from '@/lib/utils';
 import * as React from 'react';
 import { allNavItems } from '@/lib/data';
+
+const getLabel = (item: NavItem, role: UserRole) => {
+    if (item.href === '/payments') {
+        if (role === 'Admin') return 'Receipts';
+        if (role === 'Security') return 'New Receipt';
+        if (role === 'Apartment' || role === 'Contractor') return 'Payments';
+    }
+    return item.label;
+}
 
 export function SidebarNav({ isMobile = false, onLinkClick }: { isMobile?: boolean, onLinkClick?: () => void }) {
   const searchParams = useSearchParams();
@@ -42,7 +51,7 @@ export function SidebarNav({ isMobile = false, onLinkClick }: { isMobile?: boole
               onClick={handleLinkClick}
             >
                 <item.icon className="h-5 w-5" />
-                {item.label}
+                {getLabel(item, role)}
             </Link>
         ))}
     </nav>

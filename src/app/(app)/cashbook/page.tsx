@@ -3,8 +3,85 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Book } from "lucide-react";
+import { payments, expenses, users } from "@/lib/data";
+import { useSearchParams } from "next/navigation";
+import { UserRole } from "@/types";
+import { ChargesAndPaymentHistoryCard } from "@/components/app/kpi-cards/charges-payment-history-card";
+
+type LedgerEntry = {
+    date: Date;
+    receiptAccount?: string;
+    receiptDescription?: string;
+    receiptFolio?: string;
+    receiptCash?: number;
+    receiptOther?: number;
+    receiptTotal?: number;
+    paymentAccount?: string;
+    paymentDescription?: string;
+    paymentFolio?: string;
+    paymentCash?: number;
+    paymentOther?: number;
+    paymentTotal?: number;
+    balance: number;
+}
 
 export default function CashbookPage() {
+    const searchParams = useSearchParams();
+    const role = searchParams.get('role') as UserRole | null;
+    const user = users.find(u => u.role === role);
+
+    if (role && role !== 'Admin') {
+        return <ChargesAndPaymentHistoryCard />;
+    }
+    
+    const allReceipts = payments.filter(p => p.status === 'Paid').map(p => ({
+        type: 'receipt' as const,
+        date: p.date,
+        account: 'Maintenance', // Simplified for now
+        description: p.description,
+        folio: p.userId,
+        amount: p.amount,
+    }));
+
+    const allPayments = expenses.filter(e => e.status === 'Paid').map(e => ({
+        type: 'payment' as const,
+        date: e.date,
+        account: e.account,
+        description: e.description,
+        folio: e.id,
+        amount: e.amount,
+    }));
+
+    const allTransactions = [...allReceipts, ...allPayments].sort((a, b) => a.date.getTime() - b.date.getTime());
+
+    let runningBalance = 0;
+    const ledger: LedgerEntry[] = allTransactions.map(t => {
+        if (t.type === 'receipt') {
+            runningBalance += t.amount;
+            return {
+                date: t.date,
+                receiptAccount: t.account,
+                receiptDescription: t.description,
+                receiptFolio: t.folio,
+                receiptCash: t.amount,
+                receiptTotal: t.amount,
+                balance: runningBalance,
+            };
+        } else { // payment
+            runningBalance -= t.amount;
+            return {
+                date: t.date,
+                paymentAccount: t.account,
+                paymentDescription: t.description,
+                paymentFolio: t.folio,
+                paymentCash: t.amount,
+                paymentTotal: t.amount,
+                balance: runningBalance,
+            };
+        }
+    });
+    
+    const dateFormatter = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
     return (
         <div className="space-y-6">
@@ -48,56 +125,40 @@ export default function CashbookPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                <TableRow>
-                                    <TableCell colSpan={15} className="text-center text-muted-foreground py-10">
-                                        No transactions to display. This is a placeholder for the cashbook functionality.
-                                    </TableCell>
-                                </TableRow>
-                                {/* Example Row - Can be replaced with dynamic data */}
-                                <TableRow>
-                                    {/* Receipt Data */}
-                                    <TableCell>01-Jul-24</TableCell>
-                                    <TableCell>Maintenance</TableCell>
-                                    <TableCell>J. Doe - Unit 101</TableCell>
-                                    <TableCell>001</TableCell>
-                                    <TableCell className="text-right">1200.00</TableCell>
-                                    <TableCell className="text-right">0.00</TableCell>
-                                    <TableCell className="text-right font-semibold">1200.00</TableCell>
-                                    
-                                    {/* Payment Data */}
-                                    <TableCell className="border-l"></TableCell>
-                                    <TableCell></TableCell>
-                                    <TableCell></TableCell>
-                                    <TableCell></TableCell>
-                                    <TableCell></TableCell>
-                                    <TableCell></TableCell>
-                                    <TableCell></TableCell>
+                                {ledger.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={15} className="text-center text-muted-foreground py-10">
+                                            No transactions to display.
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    ledger.map((entry, index) => (
+                                        <TableRow key={index}>
+                                            {/* Receipt Data */}
+                                            <TableCell>{entry.receiptAccount ? dateFormatter.format(entry.date).replace(/ /g, '-') : ''}</TableCell>
+                                            <TableCell>{entry.receiptAccount}</TableCell>
+                                            <TableCell>{entry.receiptDescription}</TableCell>
+                                            <TableCell>{entry.receiptFolio}</TableCell>
+                                            <TableCell className="text-right">{entry.receiptCash?.toLocaleString('en-IN')}</TableCell>
+                                            <TableCell className="text-right">{entry.receiptOther?.toLocaleString('en-IN')}</TableCell>
+                                            <TableCell className="text-right font-semibold">{entry.receiptTotal?.toLocaleString('en-IN')}</TableCell>
+                                            
+                                            {/* Payment Data */}
+                                            <TableCell className="border-l">{entry.paymentAccount ? dateFormatter.format(entry.date).replace(/ /g, '-') : ''}</TableCell>
+                                            <TableCell>{entry.paymentAccount}</TableCell>
+                                            <TableCell>{entry.paymentDescription}</TableCell>
+                                            <TableCell>{entry.paymentFolio}</TableCell>
+                                            <TableCell className="text-right">{entry.paymentCash?.toLocaleString('en-IN')}</TableCell>
+                                            <TableCell className="text-right">{entry.paymentOther?.toLocaleString('en-IN')}</TableCell>
+                                            <TableCell className="text-right font-semibold">{entry.paymentTotal?.toLocaleString('en-IN')}</TableCell>
 
-                                    {/* Balance */}
-                                    <TableCell className="text-right font-semibold border-l">1200.00</TableCell>
-                                </TableRow>
-                                <TableRow>
-                                    {/* Receipt Data */}
-                                    <TableCell></TableCell>
-                                    <TableCell></TableCell>
-                                    <TableCell></TableCell>
-                                    <TableCell></TableCell>
-                                    <TableCell></TableCell>
-                                    <TableCell></TableCell>
-                                    <TableCell></TableCell>
-                                    
-                                    {/* Payment Data */}
-                                    <TableCell className="border-l">05-Jul-24</TableCell>
-                                    <TableCell>Salary</TableCell>
-                                    <TableCell>M. Guard - Security</TableCell>
-                                    <TableCell>002</TableCell>
-                                    <TableCell className="text-right">2500.00</TableCell>
-                                    <TableCell className="text-right">0.00</TableCell>
-                                    <TableCell className="text-right font-semibold">2500.00</TableCell>
-
-                                    {/* Balance */}
-                                    <TableCell className="text-right font-semibold border-l text-red-600">-1300.00</TableCell>
-                                </TableRow>
+                                            {/* Balance */}
+                                            <TableCell className={`text-right font-semibold border-l ${entry.balance < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                                {entry.balance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
                             </TableBody>
                         </Table>
                     </div>

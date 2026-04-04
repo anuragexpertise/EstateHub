@@ -1,13 +1,11 @@
 
 
-import type { User, Payment, Transaction, Shift, UserRole, NavItem, Account } from '@/types';
+import type { User, Payment, Transaction, Shift, UserRole, NavItem, Account, Event, Expense } from '@/types';
 import {
   LayoutDashboard,
-  UserPlus,
   Settings,
   CreditCard,
   ScanLine,
-  Users,
   Brush,
   UserCog,
   Building2,
@@ -15,6 +13,9 @@ import {
   Shield,
   Receipt,
   Book,
+  CalendarDays,
+  TrendingUp,
+  TrendingDown,
 } from 'lucide-react';
 
 export const users: User[] = [
@@ -39,8 +40,19 @@ export const payments: Payment[] = [
 
   // Other payments
   { id: 'pay-005', userId: 'user-con-elec', amount: 500, date: new Date(now.getFullYear(), now.getMonth() - 2, 20), status: 'Paid', description: 'Vendor Pass' },
-  { id: 'pay-006', userId: 'user-sec-01', amount: 2500, date: new Date(now.getFullYear(), now.getMonth(), 5), status: 'Paid', description: 'Salary' },
-  { id: 'pay-007', userId: 'user-sec-02', amount: 2500, date: new Date(now.getFullYear(), now.getMonth(), 5), status: 'Paid', description: 'Salary' },
+];
+
+export const expenses: Expense[] = [
+  { id: 'exp-001', account: 'Security Salaries', amount: 5000, date: new Date(now.getFullYear(), now.getMonth(), 5), status: 'Paid', description: 'Monthly salary for security staff' },
+  { id: 'exp-002', account: 'Capital Goods', amount: 15000, date: new Date(now.getFullYear(), now.getMonth() -1, 20), status: 'Paid', description: 'New lobby furniture' },
+  { id: 'exp-003', account: 'Utilities', amount: 2200, date: new Date(now.getFullYear(), now.getMonth(), 10), status: 'Pending', description: 'Electricity bill for common areas' },
+];
+
+export const events: Event[] = [
+    { id: 'evt-001', name: 'Annual General Body Meeting', description: 'Discussing the financials of the last year and plans for the next.', dateTime: new Date(now.getFullYear(), now.getMonth() + 1, 15, 11, 0), audience: ['Admin', 'Apartment'], status: 'Sent' },
+    { id: 'evt-002', name: 'Diwali Celebration', description: 'Join us for a grand Diwali celebration in the community hall.', dateTime: new Date(now.getFullYear(), 10, 5, 18, 30), audience: ['Admin', 'Apartment', 'Contractor', 'Security'], status: 'Sent' },
+    { id: 'evt-003', name: 'Water Supply Disruption', description: 'Water supply will be unavailable on the 25th from 10 AM to 2 PM for maintenance.', dateTime: new Date(now.getFullYear(), now.getMonth(), 25, 10, 0), audience: ['Apartment'], status: 'Sent' },
+    { id: 'evt-004', name: 'Security Drill', description: 'A mandatory security drill is scheduled for all security personnel.', dateTime: new Date(now.getFullYear(), now.getMonth(), 28, 15, 0), audience: ['Security'], status: 'Draft' },
 ];
 
 
@@ -79,12 +91,17 @@ export const rates = {
 
 export const allNavItems: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['Admin', 'Apartment', 'Contractor', 'Security'] },
-  { href: '/cashbook', label: 'Cashbook', icon: Book, roles: ['Admin'] },
-  { href: '/payments', label: 'Receipts', icon: Receipt, roles: ['Admin', 'Security'] },
-  { href: '/payments', label: 'Payments', icon: CreditCard, roles: ['Apartment', 'Contractor'] },
-  { href: '/enroll', label: 'Enroll Entities', icon: UserPlus, roles: [] },
+  { href: '/events', label: 'Events', icon: CalendarDays, roles: ['Admin', 'Apartment', 'Contractor', 'Security'] },
+  
+  { href: '/cashbook', label: 'Cashbook', icon: Book, roles: ['Admin', 'Apartment', 'Contractor', 'Security'] },
+
+  // This route is overloaded and the label is handled in sidebar-nav.tsx
+  { href: '/payments', label: 'Receipts & Payments', icon: TrendingUp, roles: ['Admin', 'Apartment', 'Contractor', 'Security'] },
+  
+  { href: '/expenses', label: 'Expenses', icon: TrendingDown, roles: ['Admin'] },
+  { href: '/charges', label: 'Charges', icon: TrendingDown, roles: ['Apartment', 'Contractor'] },
+
   { href: '/scan', label: 'Evaluate Pass', icon: ScanLine, roles: ['Admin'] },
-  { href: '/personnel', label: 'Personnel', icon: Users, roles: [] },
   { href: '/settings', label: 'Settings', icon: Settings, roles: ['Admin', 'Apartment', 'Contractor', 'Security'] },
   { href: '/customize', label: 'Customize', icon: Brush, roles: ['Admin'] },
 ];

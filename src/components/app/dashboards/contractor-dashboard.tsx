@@ -1,0 +1,63 @@
+
+'use client';
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { users, events, payments } from "@/lib/data";
+import { useSearchParams } from 'next/navigation';
+import { Building2, CalendarDays, CreditCard } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+
+export function ContractorDashboard() {
+  const searchParams = useSearchParams();
+  const role = searchParams.get('role');
+  const currentUser = users.find(u => u.role === 'Contractor'); // Simplified for demo
+  
+  const totalApartments = users.filter(u => u.role === 'Apartment').length;
+  const userPayments = payments.filter(p => p.userId === currentUser?.id).filter(p => p.status === 'Paid').reduce((sum, p) => sum + p.amount, 0);
+  const visibleEvents = role ? events.filter(e => e.audience.includes('Contractor') && e.status === 'Sent') : [];
+
+  const kpis = [
+    { title: "Apartment Owners", value: totalApartments, icon: Building2 },
+    { title: "Total Payments", value: `₹${userPayments.toLocaleString()}`, icon: CreditCard },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-4 md:grid-cols-2">
+        {kpis.map(kpi => (
+          <Card key={kpi.title}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">{kpi.title}</CardTitle>
+              <kpi.icon className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{kpi.value}</div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      <Card>
+        <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+                <CalendarDays className="h-5 w-5" />
+                Events & Announcements
+            </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+            {visibleEvents.length > 0 ? visibleEvents.slice(0, 3).map(event => (
+                  <div key={event.id} className="p-4 border rounded-lg">
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <h3 className="font-semibold">{event.name}</h3>
+                            <p className="text-sm text-muted-foreground">{event.description}</p>
+                        </div>
+                        <Badge variant="outline">{new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeStyle: 'short' }).format(event.dateTime)}</Badge>
+                    </div>
+                </div>
+            )) : (
+                <p className="text-muted-foreground">No upcoming events.</p>
+            )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
