@@ -1,25 +1,25 @@
-
 'use client';
 import { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { users, payments as initialPayments, expenses as initialExpenses, events as initialEvents, roleDisplayNames } from "@/lib/data";
+import { users, payments as initialPayments, expenses as initialExpenses, events as initialEvents, roleDisplayNames, accounts } from "@/lib/data";
 import type { User, Payment, Expense, Event } from '@/types';
 import { ArrowLeft, Building2, Shield, Wrench, FileDown, Check, TrendingUp, TrendingDown, IndianRupee, CalendarDays, X, Mail, Phone, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { UserProfileCard } from '@/components/app/dashboard/user-profile-card';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
 type ListFilter = 'all' | 'withDues' | 'noDues' | 'pending' | 'verified' | 'drafts' | 'sent';
 
 export function AdminDashboard() {
-    const [view, setView] = useState<'dashboard' | 'userList' | 'paymentList' | 'expenseList' | 'eventList'>('dashboard');
+    const [view, setView] = useState<'dashboard' | 'userList' | 'paymentList' | 'expenseList' | 'eventList' | 'balanceList'>('dashboard');
     const [selectedUserList, setSelectedUserList] = useState<User[]>([]);
     const [payments, setPayments] = useState<Payment[]>(initialPayments);
     const [expenses, setExpenses] = useState<Expense[]>(initialExpenses);
     const [eventsList, setEventsList] = useState<Event[]>(initialEvents);
+    const [balanceTransactions, setBalanceTransactions] = useState<any[]>([]);
+    const [financialYearStart, setFinancialYearStart] = useState<Date | null>(null);
     const [listTitle, setListTitle] = useState('');
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const { toast } = useToast();
@@ -154,6 +154,39 @@ export function AdminDashboard() {
                 setView('eventList');
                 break;
 
+            case 'Financials': {
+                const today = new Date();
+                const currentMonth = today.getMonth(); // 0-11 (Jan=0)
+                const currentYear = today.getFullYear();
+            
+                let fyStart: Date;
+                let fyEnd: Date;
+            
+                if (currentMonth >= 3) { // April (month 3) to December
+                    fyStart = new Date(currentYear, 3, 1);
+                    fyEnd = new Date(currentYear + 1, 2, 31, 23, 59, 59, 999);
+                } else { // January to March
+                    fyStart = new Date(currentYear - 1, 3, 1);
+                    fyEnd = new Date(currentYear, 2, 31, 23, 59, 59, 999);
+                }
+                setFinancialYearStart(fyStart);
+            
+                const credits = initialPayments
+                    .filter(p => p.status === 'Paid' && new Date(p.date) >= fyStart && new Date(p.date) <= fyEnd)
+                    .map(p => ({ ...p, type: 'credit' as const }));
+            
+                const debits = initialExpenses
+                    .filter(e => e.status === 'Paid' && new Date(e.date) >= fyStart && new Date(e.date) <= fyEnd)
+                    .map(e => ({ ...e, type: 'debit' as const }));
+            
+                const allTxns = [...credits, ...debits].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                
+                setBalanceTransactions(allTxns);
+                setListTitle(`Transactions for FY ${fyStart.getFullYear()}-${fyEnd.getFullYear().toString().slice(-2)}`);
+                setView('balanceList');
+                break;
+            }
+
             default:
                 toast({ title: 'Info', description: 'This KPI detail view is not yet implemented.' });
                 return;
@@ -168,13 +201,15 @@ export function AdminDashboard() {
         setPayments(initialPayments);
         setExpenses(initialExpenses);
         setEventsList(initialEvents);
+        setBalanceTransactions([]);
+        setFinancialYearStart(null);
     };
     
     const handleBackToUserList = () => {
         setSelectedUser(null);
     };
 
-    const handleExportCsv = (dataType: 'users' | 'payments' | 'expenses' | 'events') => {
+    const handleExportCsv = (dataType: 'users' | 'payments' | 'expenses' | 'events' | 'balance') => {
         let headers: string[];
         let csvRows: string[];
 
@@ -202,6 +237,23 @@ export function AdminDashboard() {
                 const row = [ expense.id, expense.userId || '', expenseUser?.name || 'N/A', expense.accountId, expense.description, expense.amount, expense.date.toISOString(), expense.status ];
                 csvRows.push(row.join(','));
             })
+        } else if (dataType === 'balance') {
+            headers = ['Date', 'Description', 'Account', 'Entity', 'Credit', 'Debit'];
+            csvRows = [headers.join(',')];
+        
+            balanceTransactions.forEach(txn => {
+                const entity = txn.userId ? users.find(u => u.id === txn.userId) : null;
+                const account = accounts.find(a => a.id === txn.accountId);
+                const row = [
+                    new Date(txn.date).toISOString(),
+                    `"${txn.description.replace(/"/g, '""')}"`,
+                    account?.name || 'N/A',
+                    entity ? `"${entity.name} (${roleDisplayNames[entity.role]})"` : 'Common',
+                    txn.type === 'credit' ? txn.amount : '',
+                    txn.type === 'debit' ? txn.amount : '',
+                ];
+                csvRows.push(row.join(','));
+            });
         } else { // events
             headers = ['id', 'name', 'description', 'dateTime', 'audience', 'status'];
             csvRows = [headers.join(',')];
@@ -332,8 +384,8 @@ export function AdminDashboard() {
                         <TableBody>
                             {selectedUserList.map((u, index) => (
                                 <TableRow key={u.id} className={cn(index % 2 === 0 && "bg-muted/50")}>
-                                    <TableCell className="font-medium cursor-pointer" onClick={() => setSelectedUser(u)}>{u.id}</TableCell>
-                                    <TableCell className="cursor-pointer" onClick={() => setSelectedUser(u)}>{u.name}</TableCell>
+                                    <TableCell className="font-medium">{u.id}</TableCell>
+                                    <TableCell>{u.name}</TableCell>
                                     <TableCell>
                                         <a href={`mailto:${u.email}`} className="flex items-center gap-2 text-primary hover:underline">
                                             <Mail className="h-4 w-4" />
@@ -350,7 +402,7 @@ export function AdminDashboard() {
                                             <span className="text-muted-foreground">N/A</span>
                                         )}
                                     </TableCell>
-                                    {isApartmentList && <TableCell className="cursor-pointer" onClick={() => setSelectedUser(u)}>{u.details?.sqft}</TableCell>}
+                                    {isApartmentList && <TableCell>{u.details?.sqft}</TableCell>}
                                 </TableRow>
                             ))}
                             {selectedUserList.length === 0 && (
@@ -617,6 +669,87 @@ export function AdminDashboard() {
         );
       }
     
+      if (view === 'balanceList') {
+        const openingBalanceCredits = initialPayments.filter(p => p.status === 'Paid' && financialYearStart && new Date(p.date) < financialYearStart).reduce((sum, p) => sum + p.amount, 0);
+        const openingBalanceDebits = initialExpenses.filter(e => e.status === 'Paid' && financialYearStart && new Date(e.date) < financialYearStart).reduce((sum, e) => sum + e.amount, 0);
+        let runningBalance = openingBalanceCredits - openingBalanceDebits;
+    
+        return (
+          <div>
+            <Button variant="outline" onClick={handleBackToDashboard} className="mb-4">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Dashboard
+            </Button>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>{listTitle}</CardTitle>
+                <Button variant="outline" size="icon" onClick={() => handleExportCsv('balance')}>
+                  <FileDown className="h-4 w-4" />
+                  <span className="sr-only">Export as CSV</span>
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead>Account</TableHead>
+                      <TableHead>Entity</TableHead>
+                      <TableHead className="text-right">Credit (₹)</TableHead>
+                      <TableHead className="text-right">Debit (₹)</TableHead>
+                      <TableHead className="text-right">Balance (₹)</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <TableRow>
+                        <TableCell colSpan={6} className="font-bold">Opening Balance</TableCell>
+                        <TableCell className={cn("text-right font-bold", runningBalance < 0 ? 'text-destructive' : 'text-green-600' )}>
+                            {runningBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </TableCell>
+                    </TableRow>
+                    {balanceTransactions.map((txn, index) => {
+                      if (txn.type === 'credit') {
+                          runningBalance += txn.amount;
+                      } else {
+                          runningBalance -= txn.amount;
+                      }
+                      const entity = txn.userId ? users.find(u => u.id === txn.userId) : null;
+                      const account = accounts.find(a => a.id === txn.accountId);
+    
+                      return (
+                        <TableRow key={`${txn.type}-${txn.id}`} className={cn(index % 2 === 0 && "bg-muted/50")}>
+                          <TableCell>{dateTimeFormatter.format(new Date(txn.date)).replace(',', '')}</TableCell>
+                          <TableCell>{txn.description}</TableCell>
+                          <TableCell>{account?.name || 'N/A'}</TableCell>
+                          <TableCell>{entity ? `${entity.name} (${roleDisplayNames[entity.role]})` : 'Common'}</TableCell>
+                          <TableCell className="text-right text-green-600 font-semibold">
+                            {txn.type === 'credit' ? `₹${txn.amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'}
+                          </TableCell>
+                          <TableCell className="text-right text-destructive font-semibold">
+                            {txn.type === 'debit' ? `₹${txn.amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'}
+                          </TableCell>
+                          <TableCell className={cn("text-right font-bold", runningBalance < 0 ? 'text-destructive' : 'text-green-600')}>
+                            ₹{runningBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                    {balanceTransactions.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center text-muted-foreground py-4">
+                          No transactions found for this financial year.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </div>
+        );
+      }
+
     return (
         <div className="space-y-6">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

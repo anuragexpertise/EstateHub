@@ -1,4 +1,3 @@
-
 import type { LucideIcon } from "lucide-react";
 
 export type UserRole = 'Admin' | 'Apartment' | 'Contractor' | 'Security';
