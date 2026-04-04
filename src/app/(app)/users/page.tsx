@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { users as allUsers, payments, shifts, roleDisplayNames, roleBadgeColors } from "@/lib/data";
+import { users as allUsers, payments, shifts, roleDisplayNames, roleBadgeVariants } from "@/lib/data";
 import type { User, UserRole } from '@/types';
 import { ArrowLeft, FileDown, Mail, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -122,7 +122,7 @@ export default function UsersPage() {
                             {filteredUsers.map((u, index) => (
                                 <TableRow key={u.id} className={cn("cursor-pointer", index % 2 === 0 && "bg-muted/50")} onClick={() => setSelectedUser(u)}>
                                     <TableCell className="font-medium">{u.name}</TableCell>
-                                    <TableCell><Badge className={cn(roleBadgeColors[u.role])}>{roleDisplayNames[u.role]}</Badge></TableCell>
+                                    <TableCell><Badge variant={roleBadgeVariants[u.role]}>{roleDisplayNames[u.role]}</Badge></TableCell>
                                     <TableCell>
                                         <a href={`mailto:${u.email}`} onClick={e => e.stopPropagation()} className="flex items-center gap-2 text-primary hover:underline">
                                             <Mail className="h-4 w-4" />

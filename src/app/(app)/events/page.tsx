@@ -9,7 +9,7 @@ import type { UserRole, Event } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CalendarDays, PlusCircle, Loader2, ArrowLeft, Send, X, FileDown } from 'lucide-react';
-import { events as initialEvents, roles, roleDisplayNames, roleBadgeColors } from '@/lib/data';
+import { events as initialEvents, roles, roleDisplayNames, roleBadgeVariants } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -352,7 +352,7 @@ function EventList() {
                                     <TableCell>
                                         <div className="flex flex-wrap gap-1">
                                             {event.audience.map(role => (
-                                                <Badge key={role} className={cn(roleBadgeColors[role])}>{roleDisplayNames[role]}</Badge>
+                                                <Badge key={role} variant={roleBadgeVariants[role as UserRole]}>{roleDisplayNames[role as UserRole]}</Badge>
                                             ))}
                                         </div>
                                     </TableCell>
