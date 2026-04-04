@@ -4,8 +4,8 @@ import { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { users, payments as initialPayments, expenses as initialExpenses, events, roleDisplayNames } from "@/lib/data";
-import type { User, Payment, Expense } from '@/types';
+import { users, payments as initialPayments, expenses as initialExpenses, events as initialEvents, roleDisplayNames } from "@/lib/data";
+import type { User, Payment, Expense, Event } from '@/types';
 import { ArrowLeft, Building2, Shield, Wrench, FileDown, Check, TrendingUp, TrendingDown, IndianRupee, CalendarDays, X, Mail, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { UserProfileCard } from '@/components/app/dashboard/user-profile-card';
@@ -15,10 +15,11 @@ import { cn } from '@/lib/utils';
 type ListFilter = 'all' | 'withDues' | 'noDues' | 'pending' | 'verified' | 'drafts' | 'sent';
 
 export function AdminDashboard() {
-    const [view, setView] = useState<'dashboard' | 'userList' | 'paymentList' | 'expenseList'>('dashboard');
+    const [view, setView] = useState<'dashboard' | 'userList' | 'paymentList' | 'expenseList' | 'eventList'>('dashboard');
     const [selectedUserList, setSelectedUserList] = useState<User[]>([]);
     const [payments, setPayments] = useState<Payment[]>(initialPayments);
     const [expenses, setExpenses] = useState<Expense[]>(initialExpenses);
+    const [eventsList, setEventsList] = useState<Event[]>(initialEvents);
     const [listTitle, setListTitle] = useState('');
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const { toast } = useToast();
@@ -42,8 +43,8 @@ export function AdminDashboard() {
     const pendingDebits = initialExpenses.filter(e => e.status === 'Pending').reduce((sum, p) => sum + p.amount, 0);
     const paidDebits = totalDebits;
     
-    const upcomingEvents = events.filter(e => e.status === 'Sent' && e.dateTime > new Date()).length;
-    const draftEvents = events.filter(e => e.status === 'Draft').length;
+    const upcomingEvents = initialEvents.filter(e => e.status === 'Sent' && e.dateTime > new Date()).length;
+    const draftEvents = initialEvents.filter(e => e.status === 'Draft').length;
 
     const kpis = [
         { title: "Apartment Owners", icon: Building2, role: 'Apartment', stats: [
@@ -135,6 +136,23 @@ export function AdminDashboard() {
                 setListTitle(newTitle);
                 setView('expenseList');
                 break;
+            
+            case 'Events':
+                newTitle = 'All Events';
+                let eventList: Event[] = [];
+                if (filter === 'sent') {
+                    eventList = initialEvents.filter(e => e.status === 'Sent' && e.dateTime > new Date());
+                    newTitle = 'Upcoming Events';
+                } else if (filter === 'drafts') {
+                    eventList = initialEvents.filter(e => e.status === 'Draft');
+                    newTitle = 'Draft Events';
+                } else {
+                    eventList = initialEvents;
+                }
+                setEventsList(eventList);
+                setListTitle(newTitle);
+                setView('eventList');
+                break;
 
             default:
                 toast({ title: 'Info', description: 'This KPI detail view is not yet implemented.' });
@@ -149,13 +167,14 @@ export function AdminDashboard() {
         setSelectedUser(null);
         setPayments(initialPayments);
         setExpenses(initialExpenses);
+        setEventsList(initialEvents);
     };
     
     const handleBackToUserList = () => {
         setSelectedUser(null);
     };
 
-    const handleExportCsv = (dataType: 'users' | 'payments' | 'expenses') => {
+    const handleExportCsv = (dataType: 'users' | 'payments' | 'expenses' | 'events') => {
         let headers: string[];
         let csvRows: string[];
 
@@ -175,7 +194,7 @@ export function AdminDashboard() {
                 const row = [ payment.id, payment.userId, paymentUser?.name || 'Unknown', payment.description, payment.amount, payment.date.toISOString(), payment.status ];
                 csvRows.push(row.join(','));
             })
-        } else { // expenses
+        } else if (dataType === 'expenses') {
             headers = ['id', 'userId', 'userName', 'accountId', 'description', 'amount', 'date', 'status'];
             csvRows = [headers.join(',')];
             expenses.forEach(expense => {
@@ -183,6 +202,20 @@ export function AdminDashboard() {
                 const row = [ expense.id, expense.userId || '', expenseUser?.name || 'N/A', expense.accountId, expense.description, expense.amount, expense.date.toISOString(), expense.status ];
                 csvRows.push(row.join(','));
             })
+        } else { // events
+            headers = ['id', 'name', 'description', 'dateTime', 'audience', 'status'];
+            csvRows = [headers.join(',')];
+            eventsList.forEach(event => {
+                const row = [
+                    event.id,
+                    `"${event.name.replace(/"/g, '""')}"`,
+                    `"${event.description.replace(/"/g, '""')}"`,
+                    event.dateTime.toISOString(),
+                    event.audience.join(';'),
+                    event.status,
+                ];
+                csvRows.push(row.join(','));
+            });
         }
 
         const csvString = csvRows.join('\n');
@@ -467,6 +500,68 @@ export function AdminDashboard() {
                         <TableRow>
                             <TableCell colSpan={6} className="text-center text-muted-foreground py-4">
                                 No expenses found for this filter.
+                            </TableCell>
+                        </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </div>
+        );
+      }
+
+    if (view === 'eventList') {
+        return (
+          <div>
+            <Button variant="outline" onClick={handleBackToDashboard} className="mb-4">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Dashboard
+            </Button>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>{listTitle}</CardTitle>
+                 <Button variant="outline" size="icon" onClick={() => handleExportCsv('events')}>
+                    <FileDown className="h-4 w-4" />
+                    <span className="sr-only">Export as CSV</span>
+                </Button>
+              </CardHeader>
+              <CardContent>
+                 <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead>Date & Time</TableHead>
+                      <TableHead>Audience</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {eventsList.map((event, index) => (
+                      <TableRow key={event.id} className={cn(index % 2 === 0 && "bg-muted/50")}>
+                        <TableCell className="font-medium">{event.name}</TableCell>
+                        <TableCell>{event.description}</TableCell>
+                        <TableCell>{dateTimeFormatter.format(new Date(event.dateTime)).replace(',', '')}</TableCell>
+                        <TableCell className="flex flex-wrap gap-1">
+                            {event.audience.map(role => (
+                                <Badge key={role} variant="outline">{roleDisplayNames[role]}</Badge>
+                            ))}
+                        </TableCell>
+                        <TableCell>
+                            <Badge 
+                                variant={event.status === 'Sent' ? 'secondary' : 'default'}
+                                className={cn(event.status === 'Sent' && 'bg-blue-500 text-white hover:bg-blue-500/80', event.status === 'Draft' && 'bg-amber-500 text-white hover:bg-amber-500/80')}
+                            >
+                                {event.status}
+                            </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {eventsList.length === 0 && (
+                        <TableRow>
+                            <TableCell colSpan={5} className="text-center text-muted-foreground py-4">
+                                No events found for this filter.
                             </TableCell>
                         </TableRow>
                     )}
