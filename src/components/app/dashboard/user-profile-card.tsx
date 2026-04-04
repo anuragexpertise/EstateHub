@@ -3,7 +3,7 @@
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User, UserRole } from "@/types";
-import { roleDisplayNames, payments, shifts, rates } from "@/lib/data";
+import { roleDisplayNames, payments, shifts, rates, roleIcons, roleTextColors } from "@/lib/data";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { Building2, Wrench, Shield, Mail, Phone, Hash, Copy, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useAvatarStore } from "@/hooks/use-avatar-store";
@@ -17,13 +17,6 @@ import { differenceInDays, endOfMonth, format, isAfter, startOfMonth, eachMonthO
 interface UserProfileCardProps {
     user: User;
 }
-
-const roleIcons: Record<UserRole, React.ElementType> = {
-    'Admin': Shield,
-    'Apartment': Building2,
-    'Contractor': Wrench,
-    'Security': Shield,
-};
 
 const NoticeCard = ({ user }: { user: User }) => {
     const { calculationStartDate } = useGlobalStore();
@@ -214,6 +207,7 @@ export function UserProfileCard({ user }: UserProfileCardProps) {
     }, [version, newAvatarUrl, lastUpdatedAvatarId, user.avatarId]);
 
     const RoleIcon = roleIcons[user.role];
+    const textColor = roleTextColors[user.role];
     
     const handleCopyId = () => {
         navigator.clipboard.writeText(user.id);
@@ -267,7 +261,7 @@ export function UserProfileCard({ user }: UserProfileCardProps) {
                     </Avatar>
                     <div>
                         <CardTitle className="text-2xl">{user.name}</CardTitle>
-                        <CardDescription className="flex items-center gap-2">
+                        <CardDescription className={cn("flex items-center gap-2", textColor)}>
                            <RoleIcon className="h-4 w-4" /> {roleDisplayNames[user.role]}
                         </CardDescription>
                     </div>
@@ -299,4 +293,3 @@ export function UserProfileCard({ user }: UserProfileCardProps) {
         </Card>
     );
 }
-
