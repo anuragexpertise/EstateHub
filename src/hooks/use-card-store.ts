@@ -13,24 +13,24 @@ interface CardState {
 // Default layouts are now keyed by `${role}-${page}`
 const defaultLayouts: { [key: string]: CardLayout } = {
   // Admin
-  'Admin-dashboard': ['Info', 'Profile'],
+  'Admin-dashboard': [], // This is now a static dashboard
   'Admin-receipts': ['Payment History', 'New Payment'],
   'Admin-evaluate-pass': ['Scan Pass'],
   'Admin-settings': [], // Settings page has its own layout
   'Admin-customize': [],
 
   // Apartment
-  'Apartment-dashboard': ['Profile', 'Charges and Payment History'],
+  'Apartment-dashboard': [], // This is now a static dashboard
   'Apartment-payments': ['Charges and Payment History'],
   'Apartment-settings': [],
 
   // Contractor
-  'Contractor-dashboard': ['Profile', 'Payment History'],
+  'Contractor-dashboard': [], // This is now a static dashboard
   'Contractor-payments': ['Payment History'],
   'Contractor-settings': [],
   
   // Security
-  'Security-dashboard': ['Scan Pass', 'Work Shift'],
+  'Security-dashboard': [], // This is now a static dashboard
   'Security-receipts': ['Payment History'],
   'Security-settings': [],
 };

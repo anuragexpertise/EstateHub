@@ -32,14 +32,16 @@ const now = new Date();
 
 export const payments: Payment[] = [
   // John Doe's Payments (user-apt-101)
-  { id: 'pay-002', userId: 'user-apt-101', amount: 1200, date: new Date(2025, 9, 10), status: 'Paid', description: '1-Month Maintenance' },
+  { id: 'pay-001', userId: 'user-apt-101', amount: 1200, date: new Date(now.getFullYear(), now.getMonth() - 2, 5), status: 'Paid', description: '1-Month Maintenance' },
+  { id: 'pay-002', userId: 'user-apt-101', amount: 1200, date: new Date(now.getFullYear(), now.getMonth(), 10), status: 'Pending Verification', description: '1-Month Maintenance' },
   
   // Jane Smith's Payments (user-apt-204)
   { id: 'pay-003', userId: 'user-apt-204', amount: 950, date: new Date(now.getFullYear(), now.getMonth() - 1, 15), status: 'Paid', description: '1-Month Maintenance' },
-  { id: 'pay-004', userId: 'user-apt-204', amount: 950, date: new Date(now.getFullYear(), now.getMonth(), 1), status: 'Paid', description: '1-Month Maintenance' },
+  { id: 'pay-004', userId: 'user-apt-204', amount: 950, date: new Date(now.getFullYear(), now.getMonth(), 1), status: 'Due', description: '1-Month Maintenance' },
 
   // Other payments
   { id: 'pay-005', userId: 'user-con-elec', amount: 500, date: new Date(now.getFullYear(), now.getMonth() - 2, 20), status: 'Paid', description: 'Vendor Pass' },
+  { id: 'pay-006', userId: 'user-sec-01', amount: 2500, date: new Date(now.getFullYear(), now.getMonth(), 5), status: 'Paid', description: 'Salary Advance' },
 ];
 
 export const expenses: Expense[] = [
@@ -90,21 +92,31 @@ export const rates = {
 };
 
 export const allNavItems: NavItem[] = [
+  // Common
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['Admin', 'Apartment', 'Contractor', 'Security'] },
   { href: '/events', label: 'Events', icon: CalendarDays, roles: ['Admin', 'Apartment', 'Contractor', 'Security'] },
   
-  { href: '/cashbook', label: 'Cashbook', icon: Book, roles: ['Admin', 'Apartment', 'Contractor', 'Security'] },
-
-  // This route is overloaded and the label is handled in sidebar-nav.tsx
-  { href: '/payments', label: 'Receipts & Payments', icon: TrendingUp, roles: ['Admin', 'Apartment', 'Contractor', 'Security'] },
-  
+  // Admin Only
+  { href: '/cashbook', label: 'Cashbook', icon: Book, roles: ['Admin'] },
+  { href: '/payments', label: 'Receipts', icon: TrendingUp, roles: ['Admin'] },
   { href: '/expenses', label: 'Expenses', icon: TrendingDown, roles: ['Admin'] },
-  { href: '/charges', label: 'Charges', icon: TrendingDown, roles: ['Apartment', 'Contractor'] },
-
+  { href: '/enroll', label: 'Enroll', icon: UserCog, roles: ['Admin'] },
   { href: '/scan', label: 'Evaluate Pass', icon: ScanLine, roles: ['Admin'] },
-  { href: '/settings', label: 'Settings', icon: Settings, roles: ['Admin', 'Apartment', 'Contractor', 'Security'] },
   { href: '/customize', label: 'Customize', icon: Brush, roles: ['Admin'] },
+  
+  // Apartment & Contractor
+  { href: '/cashbook', label: 'Cashbook', icon: Book, roles: ['Apartment', 'Contractor'] },
+  { href: '/payments', label: 'Payments', icon: CreditCard, roles: ['Apartment', 'Contractor'] },
+  { href: '/charges', label: 'Charges', icon: TrendingDown, roles: ['Apartment', 'Contractor'] },
+  
+  // Security
+  { href: '/cashbook', label: 'Cashbook', icon: Book, roles: ['Security'] },
+  { href: '/payments', label: 'New Receipt', icon: Receipt, roles: ['Security'] },
+
+  // Common
+  { href: '/settings', label: 'Settings', icon: Settings, roles: ['Admin', 'Apartment', 'Contractor', 'Security'] },
 ];
+
 
 export const roleDisplayNames: Record<UserRole, string> = {
     Admin: 'Admin',
