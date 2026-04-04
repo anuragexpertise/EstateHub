@@ -44,7 +44,7 @@ export type Event = {
   description: string;
   dateTime: Date;
   audience: UserRole[];
-  status: 'Draft' | 'Sent';
+  status: 'Draft' | 'Sent' | 'Rejected';
 };
 
 export type Transaction = {

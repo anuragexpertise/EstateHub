@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { users, payments as initialPayments, expenses as initialExpenses, events as initialEvents, roleDisplayNames } from "@/lib/data";
 import type { User, Payment, Expense, Event } from '@/types';
-import { ArrowLeft, Building2, Shield, Wrench, FileDown, Check, TrendingUp, TrendingDown, IndianRupee, CalendarDays, X, Mail, Phone } from "lucide-react";
+import { ArrowLeft, Building2, Shield, Wrench, FileDown, Check, TrendingUp, TrendingDown, IndianRupee, CalendarDays, X, Mail, Phone, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { UserProfileCard } from '@/components/app/dashboard/user-profile-card';
 import { useToast } from '@/hooks/use-toast';
@@ -275,6 +275,31 @@ export function AdminDashboard() {
             description: "The expense has been marked as rejected.",
         });
     };
+
+    const handleSendEvent = (eventId: string) => {
+        const event = initialEvents.find(e => e.id === eventId);
+        if (event) {
+            event.status = 'Sent';
+        }
+        setEventsList(prev => prev.filter(e => e.id !== eventId));
+        toast({
+            title: "Event Sent",
+            description: `The event "${event?.name}" has been sent to the audience.`,
+        });
+    };
+    
+    const handleRejectEvent = (eventId: string) => {
+        const event = initialEvents.find(e => e.id === eventId);
+        if (event) {
+            event.status = 'Rejected';
+        }
+        setEventsList(prev => prev.filter(e => e.id !== eventId));
+        toast({
+            variant: "destructive",
+            title: "Event Rejected",
+            description: `The event "${event?.name}" has been rejected.`,
+        });
+    };
     
     if (view === 'userList') {
         const isApartmentList = listTitle.includes('Apartment');
@@ -535,6 +560,7 @@ export function AdminDashboard() {
                       <TableHead>Date & Time</TableHead>
                       <TableHead>Audience</TableHead>
                       <TableHead>Status</TableHead>
+                       {listTitle === 'Draft Events' && <TableHead className="text-center">Actions</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -551,16 +577,34 @@ export function AdminDashboard() {
                         <TableCell>
                             <Badge 
                                 variant={event.status === 'Sent' ? 'secondary' : 'default'}
-                                className={cn(event.status === 'Sent' && 'bg-blue-500 text-white hover:bg-blue-500/80', event.status === 'Draft' && 'bg-amber-500 text-white hover:bg-amber-500/80')}
+                                className={cn(
+                                    event.status === 'Sent' && 'bg-blue-500 text-white hover:bg-blue-500/80', 
+                                    event.status === 'Draft' && 'bg-amber-500 text-white hover:bg-amber-500/80',
+                                    event.status === 'Rejected' && 'bg-destructive text-destructive-foreground'
+                                )}
                             >
                                 {event.status}
                             </Badge>
                         </TableCell>
+                        {listTitle === 'Draft Events' && (
+                            <TableCell className="text-center">
+                                <div className="flex items-center justify-center gap-2">
+                                    <Button size="sm" onClick={() => handleSendEvent(event.id)}>
+                                        <Send className="mr-2 h-4 w-4" />
+                                        Send
+                                    </Button>
+                                    <Button size="sm" variant="destructive" onClick={() => handleRejectEvent(event.id)}>
+                                        <X className="mr-2 h-4 w-4" />
+                                        Reject
+                                    </Button>
+                                </div>
+                            </TableCell>
+                        )}
                       </TableRow>
                     ))}
                     {eventsList.length === 0 && (
                         <TableRow>
-                            <TableCell colSpan={5} className="text-center text-muted-foreground py-4">
+                            <TableCell colSpan={listTitle === 'Draft Events' ? 6 : 5} className="text-center text-muted-foreground py-4">
                                 No events found for this filter.
                             </TableCell>
                         </TableRow>

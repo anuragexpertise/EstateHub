@@ -32,7 +32,7 @@ const eventFormSchema = z.object({
 });
 
 function CreateEventCard({ onAddEvent }: { onAddEvent: (event: Event) => void }) {
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [submissionType, setSubmissionType] = useState<'Draft' | 'Sent' | null>(null);
     const { toast } = useToast();
 
     const form = useForm<z.infer<typeof eventFormSchema>>({
@@ -45,8 +45,10 @@ function CreateEventCard({ onAddEvent }: { onAddEvent: (event: Event) => void })
         },
     });
     
-    function onSubmit(values: z.infer<typeof eventFormSchema>) {
-        setIsSubmitting(true);
+    const isSubmitting = submissionType !== null;
+
+    function onSubmit(values: z.infer<typeof eventFormSchema>, status: 'Draft' | 'Sent') {
+        setSubmissionType(status);
         // Simulate API call
         setTimeout(() => {
             const [hours, minutes] = values.time.split(':').map(Number);
@@ -59,12 +61,12 @@ function CreateEventCard({ onAddEvent }: { onAddEvent: (event: Event) => void })
                 description: values.description,
                 dateTime: combinedDateTime,
                 audience: values.audience as UserRole[],
-                status: 'Draft',
+                status: status,
             };
             onAddEvent(newEvent);
-            toast({ title: 'Event Created', description: `${values.name} has been saved as a draft.` });
+            toast({ title: 'Success', description: `${values.name} has been saved as a ${status.toLowerCase()}.` });
             form.reset();
-            setIsSubmitting(false);
+            setSubmissionType(null);
         }, 1000);
     }
 
@@ -81,7 +83,7 @@ function CreateEventCard({ onAddEvent }: { onAddEvent: (event: Event) => void })
             </CardHeader>
             <CardContent>
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                    <div className="space-y-8">
                         <FormField
                             control={form.control}
                             name="name"
@@ -208,11 +210,26 @@ function CreateEventCard({ onAddEvent }: { onAddEvent: (event: Event) => void })
                                 </FormItem>
                             )}
                         />
-                        <Button type="submit" disabled={isSubmitting}>
-                             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                             Create Event
-                        </Button>
-                    </form>
+                        <div className="flex gap-4">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={form.handleSubmit((values) => onSubmit(values, 'Draft'))}
+                                disabled={isSubmitting}
+                            >
+                                {submissionType === 'Draft' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Save Draft
+                            </Button>
+                            <Button
+                                type="button"
+                                onClick={form.handleSubmit((values) => onSubmit(values, 'Sent'))}
+                                disabled={isSubmitting}
+                            >
+                                {submissionType === 'Sent' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Send Event
+                            </Button>
+                        </div>
+                    </div>
                 </Form>
             </CardContent>
         </Card>
