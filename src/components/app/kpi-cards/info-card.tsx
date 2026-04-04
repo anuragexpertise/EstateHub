@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { transactions, users, payments as initialPayments, rates, shifts, findUserByRole } from "@/lib/data";
 import type { User, UserRole, Payment } from '@/types';
-import { ArrowLeft, Building2, Shield, Wrench, FileDown, Check, CreditCard } from "lucide-react";
+import { ArrowLeft, Building2, Shield, Wrench, FileDown, Check, CreditCard, Mail, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from '@/hooks/use-toast';
 import { UserProfileCard } from '@/components/app/dashboard/user-profile-card';
@@ -188,7 +188,7 @@ export function InfoCard() {
     const passPayments = payments.filter(p => p.userId === userId && p.description.includes('Pass') && p.status === 'Paid');
     if (passPayments.length === 0) return { active: false, expires: null };
 
-    const sortedPasses = passPayments.sort((a, b) => b.date.getTime() - a.getTime());
+    const sortedPasses = passPayments.sort((a, b) => b.date.getTime() - a.date.getTime());
     const lastPass = sortedPasses[0];
 
     const expiryDate = new Date(lastPass.date);
@@ -242,6 +242,8 @@ export function InfoCard() {
                       <TableRow>
                           <TableHead>{isApartmentList ? "Apartment ID" : isContractorList ? "Contractor ID" : "Staff ID"}</TableHead>
                           <TableHead>{isApartmentList ? "Resident Name" : isContractorList ? "Contractor Name" : "Staff Name"}</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Phone</TableHead>
                           {isApartmentList && <TableHead>Size (sqft)</TableHead>}
                           {isApartmentList && <TableHead>Pass Status</TableHead>}
                       </TableRow>
@@ -250,11 +252,27 @@ export function InfoCard() {
                       {selectedUserList.map(u => {
                           const passStatus = checkPassStatus(u.id);
                           return (
-                              <TableRow key={u.id} onClick={() => setSelectedUser(u)} className={"cursor-pointer"}>
-                                  <TableCell className="font-medium">{u.id}</TableCell>
-                                  <TableCell>{u.name}</TableCell>
-                                  {isApartmentList && <TableCell>{u.details?.sqft}</TableCell>}
-                                  {isApartmentList && <TableCell>
+                              <TableRow key={u.id}>
+                                  <TableCell className="font-medium cursor-pointer" onClick={() => setSelectedUser(u)}>{u.id}</TableCell>
+                                  <TableCell className="cursor-pointer" onClick={() => setSelectedUser(u)}>{u.name}</TableCell>
+                                  <TableCell>
+                                      <a href={`mailto:${u.email}`} className="flex items-center gap-2 hover:underline text-primary">
+                                          <Mail className="h-4 w-4" />
+                                          <span>Email</span>
+                                      </a>
+                                  </TableCell>
+                                  <TableCell>
+                                      {u.phone ? (
+                                          <a href={`tel:${u.phone}`} className="flex items-center gap-2 hover:underline text-primary">
+                                              <Phone className="h-4 w-4" />
+                                              <span>Call</span>
+                                          </a>
+                                      ) : (
+                                          <span className="text-muted-foreground">N/A</span>
+                                      )}
+                                  </TableCell>
+                                  {isApartmentList && <TableCell className="cursor-pointer" onClick={() => setSelectedUser(u)}>{u.details?.sqft}</TableCell>}
+                                  {isApartmentList && <TableCell className="cursor-pointer" onClick={() => setSelectedUser(u)}>
                                       <Badge variant={passStatus.active ? 'secondary' : 'outline'} className={passStatus.active ? 'bg-green-500 text-white' : ''}>
                                           {passStatus.active ? `Active (Expires ${dateFormatter.format(passStatus.expires!).replace(/ /g, '-')})` : 'Inactive'}
                                       </Badge>
@@ -264,7 +282,7 @@ export function InfoCard() {
                       })}
                       {selectedUserList.length === 0 && (
                           <TableRow>
-                              <TableCell colSpan={isApartmentList ? 4 : 2} className="text-center">No users found for this filter.</TableCell>
+                              <TableCell colSpan={isApartmentList ? 6 : 4} className="text-center">No users found for this filter.</TableCell>
                           </TableRow>
                       )}
                   </TableBody>

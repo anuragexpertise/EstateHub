@@ -39,7 +39,7 @@ import type { UserRole } from '@/types';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { Upload } from 'lucide-react';
+import { Upload, Mail, Phone } from 'lucide-react';
 import { useAvatarStore } from '@/hooks/use-avatar-store';
 
 
@@ -382,21 +382,46 @@ export function WorkShiftsCard() {
             <Table>
             <TableHeader>
                 <TableRow>
-                <TableHead>Personnel</TableHead>
-                <TableHead>Shift</TableHead>
-                <TableHead>Status</TableHead>
+                    <TableHead>Personnel</TableHead>
+                    <TableHead>Shift</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Phone</TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
-                {shifts.map(shift => (
-                    <TableRow key={shift.id}>
-                        <TableCell className="font-medium">{shift.personnel}</TableCell>
-                        <TableCell>{shift.shift}</TableCell>
-                        <TableCell>
-                            <Badge variant={shift.status === 'Active' ? 'default' : 'outline'}>{shift.status}</Badge>
-                        </TableCell>
-                    </TableRow>
-                ))}
+                {shifts.map(shift => {
+                    const user = users.find(u => u.name === shift.personnel);
+                    return (
+                        <TableRow key={shift.id}>
+                            <TableCell className="font-medium">{shift.personnel}</TableCell>
+                            <TableCell>{shift.shift}</TableCell>
+                            <TableCell>
+                                <Badge variant={shift.status === 'Active' ? 'default' : 'outline'}>{shift.status}</Badge>
+                            </TableCell>
+                            <TableCell>
+                                {user ? (
+                                    <a href={`mailto:${user.email}`} className="flex items-center gap-2 hover:underline text-primary">
+                                        <Mail className="h-4 w-4" />
+                                        <span>Email</span>
+                                    </a>
+                                ) : (
+                                    <span className="text-muted-foreground">N/A</span>
+                                )}
+                            </TableCell>
+                            <TableCell>
+                                {user?.phone ? (
+                                    <a href={`tel:${user.phone}`} className="flex items-center gap-2 hover:underline text-primary">
+                                        <Phone className="h-4 w-4" />
+                                        <span>Call</span>
+                                    </a>
+                                ) : (
+                                    <span className="text-muted-foreground">N/A</span>
+                                )}
+                            </TableCell>
+                        </TableRow>
+                    );
+                })}
             </TableBody>
             </Table>
         </CardContent>

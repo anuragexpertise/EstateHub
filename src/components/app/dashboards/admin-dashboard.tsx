@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { users, payments as initialPayments, expenses, events } from "@/lib/data";
 import type { User, Payment } from '@/types';
-import { ArrowLeft, Building2, Shield, Wrench, FileDown, Check, TrendingUp, TrendingDown, IndianRupee, CalendarDays, X } from "lucide-react";
+import { ArrowLeft, Building2, Shield, Wrench, FileDown, Check, TrendingUp, TrendingDown, IndianRupee, CalendarDays, X, Mail, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { UserProfileCard } from '@/components/app/dashboard/user-profile-card';
 import { useToast } from '@/hooks/use-toast';
@@ -234,20 +234,38 @@ export function AdminDashboard() {
                             <TableRow>
                                 <TableHead>ID</TableHead>
                                 <TableHead>Name</TableHead>
+                                <TableHead>Email</TableHead>
+                                <TableHead>Phone</TableHead>
                                 {isApartmentList && <TableHead>Size (sqft)</TableHead>}
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {selectedUserList.map((u, index) => (
-                                <TableRow key={u.id} onClick={() => setSelectedUser(u)} className={cn("cursor-pointer", index % 2 === 0 && "bg-muted/50")}>
-                                    <TableCell className="font-medium">{u.id}</TableCell>
-                                    <TableCell>{u.name}</TableCell>
-                                    {isApartmentList && <TableCell>{u.details?.sqft}</TableCell>}
+                                <TableRow key={u.id} className={cn(index % 2 === 0 && "bg-muted/50")}>
+                                    <TableCell className="font-medium cursor-pointer" onClick={() => setSelectedUser(u)}>{u.id}</TableCell>
+                                    <TableCell className="cursor-pointer" onClick={() => setSelectedUser(u)}>{u.name}</TableCell>
+                                    <TableCell>
+                                        <a href={`mailto:${u.email}`} className="flex items-center gap-2 text-primary hover:underline">
+                                            <Mail className="h-4 w-4" />
+                                            <span>Email</span>
+                                        </a>
+                                    </TableCell>
+                                    <TableCell>
+                                        {u.phone ? (
+                                            <a href={`tel:${u.phone}`} className="flex items-center gap-2 text-primary hover:underline">
+                                                <Phone className="h-4 w-4" />
+                                                <span>Call</span>
+                                            </a>
+                                        ) : (
+                                            <span className="text-muted-foreground">N/A</span>
+                                        )}
+                                    </TableCell>
+                                    {isApartmentList && <TableCell className="cursor-pointer" onClick={() => setSelectedUser(u)}>{u.details?.sqft}</TableCell>}
                                 </TableRow>
                             ))}
                             {selectedUserList.length === 0 && (
                                 <TableRow>
-                                    <TableCell colSpan={isApartmentList ? 3 : 2} className="text-center text-muted-foreground py-4">No users found for this filter.</TableCell>
+                                    <TableCell colSpan={isApartmentList ? 5 : 4} className="text-center text-muted-foreground py-4">No users found for this filter.</TableCell>
                                 </TableRow>
                             )}
                         </TableBody>
