@@ -5,7 +5,7 @@ import { SidebarNav } from '@/components/app/sidebar-nav';
 import { UserNav } from '@/components/app/user-nav';
 import { Logo } from '@/components/logo';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
 import { PanelLeft } from 'lucide-react';
 import { SidebarNavHeader } from '@/components/app/sidebar-nav-header';
 import { DateTimeDisplay } from '@/components/app/date-time-display';
@@ -44,6 +44,7 @@ export default function AppLayout({
             </SheetTrigger>
             <SheetContent side="left" className="sm:max-w-xs">
               <nav className="grid gap-6 text-lg font-medium">
+                <SheetTitle className="sr-only">Menu</SheetTitle>
                 <a
                   href="#"
                   className="group flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:text-base"
