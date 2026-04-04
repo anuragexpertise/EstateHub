@@ -15,6 +15,7 @@ import {
 } from '@/components/app/kpi-cards/settings-card';
 import { ApplicationSettingsCard } from '@/components/app/kpi-cards/application-settings-card';
 import { AccountSettingsCard } from '@/components/app/kpi-cards/account-settings-card';
+import { AccountsTableCard } from '@/components/app/kpi-cards/accounts-table-card';
 
 const AdminSettings = () => (
     <TabsContent value="admin" className="space-y-4">
@@ -27,8 +28,8 @@ const AdminSettings = () => (
     </TabsContent>
 )
 
-const GeneralSettings = () => (
-    <TabsContent value="general" className="space-y-4">
+const PersonnelSettings = () => (
+    <TabsContent value="personnel" className="space-y-4">
         <SettingsCard />
     </TabsContent>
 )
@@ -42,6 +43,7 @@ const GlobalSettings = () => (
 const AccountSettings = () => (
      <TabsContent value="accounts" className="space-y-4">
         <AccountSettingsCard />
+        <AccountsTableCard />
     </TabsContent>
 )
 
@@ -57,6 +59,8 @@ export default function SettingsPage() {
           </Card>
       );
   }
+  
+  const isAdmin = role === 'Admin';
 
   return (
     <div className="space-y-6">
@@ -69,17 +73,17 @@ export default function SettingsPage() {
             </div>
         </div>
 
-        <Tabs defaultValue="general" className="space-y-4">
+        <Tabs defaultValue={isAdmin ? "global" : "personnel"} className="space-y-4">
             <TabsList>
-                <TabsTrigger value="general">General</TabsTrigger>
-                {role === 'Admin' && <TabsTrigger value="admin">Admin</TabsTrigger>}
-                {role === 'Admin' && <TabsTrigger value="accounts">Accounts</TabsTrigger>}
-                {role === 'Admin' && <TabsTrigger value="global">Global</TabsTrigger>}
+                {isAdmin && <TabsTrigger value="global">Global</TabsTrigger>}
+                {isAdmin && <TabsTrigger value="admin">Admin</TabsTrigger>}
+                {isAdmin && <TabsTrigger value="accounts">Accounts</TabsTrigger>}
+                <TabsTrigger value="personnel">Personnel</TabsTrigger>
             </TabsList>
-            <GeneralSettings />
-            {role === 'Admin' && <AdminSettings />}
-            {role === 'Admin' && <AccountSettings />}
-            {role === 'Admin' && <GlobalSettings />}
+            {isAdmin && <GlobalSettings />}
+            {isAdmin && <AdminSettings />}
+            {isAdmin && <AccountSettings />}
+            <PersonnelSettings />
         </Tabs>
     </div>
   );

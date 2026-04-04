@@ -1,5 +1,6 @@
 
-import type { User, Payment, Transaction, Shift, UserRole, NavItem } from '@/types';
+
+import type { User, Payment, Transaction, Shift, UserRole, NavItem, Account } from '@/types';
 import {
   LayoutDashboard,
   UserPlus,
@@ -104,3 +105,11 @@ export const roles: { role: UserRole; icon: React.ElementType, displayName: stri
 
 
 export const findUserByRole = (role: UserRole) => users.find((user) => user.role === role);
+
+
+export const accounts: Account[] = [
+  { id: 'acc-01', name: 'Maintenance Fees', type: 'Credit', balanceForward: 15000.00, description: 'Monthly maintenance collections' },
+  { id: 'acc-02', name: 'Security Salaries', type: 'Debit', balanceForward: 5000.00, description: 'Salaries for security personnel' },
+  { id: 'acc-03', name: 'Capital Goods', type: 'Debit', balanceForward: 0.00, description: 'Assets and equipment', depreciationRate: 10 },
+  { id: 'acc-04', name: 'Fines Collected', type: 'Credit', balanceForward: 2500.00, description: 'Late payment fines' },
+];

@@ -1,3 +1,4 @@
+
 import type { LucideIcon } from "lucide-react";
 
 export type UserRole = 'Admin' | 'Apartment' | 'Contractor' | 'Security';
@@ -46,4 +47,13 @@ export type NavItem = {
   label: string;
   icon: LucideIcon;
   roles: UserRole[];
+};
+
+export type Account = {
+  id: string;
+  name: string;
+  description?: string;
+  type: 'Debit' | 'Credit';
+  balanceForward: number;
+  depreciationRate?: number;
 };
