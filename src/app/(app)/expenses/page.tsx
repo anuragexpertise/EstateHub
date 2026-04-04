@@ -1,11 +1,12 @@
 
 'use client';
-import { useState } from 'react';
+import * as React from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { expenses as initialExpenses } from "@/lib/data";
-import { TrendingDown, PlusCircle, Loader2 } from "lucide-react";
+import { TrendingDown, PlusCircle, Loader2, ArrowLeft, Check, X } from "lucide-react";
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -15,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { accounts, users, roleDisplayNames } from '@/lib/data';
-import type { Expense, Account, UserRole } from '@/types';
+import type { Expense, Account } from '@/types';
 import { cn } from '@/lib/utils';
 
 
@@ -28,8 +29,8 @@ const expenseFormSchema = z.object({
 
 function NewExpenseCard({ onAddExpense }: { onAddExpense: (expense: Expense) => void }) {
     const { toast } = useToast();
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
+    const [selectedAccount, setSelectedAccount] = React.useState<Account | null>(null);
   
     const form = useForm<z.infer<typeof expenseFormSchema>>({
       resolver: zodResolver(expenseFormSchema),
@@ -41,7 +42,7 @@ function NewExpenseCard({ onAddExpense }: { onAddExpense: (expense: Expense) => 
 
     const accountId = form.watch('accountId');
 
-    useState(() => {
+    React.useEffect(() => {
         if(accountId) {
             setSelectedAccount(accounts.find(a => a.id === accountId) || null);
         } else {
@@ -192,24 +193,63 @@ function NewExpenseCard({ onAddExpense }: { onAddExpense: (expense: Expense) => 
 
 
 export default function ExpensesPage() {
-    const [expenses, setExpenses] = useState(initialExpenses);
+    const [allExpenses, setAllExpenses] = React.useState(initialExpenses);
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const status = searchParams.get('status');
+    const { toast } = useToast();
+
     const dateTimeFormatter = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
     
     const handleAddExpense = (newExpense: Expense) => {
-        setExpenses(prevExpenses => [newExpense, ...prevExpenses].sort((a, b) => b.date.getTime() - a.date.getTime()));
+        setAllExpenses(prevExpenses => [newExpense, ...prevExpenses].sort((a, b) => b.date.getTime() - a.date.getTime()));
     }
     
     const accountName = (accountId: string) => accounts.find(a => a.id === accountId)?.name || 'N/A';
+
+    const handleVerifyExpense = (expenseId: string) => {
+        const expenseIndex = allExpenses.findIndex(e => e.id === expenseId);
+        if (expenseIndex > -1) initialExpenses[expenseIndex].status = 'Paid';
+        setAllExpenses(prev => prev.map(e => e.id === expenseId ? { ...e, status: 'Paid' } : e));
+        toast({ title: "Expense Verified", description: "The expense has been marked as paid." });
+    };
+
+    const handleRejectExpense = (expenseId: string) => {
+        const expenseIndex = allExpenses.findIndex(e => e.id === expenseId);
+        if (expenseIndex > -1) initialExpenses[expenseIndex].status = 'Rejected';
+        setAllExpenses(prev => prev.map(e => e.id === expenseId ? { ...e, status: 'Rejected' } : e));
+        toast({ variant: "destructive", title: "Expense Rejected", description: "The expense has been marked as rejected." });
+    };
+
+    const {filteredExpenses, listTitle} = React.useMemo(() => {
+        let expenses = allExpenses;
+        let title = 'Expenses Log';
+        if (status === 'pending') {
+            expenses = expenses.filter(e => e.status === 'Pending');
+            title = 'Pending Expenses';
+        } else if (status === 'paid') {
+            expenses = expenses.filter(e => e.status === 'Paid');
+            title = 'Paid Expenses';
+        }
+        return {filteredExpenses: expenses, listTitle: title};
+    }, [allExpenses, status]);
 
     return (
         <div className="space-y-6">
             <NewExpenseCard onAddExpense={handleAddExpense} />
             <Card>
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <TrendingDown className="h-5 w-5" />
-                        Expenses Log
-                    </CardTitle>
+                    <div className="flex items-center gap-4">
+                        {status && (
+                            <Button variant="outline" size="icon" onClick={() => router.push('/expenses?role=Admin')}>
+                                <ArrowLeft className="h-4 w-4" />
+                            </Button>
+                        )}
+                        <CardTitle className="flex items-center gap-2">
+                            <TrendingDown className="h-5 w-5" />
+                            {listTitle}
+                        </CardTitle>
+                    </div>
                     <CardDescription>
                         A log of all payments and expenses made by the society.
                     </CardDescription>
@@ -223,23 +263,38 @@ export default function ExpensesPage() {
                                 <TableHead>Description</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead className="text-right">Amount</TableHead>
+                                <TableHead className="text-center">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {expenses.map((expense, index) => (
+                            {filteredExpenses.map((expense, index) => (
                                 <TableRow key={expense.id} className={cn(index % 2 === 0 && "bg-muted/50")}>
                                     <TableCell>{dateTimeFormatter.format(expense.date).replace(',', '')}</TableCell>
                                     <TableCell>{accountName(expense.accountId)}</TableCell>
                                     <TableCell>{expense.description}</TableCell>
                                     <TableCell>
-                                        <Badge variant={expense.status === 'Paid' ? 'secondary' : 'destructive'}>{expense.status}</Badge>
+                                        <Badge variant={expense.status === 'Paid' ? 'secondary' : expense.status === 'Rejected' ? 'destructive' : 'default'} className={cn(expense.status === 'Pending' && 'bg-amber-500 text-white hover:bg-amber-500/80', expense.status === 'Paid' && 'bg-green-600 text-white hover:bg-green-600/80')}>
+                                            {expense.status}
+                                        </Badge>
                                     </TableCell>
                                     <TableCell className="text-right text-red-600">₹{expense.amount.toLocaleString()}</TableCell>
+                                    <TableCell className="text-center">
+                                        {expense.status === 'Pending' && (
+                                            <div className="flex items-center justify-center gap-2">
+                                                <Button size="sm" onClick={() => handleVerifyExpense(expense.id)}>
+                                                    <Check className="mr-2 h-4 w-4" /> Verify
+                                                </Button>
+                                                <Button size="sm" variant="destructive" onClick={() => handleRejectExpense(expense.id)}>
+                                                    <X className="mr-2 h-4 w-4" /> Reject
+                                                </Button>
+                                            </div>
+                                        )}
+                                    </TableCell>
                                 </TableRow>
                             ))}
-                            {expenses.length === 0 && (
+                            {filteredExpenses.length === 0 && (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="text-center text-muted-foreground py-4">No expenses recorded.</TableCell>
+                                    <TableCell colSpan={6} className="text-center text-muted-foreground py-4">No expenses recorded.</TableCell>
                                 </TableRow>
                             )}
                         </TableBody>

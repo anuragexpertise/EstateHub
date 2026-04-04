@@ -1,15 +1,15 @@
 
 'use client';
-import { useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useState, useMemo } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import type { UserRole, Event } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CalendarDays, PlusCircle, Loader2 } from 'lucide-react';
-import { events as initialEvents, roles } from '@/lib/data';
+import { CalendarDays, PlusCircle, Loader2, ArrowLeft, Send, X } from 'lucide-react';
+import { events as initialEvents, roles, roleDisplayNames } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -20,6 +20,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 const eventFormSchema = z.object({
   name: z.string().min(3, { message: 'Event name must be at least 3 characters.' }),
@@ -238,32 +239,127 @@ function CreateEventCard({ onAddEvent }: { onAddEvent: (event: Event) => void })
 
 function EventList() {
     const searchParams = useSearchParams();
+    const router = useRouter();
     const role = searchParams.get('role') as UserRole | null;
+    const status = searchParams.get('status');
+    const {toast} = useToast();
     const dateTimeFormatter = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
+    const [eventsList, setEventsList] = useState<Event[]>(initialEvents);
 
-    const visibleEvents = role ? initialEvents.filter(e => e.audience.includes(role) && e.status === 'Sent') : [];
+    const { visibleEvents, listTitle } = useMemo(() => {
+        let eventsToFilter = eventsList;
+        let title = 'Upcoming Events & Announcements';
+
+        if (role === 'Admin' && status) {
+            if (status === 'sent') {
+                eventsToFilter = eventsList.filter(e => e.status === 'Sent' && e.dateTime > new Date());
+                title = 'Upcoming Sent Events';
+            } else if (status === 'drafts') {
+                eventsToFilter = eventsList.filter(e => e.status === 'Draft');
+                title = 'Draft Events';
+            }
+        } else if (role) {
+            eventsToFilter = eventsList.filter(e => e.audience.includes(role) && e.status === 'Sent');
+        } else {
+            eventsToFilter = [];
+        }
+
+        return { visibleEvents: eventsToFilter, listTitle: title };
+    }, [role, status, eventsList]);
+
+    const handleSendEvent = (eventId: string) => {
+        const event = initialEvents.find(e => e.id === eventId);
+        if (event) event.status = 'Sent';
+        setEventsList(prev => prev.filter(e => e.id !== eventId));
+        toast({ title: "Event Sent", description: `The event "${event?.name}" has been sent.` });
+    };
+
+    const handleRejectEvent = (eventId: string) => {
+        const event = initialEvents.find(e => e.id === eventId);
+        if (event) event.status = 'Rejected';
+        setEventsList(prev => prev.filter(e => e.id !== eventId));
+        toast({ variant: "destructive", title: "Event Rejected", description: `The event "${event?.name}" has been rejected.` });
+    };
     
     return (
         <Card>
             <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <CalendarDays className="h-5 w-5" />
-                    Upcoming Events & Announcements
-                </CardTitle>
+                <div className='flex items-center gap-4'>
+                    {status && (
+                         <Button variant="outline" size="icon" onClick={() => router.push('/events?role=Admin')}>
+                            <ArrowLeft className="h-4 w-4" />
+                        </Button>
+                    )}
+                    <CardTitle className="flex items-center gap-2">
+                        <CalendarDays className="h-5 w-5" />
+                        {listTitle}
+                    </CardTitle>
+                </div>
             </CardHeader>
-            <CardContent className="space-y-4">
-                {visibleEvents.length > 0 ? visibleEvents.map((event, index) => (
-                     <div key={event.id} className={cn("p-4 border rounded-lg", index % 2 !== 0 && "bg-muted/50")}>
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <h3 className="font-semibold">{event.name}</h3>
-                                <p className="text-sm text-muted-foreground">{event.description}</p>
+            <CardContent>
+                {role === 'Admin' && status ? (
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Name</TableHead>
+                                <TableHead>Date & Time</TableHead>
+                                <TableHead>Audience</TableHead>
+                                <TableHead>Status</TableHead>
+                                {status === 'drafts' && <TableHead className="text-center">Actions</TableHead>}
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {visibleEvents.map((event, index) => (
+                                <TableRow key={event.id} className={cn(index % 2 === 0 && "bg-muted/50")}>
+                                    <TableCell className="font-medium">{event.name}</TableCell>
+                                    <TableCell>{dateTimeFormatter.format(new Date(event.dateTime)).replace(',', '')}</TableCell>
+                                    <TableCell className="flex flex-wrap gap-1">
+                                        {event.audience.map(role => (
+                                            <Badge key={role} variant="outline">{roleDisplayNames[role]}</Badge>
+                                        ))}
+                                    </TableCell>
+                                    <TableCell>
+                                        <Badge variant={event.status === 'Sent' ? 'secondary' : 'default'} className={cn(event.status === 'Draft' && 'bg-amber-500 text-white hover:bg-amber-500/80')}>
+                                            {event.status}
+                                        </Badge>
+                                    </TableCell>
+                                    {status === 'drafts' && (
+                                        <TableCell className="text-center">
+                                            <div className="flex items-center justify-center gap-2">
+                                                <Button size="sm" onClick={() => handleSendEvent(event.id)}>
+                                                    <Send className="mr-2 h-4 w-4" /> Send
+                                                </Button>
+                                                <Button size="sm" variant="destructive" onClick={() => handleRejectEvent(event.id)}>
+                                                    <X className="mr-2 h-4 w-4" /> Reject
+                                                </Button>
+                                            </div>
+                                        </TableCell>
+                                    )}
+                                </TableRow>
+                            ))}
+                            {visibleEvents.length === 0 && (
+                                <TableRow>
+                                    <TableCell colSpan={status === 'drafts' ? 5 : 4} className="text-center text-muted-foreground py-4">No events found.</TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                ) : (
+                    <div className="space-y-4">
+                        {visibleEvents.length > 0 ? visibleEvents.map((event, index) => (
+                            <div key={event.id} className={cn("p-4 border rounded-lg", index % 2 !== 0 && "bg-muted/50")}>
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <h3 className="font-semibold">{event.name}</h3>
+                                        <p className="text-sm text-muted-foreground">{event.description}</p>
+                                    </div>
+                                    <Badge variant="outline">{dateTimeFormatter.format(event.dateTime)}</Badge>
+                                </div>
                             </div>
-                            <Badge variant="outline">{dateTimeFormatter.format(event.dateTime)}</Badge>
-                        </div>
+                        )) : (
+                            <p className="text-muted-foreground">No upcoming events or announcements.</p>
+                        )}
                     </div>
-                )) : (
-                    <p className="text-muted-foreground">No upcoming events or announcements.</p>
                 )}
             </CardContent>
         </Card>

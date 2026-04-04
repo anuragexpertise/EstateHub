@@ -1,7 +1,7 @@
 
 'use client';
-import { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import * as React from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { users, payments as initialPayments, roleDisplayNames, accounts } from "@/lib/data";
 import type { UserRole, Payment, Account } from '@/types';
-import { Receipt, Check, PlusCircle, Loader2, X } from 'lucide-react';
+import { Receipt, Check, PlusCircle, Loader2, X, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -31,8 +31,10 @@ const paymentFormSchema = z.object({
 
 export function PaymentHistoryCard() {
     const searchParams = useSearchParams();
+    const router = useRouter();
     const { toast } = useToast();
     const role = searchParams.get('role') as UserRole | null;
+    const status = searchParams.get('status');
   
     if(role === 'Apartment') {
         return <ChargesAndPaymentHistoryCard />;
@@ -40,7 +42,7 @@ export function PaymentHistoryCard() {
 
     const user = users.find(u => u.role === role);
   
-    const [payments, setPayments] = useState<Payment[]>(initialPayments);
+    const [payments, setPayments] = React.useState<Payment[]>(initialPayments);
     const dateTimeFormatter = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   
     if (!user || !role) {
@@ -61,12 +63,27 @@ export function PaymentHistoryCard() {
         toast({ variant: 'destructive', title: "Payment Rejected", description: "The payment has been marked as rejected." });
     }
 
-    const userPayments = payments
-    .filter(p => {
-        if (role === 'Admin' || role === 'Security') return true;
-        return p.userId === user.id;
-    })
-    .sort((a, b) => b.date.getTime() - a.date.getTime());
+    const { filteredPayments, listTitle } = React.useMemo(() => {
+        let title = (role === 'Admin' || role === 'Security') ? 'Receipts' : 'Payment History';
+        let filtered = payments;
+
+        if (role === 'Admin' || role === 'Security') {
+            if (status === 'pending') {
+                filtered = payments.filter(p => p.status === 'Pending Verification');
+                title = 'Pending Receipts';
+            } else if (status === 'verified') {
+                filtered = payments.filter(p => p.status === 'Paid');
+                title = 'Verified Receipts';
+            }
+        } else {
+            filtered = payments.filter(p => p.userId === user.id);
+        }
+
+        return {
+            filteredPayments: filtered.sort((a, b) => b.date.getTime() - a.date.getTime()),
+            listTitle: title
+        };
+    }, [payments, role, status, user]);
     
     const userForPayment = (userId: string) => {
         const paymentUser = users.find(u => u.id === userId);
@@ -77,10 +94,17 @@ export function PaymentHistoryCard() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Receipt className="h-5 w-5" />
-            {(role === 'Admin' || role === 'Security') ? 'Receipts' : 'Payment History'}
-          </CardTitle>
+            <div className="flex items-center gap-4">
+                {status && (
+                    <Button variant="outline" size="icon" onClick={() => router.push('/payments?role=Admin')}>
+                        <ArrowLeft className="h-4 w-4" />
+                    </Button>
+                )}
+                <CardTitle className="flex items-center gap-2">
+                    <Receipt className="h-5 w-5" />
+                    {listTitle}
+                </CardTitle>
+            </div>
           <CardDescription>
             {role === 'Admin' ? 'A complete log of all payments in the system.' : 'Your personal payment history.'}
           </CardDescription>
@@ -98,7 +122,7 @@ export function PaymentHistoryCard() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {userPayments.map((payment, index) => (
+              {filteredPayments.map((payment, index) => (
                 <TableRow key={payment.id} className={cn(index % 2 === 0 && "bg-muted/50")}>
                   {(role === 'Admin' || role === 'Security') && <TableCell className="font-medium">{userForPayment(payment.userId)}</TableCell>}
                   <TableCell className="font-medium">{payment.description}</TableCell>
@@ -130,7 +154,7 @@ export function PaymentHistoryCard() {
                   )}
                 </TableRow>
               ))}
-              {userPayments.length === 0 && (
+              {filteredPayments.length === 0 && (
                 <TableRow>
                     <TableCell colSpan={(role === 'Admin' || role === 'Security') ? (role === 'Admin' ? 6 : 5) : 4} className="text-center text-muted-foreground py-4">No payments found.</TableCell>
                 </TableRow>
@@ -146,10 +170,10 @@ export function PaymentsCard() {
     const searchParams = useSearchParams();
     const { toast } = useToast();
     const role = searchParams.get('role') as UserRole | null;
-    const [payments, setPayments] = useState<Payment[]>(initialPayments);
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [payments, setPayments] = React.useState<Payment[]>(initialPayments);
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
     const { receiptQrUrl } = useGlobalStore();
-    const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
+    const [selectedAccount, setSelectedAccount] = React.useState<Account | null>(null);
   
     const form = useForm<z.infer<typeof paymentFormSchema>>({
       resolver: zodResolver(paymentFormSchema),
@@ -161,7 +185,7 @@ export function PaymentsCard() {
 
     const accountId = form.watch('accountId');
 
-    useEffect(() => {
+    React.useEffect(() => {
         if(accountId) {
             setSelectedAccount(accounts.find(a => a.id === accountId) || null);
         } else {

@@ -1,5 +1,4 @@
 
-
 import type { User, Payment, Transaction, Shift, UserRole, NavItem, Account, Event, Expense } from '@/types';
 import {
   LayoutDashboard,
@@ -16,6 +15,7 @@ import {
   CalendarDays,
   TrendingUp,
   TrendingDown,
+  Users
 } from 'lucide-react';
 
 export const users: User[] = [
@@ -101,6 +101,7 @@ export const allNavItems: NavItem[] = [
   { href: '/payments', label: 'Receipts', icon: TrendingUp, roles: ['Admin'] },
   { href: '/expenses', label: 'Expenses', icon: TrendingDown, roles: ['Admin'] },
   { href: '/enroll', label: 'Enroll', icon: UserCog, roles: ['Admin'] },
+  { href: '/users', label: 'Users', icon: Users, roles: ['Admin'] },
   { href: '/scan', label: 'Evaluate Pass', icon: ScanLine, roles: ['Admin'] },
   { href: '/customize', label: 'Customize', icon: Brush, roles: ['Admin'] },
   
