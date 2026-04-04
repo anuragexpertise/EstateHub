@@ -9,7 +9,7 @@ import type { UserRole, Event } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CalendarDays, PlusCircle, Loader2, ArrowLeft, Send, X, FileDown } from 'lucide-react';
-import { events as initialEvents, roles, roleDisplayNames } from '@/lib/data';
+import { events as initialEvents, roles, roleDisplayNames, roleBadgeColors } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -336,6 +336,7 @@ function EventList() {
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Name</TableHead>
+                                <TableHead className="hidden md:table-cell">Description</TableHead>
                                 <TableHead>Date & Time</TableHead>
                                 <TableHead>Audience</TableHead>
                                 <TableHead>Status</TableHead>
@@ -346,11 +347,14 @@ function EventList() {
                             {visibleEvents.map((event, index) => (
                                 <TableRow key={event.id} className={cn(index % 2 === 0 && "bg-muted/50")}>
                                     <TableCell className="font-medium">{event.name}</TableCell>
+                                    <TableCell className="hidden md:table-cell max-w-sm text-muted-foreground truncate">{event.description}</TableCell>
                                     <TableCell>{dateTimeFormatter.format(new Date(event.dateTime)).replace(',', '')}</TableCell>
-                                    <TableCell className="flex flex-wrap gap-1">
-                                        {event.audience.map(role => (
-                                            <Badge key={role} variant="outline">{roleDisplayNames[role]}</Badge>
-                                        ))}
+                                    <TableCell>
+                                        <div className="flex flex-wrap gap-1">
+                                            {event.audience.map(role => (
+                                                <Badge key={role} variant="outline" className={cn(roleBadgeColors[role])}>{roleDisplayNames[role]}</Badge>
+                                            ))}
+                                        </div>
                                     </TableCell>
                                     <TableCell>
                                         <Badge variant={event.status === 'Sent' ? 'secondary' : 'default'} className={cn(event.status === 'Draft' && 'bg-amber-500 text-white hover:bg-amber-500/80')}>
@@ -373,7 +377,7 @@ function EventList() {
                             ))}
                             {visibleEvents.length === 0 && (
                                 <TableRow>
-                                    <TableCell colSpan={status === 'drafts' ? 5 : 4} className="text-center text-muted-foreground py-4">No events found.</TableCell>
+                                    <TableCell colSpan={status === 'drafts' ? 6 : 5} className="text-center text-muted-foreground py-4">No events found.</TableCell>
                                 </TableRow>
                             )}
                         </TableBody>
