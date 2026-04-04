@@ -6,11 +6,15 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Logo } from '@/components/logo';
 import { useGlobalStore } from '@/hooks/use-global-store';
 import { useEffect, useState } from 'react';
+import { users } from '@/lib/data';
 
 export default function LoginPage() {
   const { societyName, logoUrl } = useGlobalStore();
   const loginHeroPlaceholder = PlaceHolderImages.find((img) => img.id === 'login-hero');
   const [heroImage, setHeroImage] = useState(loginHeroPlaceholder?.imageUrl);
+  
+  const adminUser = users.find(user => user.role === 'Admin');
+  const adminPhone = adminUser?.phone;
 
   useEffect(() => {
     // Ensure the state is initialized from localStorage before rendering the image
@@ -47,7 +51,7 @@ export default function LoginPage() {
           <LoginForm />
           <div className="mt-4 text-center text-sm">
             Don&apos;t have an account?{' '}
-            <a href="#" className="underline">
+            <a href={adminPhone ? `tel:${adminPhone}` : '#'} className="underline">
               Contact Admin
             </a>
           </div>
