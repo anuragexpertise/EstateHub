@@ -352,7 +352,7 @@ function EventList() {
                                     <TableCell>
                                         <div className="flex flex-wrap gap-1">
                                             {event.audience.map(role => (
-                                                <Badge key={role} variant="outline" className={cn(roleBadgeColors[role])}>{roleDisplayNames[role]}</Badge>
+                                                <Badge key={role} className={cn(roleBadgeColors[role])}>{roleDisplayNames[role]}</Badge>
                                             ))}
                                         </div>
                                     </TableCell>

@@ -9,7 +9,7 @@ import { users as allUsers, payments, shifts, roleDisplayNames, roleBadgeColors 
 import type { User, UserRole } from '@/types';
 import { ArrowLeft, FileDown, Mail, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn } from '@/lib/utils';
+import { cn } from "@/lib/utils";
 import { UserProfileCard } from '@/components/app/dashboard/user-profile-card';
 
 export default function UsersPage() {
@@ -122,7 +122,7 @@ export default function UsersPage() {
                             {filteredUsers.map((u, index) => (
                                 <TableRow key={u.id} className={cn("cursor-pointer", index % 2 === 0 && "bg-muted/50")} onClick={() => setSelectedUser(u)}>
                                     <TableCell className="font-medium">{u.name}</TableCell>
-                                    <TableCell><Badge variant="outline" className={cn(roleBadgeColors[u.role])}>{roleDisplayNames[u.role]}</Badge></TableCell>
+                                    <TableCell><Badge className={cn(roleBadgeColors[u.role])}>{roleDisplayNames[u.role]}</Badge></TableCell>
                                     <TableCell>
                                         <a href={`mailto:${u.email}`} onClick={e => e.stopPropagation()} className="flex items-center gap-2 text-primary hover:underline">
                                             <Mail className="h-4 w-4" />
