@@ -6,7 +6,7 @@ import { useGlobalStore } from "@/hooks/use-global-store";
 import { eachMonthOfInterval, startOfMonth, format, isAfter, differenceInDays } from 'date-fns';
 import { Receipt, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirebase, useCollection, useMemoFirebase, useUser } from '@/firebase';
 import { collection, Timestamp } from 'firebase/firestore';
 import type { Payment } from '@/types';
 
@@ -23,10 +23,30 @@ export function ChargesAndPaymentHistoryCard() {
     const { calculationStartDate } = useGlobalStore();
     
     const { firestore } = useFirebase();
-    const receiptsQuery = useMemoFirebase(() => collection(firestore, 'receipts'), [firestore]);
+    const { user: authUser, isUserLoading: isAuthLoading } = useUser();
+    const receiptsQuery = useMemoFirebase(() => authUser ? collection(firestore, 'receipts') : null, [firestore, authUser]);
     const { data: payments, isLoading } = useCollection<Payment>(receiptsQuery);
 
     const user = users.find(u => u.role === 'Apartment');
+
+    if (isAuthLoading || isLoading) {
+         return (
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <Receipt className="h-5 w-5" />
+                        Charges & Payment History
+                    </CardTitle>
+                    <CardDescription>
+                        A detailed log of your maintenance charges, fines, and payments.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="flex items-center justify-center h-64">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </CardContent>
+            </Card>
+        );
+    }
 
     if (!user) {
         return (
@@ -49,25 +69,6 @@ export function ChargesAndPaymentHistoryCard() {
                 </CardHeader>
                 <CardContent>
                     <p className="text-muted-foreground">Arrears calculation start date is not set in global settings, or user has no sqft details.</p>
-                </CardContent>
-            </Card>
-        );
-    }
-
-    if (isLoading) {
-         return (
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <Receipt className="h-5 w-5" />
-                        Charges & Payment History
-                    </CardTitle>
-                    <CardDescription>
-                        A detailed log of your maintenance charges, fines, and payments.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="flex items-center justify-center h-64">
-                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                 </CardContent>
             </Card>
         );

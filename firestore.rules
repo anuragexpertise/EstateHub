@@ -289,6 +289,19 @@ service cloud.firestore {
       allow create: if isSecurity() && isOwner(request.resource.data.scannerSecurityPersonnelId);
       allow update, delete: if false;
     }
+    
+    match /receipts/{receiptId} {
+      allow read: if isAdmin() || isSecurity() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow create: if isAdmin() || isSecurity();
+      allow update: if isAdmin(); // For verifying/rejecting
+      allow delete: if isAdmin();
+    }
+
+    match /expenses/{expenseId} {
+      allow read: if isAdmin() || (isSignedIn() && resource.data.userId != null && resource.data.userId == request.auth.uid);
+      allow create: if isAdmin();
+      allow update, delete: if isAdmin();
+    }
 
   }
 }

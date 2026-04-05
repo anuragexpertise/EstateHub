@@ -11,7 +11,7 @@ import { users } from '@/lib/data';
 import type { User, Payment } from '@/types';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import jsQR from 'jsqr';
-import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirebase, useCollection, useMemoFirebase, useUser } from '@/firebase';
 import { collection, Timestamp } from 'firebase/firestore';
 
 type Verdict = 'PASS' | 'FAIL' | null;
@@ -33,7 +33,8 @@ export function ScanCard() {
   const streamRef = useRef<MediaStream | null>(null);
 
   const { firestore } = useFirebase();
-  const receiptsQuery = useMemoFirebase(() => collection(firestore, 'receipts'), [firestore]);
+  const { user: authUser } = useUser();
+  const receiptsQuery = useMemoFirebase(() => authUser ? collection(firestore, 'receipts') : null, [firestore, authUser]);
   const { data: paymentsData } = useCollection<Payment>(receiptsQuery);
 
 

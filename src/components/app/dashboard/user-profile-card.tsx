@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useGlobalStore } from "@/hooks/use-global-store";
 import { differenceInDays, endOfMonth, format, isAfter, startOfMonth, eachMonthOfInterval } from 'date-fns';
-import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirebase, useCollection, useMemoFirebase, useUser } from '@/firebase';
 import { collection, Timestamp } from 'firebase/firestore';
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -20,7 +20,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 const NoticeCard = ({ user }: { user: User }) => {
     const { calculationStartDate } = useGlobalStore();
     const { firestore } = useFirebase();
-    const receiptsQuery = useMemoFirebase(() => collection(firestore, 'receipts'), [firestore]);
+    const { user: authUser, isUserLoading: isAuthLoading } = useUser();
+    const receiptsQuery = useMemoFirebase(() => authUser ? collection(firestore, 'receipts') : null, [firestore, authUser]);
     const { data: paymentsData, isLoading: paymentsLoading } = useCollection<Payment>(receiptsQuery);
 
     let title = 'Status';
@@ -30,7 +31,7 @@ const NoticeCard = ({ user }: { user: User }) => {
 
     const dateTimeFormatter = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
 
-    if (paymentsLoading) {
+    if (isAuthLoading || paymentsLoading) {
         return <Skeleton className="h-32 w-full mt-4" />
     }
 

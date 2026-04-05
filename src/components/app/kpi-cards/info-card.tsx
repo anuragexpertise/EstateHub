@@ -10,7 +10,7 @@ import { ArrowLeft, Building2, Shield, Wrench, FileDown, Check, CreditCard, Mail
 import { Button } from "@/components/ui/button";
 import { useToast } from '@/hooks/use-toast';
 import { UserProfileCard } from '@/components/app/dashboard/user-profile-card';
-import { useFirebase, useCollection, useMemoFirebase, updateDocumentNonBlocking } from '@/firebase';
+import { useFirebase, useCollection, useMemoFirebase, updateDocumentNonBlocking, useUser } from '@/firebase';
 import { collection, doc, Timestamp } from 'firebase/firestore';
 
 
@@ -28,7 +28,8 @@ export function InfoCard() {
   const { toast } = useToast();
   
   const { firestore } = useFirebase();
-  const receiptsQuery = useMemoFirebase(() => collection(firestore, 'receipts'), [firestore]);
+  const { user: authUser, isUserLoading: isAuthLoading } = useUser();
+  const receiptsQuery = useMemoFirebase(() => authUser ? collection(firestore, 'receipts') : null, [firestore, authUser]);
   const { data: initialPayments, isLoading: paymentsLoading } = useCollection<Payment>(receiptsQuery);
 
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -40,6 +41,20 @@ export function InfoCard() {
   }, [initialPayments]);
 
   const dateFormatter = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
+  if (isAuthLoading || paymentsLoading) {
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Info KPIs</CardTitle>
+                <CardDescription>An overview of key metrics across the system.</CardDescription>
+            </CardHeader>
+            <CardContent className="flex justify-center items-center h-48">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </CardContent>
+        </Card>
+    )
+  }
 
   const totalApartments = users.filter(u => u.role === 'Apartment').length;
   const apartmentsWithDues = users.filter(u => u.role === 'Apartment' && payments.some(p => p.userId === u.id && (p.status === 'Due' || p.status === 'Overdue'))).length;
@@ -369,20 +384,6 @@ export function InfoCard() {
     );
   }
   
-  if (paymentsLoading) {
-    return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Info KPIs</CardTitle>
-                <CardDescription>An overview of key metrics across the system.</CardDescription>
-            </CardHeader>
-            <CardContent className="flex justify-center items-center h-48">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </CardContent>
-        </Card>
-    )
-  }
-
   return (
     <Card>
         <CardHeader>

@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { UserProfileCard } from '@/components/app/dashboard/user-profile-card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirebase, useCollection, useMemoFirebase, useUser } from '@/firebase';
 import { collection } from 'firebase/firestore';
 
 function UsersPageContent() {
@@ -24,7 +24,8 @@ function UsersPageContent() {
     const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
 
     const { firestore } = useFirebase();
-    const receiptsQuery = useMemoFirebase(() => collection(firestore, 'receipts'), [firestore]);
+    const { user, isUserLoading: isAuthLoading } = useUser();
+    const receiptsQuery = useMemoFirebase(() => user ? collection(firestore, 'receipts') : null, [firestore, user]);
     const { data: paymentsData, isLoading: paymentsLoading } = useCollection<Payment>(receiptsQuery);
 
     const isAdmin = role === 'Admin';
@@ -109,7 +110,7 @@ function UsersPageContent() {
         )
     }
 
-    if (paymentsLoading) {
+    if (isAuthLoading || paymentsLoading) {
         return (
             <div className="space-y-6">
                 <div className="flex items-center gap-4">

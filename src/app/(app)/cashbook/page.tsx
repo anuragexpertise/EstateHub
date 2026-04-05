@@ -9,7 +9,7 @@ import { UserRole } from "@/types";
 import { ChargesAndPaymentHistoryCard } from "@/components/app/kpi-cards/charges-payment-history-card";
 import { cn } from "@/lib/utils";
 import { Skeleton } from '@/components/ui/skeleton';
-import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirebase, useCollection, useMemoFirebase, useUser } from '@/firebase';
 import { collection, Timestamp } from 'firebase/firestore';
 
 type LedgerEntry = {
@@ -32,10 +32,11 @@ type LedgerEntry = {
 function CashbookPageContent() {
     const searchParams = useSearchParams();
     const { firestore } = useFirebase();
+    const { user, isUserLoading: isAuthLoading } = useUser();
     const role = searchParams.get('role') as UserRole | null;
     
-    const receiptsQuery = useMemoFirebase(() => collection(firestore, 'receipts'), [firestore]);
-    const expensesQuery = useMemoFirebase(() => collection(firestore, 'expenses'), [firestore]);
+    const receiptsQuery = useMemoFirebase(() => user ? collection(firestore, 'receipts') : null, [firestore, user]);
+    const expensesQuery = useMemoFirebase(() => user ? collection(firestore, 'expenses') : null, [firestore, user]);
 
     const { data: payments, isLoading: paymentsLoading } = useCollection(receiptsQuery);
     const { data: expenses, isLoading: expensesLoading } = useCollection(expensesQuery);
@@ -44,7 +45,7 @@ function CashbookPageContent() {
         return <ChargesAndPaymentHistoryCard />;
     }
     
-    if (paymentsLoading || expensesLoading) {
+    if (isAuthLoading || paymentsLoading || expensesLoading) {
         return <PageSkeleton />;
     }
 

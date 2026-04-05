@@ -7,7 +7,7 @@ import type { UserRole, Payment, Expense } from '@/types';
 import { Building2, Shield, Wrench, IndianRupee, TrendingUp, TrendingDown, CalendarDays, Loader2 } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirebase, useCollection, useMemoFirebase, useUser } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -16,15 +16,16 @@ type ListFilter = 'all' | 'withDues' | 'noDues' | 'pending' | 'verified' | 'paid
 export function AdminDashboard() {
     const router = useRouter();
     const { toast } = useToast();
+    const { user, isUserLoading: isAuthLoading } = useUser();
     
     const { firestore } = useFirebase();
-    const receiptsQuery = useMemoFirebase(() => collection(firestore, 'receipts'), [firestore]);
-    const expensesQuery = useMemoFirebase(() => collection(firestore, 'expenses'), [firestore]);
+    const receiptsQuery = useMemoFirebase(() => user ? collection(firestore, 'receipts') : null, [firestore, user]);
+    const expensesQuery = useMemoFirebase(() => user ? collection(firestore, 'expenses') : null, [firestore, user]);
 
     const { data: initialPayments, isLoading: paymentsLoading } = useCollection<Payment>(receiptsQuery);
     const { data: initialExpenses, isLoading: expensesLoading } = useCollection<Expense>(expensesQuery);
 
-    if (paymentsLoading || expensesLoading) {
+    if (isAuthLoading || paymentsLoading || expensesLoading) {
         return (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {Array.from({ length: 7 }).map((_, i) => (

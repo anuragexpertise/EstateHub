@@ -17,7 +17,7 @@ import { accounts, users, roleDisplayNames } from '@/lib/data';
 import type { Expense, Account, UserRole } from '@/types';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useFirebase, useCollection, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
+import { useFirebase, useCollection, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking, useUser } from '@/firebase';
 import { collection, doc, serverTimestamp, Timestamp } from 'firebase/firestore';
 
 
@@ -250,7 +250,8 @@ function NewExpenseCard() {
 
 function ExpensesPageContent() {
     const { firestore } = useFirebase();
-    const expensesQuery = useMemoFirebase(() => collection(firestore, 'expenses'), [firestore]);
+    const { user, isUserLoading: isAuthLoading } = useUser();
+    const expensesQuery = useMemoFirebase(() => user ? collection(firestore, 'expenses') : null, [firestore, user]);
     const { data: allExpenses, isLoading } = useCollection<Expense>(expensesQuery);
     
     const searchParams = useSearchParams();
@@ -287,7 +288,7 @@ function ExpensesPageContent() {
         return {filteredExpenses: expenses, listTitle: title};
     }, [allExpenses, status]);
 
-    if (isLoading) {
+    if (isAuthLoading || isLoading) {
         return <PageSkeleton />;
     }
 

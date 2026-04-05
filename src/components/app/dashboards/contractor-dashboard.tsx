@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { Building2, CalendarDays, CreditCard } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirebase, useCollection, useMemoFirebase, useUser } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Payment } from '@/types';
@@ -39,10 +39,11 @@ export function ContractorDashboard() {
   const dateTimeFormatter = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
   
   const { firestore } = useFirebase();
-  const receiptsQuery = useMemoFirebase(() => collection(firestore, 'receipts'), [firestore]);
+  const { user, isUserLoading: isAuthLoading } = useUser();
+  const receiptsQuery = useMemoFirebase(() => user ? collection(firestore, 'receipts') : null, [firestore, user]);
   const { data: paymentsData, isLoading } = useCollection<Payment>(receiptsQuery);
 
-  if (isLoading) {
+  if (isAuthLoading || isLoading) {
     return <DashboardSkeleton />;
   }
 

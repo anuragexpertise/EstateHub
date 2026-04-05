@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { users, shifts } from "@/lib/data";
 import { CreditCard, Users, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirebase, useCollection, useMemoFirebase, useUser } from '@/firebase';
 import { collection, query, where, Timestamp } from 'firebase/firestore';
 import type { Expense } from "@/types";
 
@@ -47,21 +47,22 @@ export function PersonnelCard() {
 }
 
 export function SalaryHistoryCard() {
-    const user = users.find(u => u.role === 'Security');
+    const staticUser = users.find(u => u.role === 'Security');
     const { firestore } = useFirebase();
+    const { user, isUserLoading: isAuthLoading } = useUser();
 
     const expensesQuery = useMemoFirebase(() => {
-        if (!user) return null;
+        if (!user || !staticUser) return null;
         return query(
             collection(firestore, 'expenses'), 
-            where('userId', '==', user.id),
+            where('userId', '==', staticUser.id),
             where('accountId', '==', 'acc-02') // Salary account
         )
-    }, [firestore, user]);
+    }, [firestore, user, staticUser]);
     
     const { data: userPayments, isLoading } = useCollection<Expense>(expensesQuery);
 
-    if (!user) {
+    if (!staticUser) {
         return null;
     }
 
@@ -86,7 +87,7 @@ export function SalaryHistoryCard() {
                 </TableRow>
                 </TableHeader>
                 <TableBody>
-                {isLoading ? (
+                {isAuthLoading || isLoading ? (
                     <TableRow>
                         <TableCell colSpan={3} className="text-center"><Loader2 className="mx-auto h-6 w-6 animate-spin" /></TableCell>
                     </TableRow>
