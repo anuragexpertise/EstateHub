@@ -2,13 +2,13 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { users, events, payments } from "@/lib/data";
 import { User, Building2, Wrench, Shield, CalendarDays, TrendingDown, CreditCard, IndianRupee } from "lucide-react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
-import { ChargesAndPaymentHistoryCard } from "../kpi-cards/charges-payment-history-card";
 import { cn } from "@/lib/utils";
 
 export function ApartmentDashboard() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const role = searchParams.get('role');
   const currentUser = users.find(u => u.role === 'Apartment'); // Simplified for demo
   const dateTimeFormatter = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
@@ -23,13 +23,17 @@ export function ApartmentDashboard() {
   
   const visibleEvents = role ? events.filter(e => e.audience.includes('Apartment') && e.status === 'Sent') : [];
 
+  const handleKpiClick = (page: 'charges' | 'payments') => {
+    router.push(`/${page}?role=${role}`);
+  };
+
   const kpis = [
     { title: "Apartment Owners", value: totalApartments, icon: Building2 },
     { title: "Utility Contractors", value: totalContractors, icon: Wrench },
     { title: "Security Staff", value: totalSecurity, icon: Shield },
-    { title: "Dues", value: `₹${userDues.toLocaleString()}`, icon: IndianRupee, color: userDues > 0 ? "text-destructive" : "text-green-600" },
-    { title: "Total Charges", value: `₹${userCharges.toLocaleString()}`, icon: TrendingDown, color: "text-destructive" },
-    { title: "Total Payments", value: `₹${userPayments.toLocaleString()}`, icon: CreditCard, color: "text-green-600" },
+    { title: "Dues", value: `₹${userDues.toLocaleString()}`, icon: IndianRupee, color: userDues > 0 ? "text-destructive" : "text-green-600", page: 'charges' },
+    { title: "Total Charges", value: `₹${userCharges.toLocaleString()}`, icon: TrendingDown, color: "text-destructive", page: 'charges' },
+    { title: "Total Payments", value: `₹${userPayments.toLocaleString()}`, icon: CreditCard, color: "text-green-600", page: 'payments' },
   ];
 
   return (
@@ -42,7 +46,12 @@ export function ApartmentDashboard() {
               <kpi.icon className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className={cn("text-2xl font-bold", kpi.color)}>{kpi.value}</div>
+              <div 
+                className={cn("text-2xl font-bold", kpi.color, kpi.page && "cursor-pointer hover:underline")}
+                onClick={() => kpi.page && handleKpiClick(kpi.page as 'charges' | 'payments')}
+              >
+                {kpi.value}
+              </div>
             </CardContent>
           </Card>
         ))}
@@ -70,7 +79,6 @@ export function ApartmentDashboard() {
             )}
         </CardContent>
       </Card>
-      <ChargesAndPaymentHistoryCard />
     </div>
   );
 }
