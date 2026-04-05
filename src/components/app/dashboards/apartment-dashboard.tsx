@@ -1,4 +1,3 @@
-
 'use client';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { users, events } from "@/lib/data";
@@ -6,15 +5,48 @@ import { User, Building2, Wrench, Shield, CalendarDays, TrendingDown, CreditCard
 import { useSearchParams, useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { useDataStore } from "@/hooks/use-data-store";
+import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { collection } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
+import type { Payment } from '@/types';
+
+function DashboardSkeleton() {
+    return (
+        <div className="space-y-6">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {Array.from({ length: 6 }).map((_, i) => (
+                    <Card key={i}>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <Skeleton className="h-4 w-2/3" />
+                            <Skeleton className="h-4 w-4" />
+                        </CardHeader>
+                        <CardContent>
+                            <Skeleton className="h-8 w-1/2" />
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
+            <Skeleton className="h-64 w-full" />
+        </div>
+    )
+}
 
 export function ApartmentDashboard() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { payments } = useDataStore();
   const role = searchParams.get('role');
   const currentUser = users.find(u => u.role === 'Apartment'); // Simplified for demo
   const dateTimeFormatter = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
+  
+  const { firestore } = useFirebase();
+  const receiptsQuery = useMemoFirebase(() => collection(firestore, 'receipts'), [firestore]);
+  const { data: paymentsData, isLoading } = useCollection<Payment>(receiptsQuery);
+
+  if (isLoading) {
+    return <DashboardSkeleton />;
+  }
+
+  const payments = paymentsData || [];
   
   const totalApartments = users.filter(u => u.role === 'Apartment').length;
   const totalContractors = users.filter(u => u.role === 'Contractor').length;

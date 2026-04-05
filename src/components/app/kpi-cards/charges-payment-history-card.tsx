@@ -1,13 +1,14 @@
-
 'use client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { users, rates } from "@/lib/data";
 import { useGlobalStore } from "@/hooks/use-global-store";
 import { eachMonthOfInterval, startOfMonth, format, isAfter, differenceInDays } from 'date-fns';
-import { Receipt } from "lucide-react";
+import { Receipt, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useDataStore } from "@/hooks/use-data-store";
+import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, Timestamp } from 'firebase/firestore';
+import type { Payment } from '@/types';
 
 type LedgerItem = {
     date: Date;
@@ -20,7 +21,11 @@ type LedgerItem = {
 
 export function ChargesAndPaymentHistoryCard() {
     const { calculationStartDate } = useGlobalStore();
-    const { payments } = useDataStore();
+    
+    const { firestore } = useFirebase();
+    const receiptsQuery = useMemoFirebase(() => collection(firestore, 'receipts'), [firestore]);
+    const { data: payments, isLoading } = useCollection<Payment>(receiptsQuery);
+
     const user = users.find(u => u.role === 'Apartment');
 
     if (!user) {
@@ -48,6 +53,25 @@ export function ChargesAndPaymentHistoryCard() {
             </Card>
         );
     }
+
+    if (isLoading) {
+         return (
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <Receipt className="h-5 w-5" />
+                        Charges & Payment History
+                    </CardTitle>
+                    <CardDescription>
+                        A detailed log of your maintenance charges, fines, and payments.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="flex items-center justify-center h-64">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </CardContent>
+            </Card>
+        );
+    }
     
     const ledger: LedgerItem[] = [];
 
@@ -55,9 +79,9 @@ export function ChargesAndPaymentHistoryCard() {
     const today = new Date();
     const monthlyChargeAmount = user.details.sqft * rates.apartment['1month'];
     
-    const userPayments = payments
+    const userPayments = (payments || [])
         .filter(p => p.userId === user.id && p.description.includes('Maintenance') && p.status === 'Paid')
-        .map(p => ({ date: new Date(p.date), amount: p.amount, type: 'payment' as const, description: 'Payment Received' }));
+        .map(p => ({ date: (p.date as Timestamp).toDate(), amount: p.amount, type: 'payment' as const, description: 'Payment Received' }));
 
     const monthlyCharges = eachMonthOfInterval({ start: startDate, end: today }).map(month => ({
         date: startOfMonth(month),

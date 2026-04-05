@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
@@ -9,11 +8,11 @@ import { useToast } from '@/hooks/use-toast';
 import { CheckCircle2, XCircle, ScanLine, Loader2, Video, Camera, SwitchCamera, Play, StopCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { users } from '@/lib/data';
-import type { User } from '@/types';
+import type { User, Payment } from '@/types';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import jsQR from 'jsqr';
-import { useDataStore } from '@/hooks/use-data-store';
-
+import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, Timestamp } from 'firebase/firestore';
 
 type Verdict = 'PASS' | 'FAIL' | null;
 
@@ -23,7 +22,7 @@ export function ScanCard() {
   const [isLoading, setIsLoading] = useState(false);
   const [scannedUser, setScannedUser] = useState<string | null>(null);
   const { toast } = useToast();
-  const { payments } = useDataStore();
+  
   const [hasCameraPermission, setHasCameraPermission] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -32,6 +31,10 @@ export function ScanCard() {
   const requestRef = useRef<number>();
   const [isScanning, setIsScanning] = useState(true);
   const streamRef = useRef<MediaStream | null>(null);
+
+  const { firestore } = useFirebase();
+  const receiptsQuery = useMemoFirebase(() => collection(firestore, 'receipts'), [firestore]);
+  const { data: paymentsData } = useCollection<Payment>(receiptsQuery);
 
 
   const evaluatePass = useCallback((dataToEvaluate: string) => {
@@ -52,6 +55,8 @@ export function ScanCard() {
     if(isScanning) {
         setIsScanning(false);
     }
+
+    const payments = paymentsData || [];
 
     setTimeout(() => {
       try {
@@ -79,7 +84,7 @@ export function ScanCard() {
         if (user.role === 'Apartment') {
             const lastPayment = payments
                 .filter(p => p.userId === user.id && p.status === 'Paid' && p.description.includes('Maintenance'))
-                .sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+                .sort((a,b) => (b.date as Timestamp).toMillis() - (a.date as Timestamp).toMillis())[0];
 
             if (!lastPayment) {
                  setVerdict('FAIL');
@@ -87,7 +92,7 @@ export function ScanCard() {
                  return;
             }
             
-            const expiryDate = new Date(lastPayment.date);
+            const expiryDate = (lastPayment.date as Timestamp).toDate();
             if(lastPayment.description.includes('1-Month')) expiryDate.setMonth(expiryDate.getMonth() + 1);
             if(lastPayment.description.includes('3-Month')) expiryDate.setMonth(expiryDate.getMonth() + 3);
             if(lastPayment.description.includes('6-Month')) expiryDate.setMonth(expiryDate.getMonth() + 6);
@@ -110,8 +115,8 @@ export function ScanCard() {
                 return;
             }
 
-            const lastPass = passPayments.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
-            const expiryDate = new Date(lastPass.date);
+            const lastPass = passPayments.sort((a, b) => (b.date as Timestamp).toMillis() - (a.date as Timestamp).toMillis())[0];
+            const expiryDate = (lastPass.date as Timestamp).toDate();
             if (lastPass.description.includes('1-Day')) expiryDate.setDate(expiryDate.getDate() + 1);
             else if (lastPass.description.includes('7-Day')) expiryDate.setDate(expiryDate.getDate() + 7);
             else if (lastPass.description.includes('1-Month')) expiryDate.setMonth(expiryDate.getMonth() + 1);
@@ -148,7 +153,7 @@ export function ScanCard() {
         }, 5000);
       }
     }, 1000);
-  }, [toast, isLoading, isScanning, payments]);
+  }, [toast, isLoading, isScanning, paymentsData]);
 
   const scanQRCode = useCallback(() => {
     if (!isScanning) return;

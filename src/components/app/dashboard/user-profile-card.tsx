@@ -1,8 +1,7 @@
-
 'use client';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, UserRole } from "@/types";
+import { User, UserRole, Payment } from "@/types";
 import { roleDisplayNames, shifts, rates, roleIcons, roleTextColors } from "@/lib/data";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { Building2, Wrench, Shield, Mail, Phone, Hash, Copy, AlertCircle, CheckCircle2 } from 'lucide-react';
@@ -13,15 +12,16 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useGlobalStore } from "@/hooks/use-global-store";
 import { differenceInDays, endOfMonth, format, isAfter, startOfMonth, eachMonthOfInterval } from 'date-fns';
-import { useDataStore } from "@/hooks/use-data-store";
+import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, Timestamp } from 'firebase/firestore';
+import { Skeleton } from "@/components/ui/skeleton";
 
-interface UserProfileCardProps {
-    user: User;
-}
 
 const NoticeCard = ({ user }: { user: User }) => {
     const { calculationStartDate } = useGlobalStore();
-    const { payments } = useDataStore();
+    const { firestore } = useFirebase();
+    const receiptsQuery = useMemoFirebase(() => collection(firestore, 'receipts'), [firestore]);
+    const { data: paymentsData, isLoading: paymentsLoading } = useCollection<Payment>(receiptsQuery);
 
     let title = 'Status';
     let amountDue: number | null = null;
@@ -29,6 +29,12 @@ const NoticeCard = ({ user }: { user: User }) => {
     let noticeType: 'due' | 'paid' | 'info' = 'info';
 
     const dateTimeFormatter = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
+
+    if (paymentsLoading) {
+        return <Skeleton className="h-32 w-full mt-4" />
+    }
+
+    const payments = paymentsData || [];
 
     if (user.role === 'Apartment') {
         title = 'Maintenance Status';
@@ -43,7 +49,7 @@ const NoticeCard = ({ user }: { user: User }) => {
 
             const userPayments = payments
                 .filter(p => p.userId === user.id && p.description.includes('Maintenance') && p.status === 'Paid')
-                .map(p => ({ date: new Date(p.date), amount: p.amount, type: 'payment' as const }));
+                .map(p => ({ date: (p.date as Timestamp).toDate(), amount: p.amount, type: 'payment' as const }));
 
             const monthlyCharges = eachMonthOfInterval({ start: startDate, end: today }).map(month => ({
                 date: startOfMonth(month),
@@ -116,10 +122,10 @@ const NoticeCard = ({ user }: { user: User }) => {
     } else if (user.role === 'Contractor') {
         title = 'Pass Status';
         const passPayments = payments.filter(p => p.userId === user.id && p.description.includes('Pass') && p.status === 'Paid');
-        const lastPass = passPayments.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+        const lastPass = passPayments.sort((a, b) => (b.date as Timestamp).toMillis() - (a.date as Timestamp).toMillis())[0];
         
         if (lastPass) {
-            const expiryDate = new Date(lastPass.date);
+            const expiryDate = (lastPass.date as Timestamp).toDate();
             if (lastPass.description.includes('1-Day')) expiryDate.setDate(expiryDate.getDate() + 1);
             else if (lastPass.description.includes('7-Day')) expiryDate.setDate(expiryDate.getDate() + 7);
             else if (lastPass.description.includes('1-Month')) expiryDate.setMonth(expiryDate.getMonth() + 1);
@@ -193,7 +199,7 @@ const NoticeCard = ({ user }: { user: User }) => {
 }
 
 
-export function UserProfileCard({ user }: UserProfileCardProps) {
+export function UserProfileCard({ user }: { user: User }) {
     const { version, newAvatarUrl, lastUpdatedAvatarId } = useAvatarStore();
     const initialAvatar = PlaceHolderImages.find(img => img.id === user.avatarId);
     const [currentAvatarUrl, setCurrentAvatarUrl] = useState(initialAvatar?.imageUrl);

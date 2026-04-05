@@ -5,29 +5,34 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { users as allUsers, shifts, roleDisplayNames, roleBadgeVariants } from "@/lib/data";
-import type { User, UserRole } from '@/types';
+import type { User, UserRole, Payment } from '@/types';
 import { ArrowLeft, FileDown, Mail, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { UserProfileCard } from '@/components/app/dashboard/user-profile-card';
-import { useDataStore } from '@/hooks/use-data-store';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { collection } from 'firebase/firestore';
 
 function UsersPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { payments } = useDataStore();
+    
     const role = searchParams.get('role') as UserRole | null;
     const userRoleFilter = searchParams.get('userRoleFilter') as UserRole | null;
     const statusFilter = searchParams.get('statusFilter');
     const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
 
+    const { firestore } = useFirebase();
+    const receiptsQuery = useMemoFirebase(() => collection(firestore, 'receipts'), [firestore]);
+    const { data: paymentsData, isLoading: paymentsLoading } = useCollection<Payment>(receiptsQuery);
+
     const isAdmin = role === 'Admin';
 
     const { filteredUsers, listTitle } = React.useMemo(() => {
+        const payments = paymentsData || [];
         let defaultTitle = isAdmin ? 'All Users' : 'User Directory';
-        let usersToFilter = isAdmin ? allUsers : allUsers.filter(u => u.role === userRoleFilter);
-
+        
         if (!userRoleFilter) {
             return { filteredUsers: isAdmin ? allUsers : [], listTitle: defaultTitle };
         }
@@ -65,7 +70,7 @@ function UsersPageContent() {
 
 
         return { filteredUsers: filtered, listTitle: newTitle };
-    }, [userRoleFilter, statusFilter, isAdmin, payments]);
+    }, [userRoleFilter, statusFilter, isAdmin, paymentsData]);
 
     const handleExportCsv = () => {
         const headers = ['id', 'name', 'email', 'phone', 'role', 'unit', 'sqft', 'service', 'shift'];
@@ -102,6 +107,25 @@ function UsersPageContent() {
                 </div>
             </div>
         )
+    }
+
+    if (paymentsLoading) {
+        return (
+            <div className="space-y-6">
+                <div className="flex items-center gap-4">
+                    <Skeleton className="h-10 w-10" />
+                    <Skeleton className="h-8 w-48" />
+                </div>
+                <Card>
+                    <CardHeader>
+                        <Skeleton className="h-8 w-48" />
+                    </CardHeader>
+                    <CardContent>
+                        <Skeleton className="h-64 w-full" />
+                    </CardContent>
+                </Card>
+            </div>
+        );
     }
 
     return (

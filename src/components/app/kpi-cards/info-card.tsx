@@ -1,23 +1,23 @@
-
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { users, rates, shifts, findUserByRole } from "@/lib/data";
 import type { User, UserRole, Payment } from '@/types';
-import { ArrowLeft, Building2, Shield, Wrench, FileDown, Check, CreditCard, Mail, Phone } from "lucide-react";
+import { ArrowLeft, Building2, Shield, Wrench, FileDown, Check, CreditCard, Mail, Phone, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from '@/hooks/use-toast';
 import { UserProfileCard } from '@/components/app/dashboard/user-profile-card';
-import { useDataStore } from '@/hooks/use-data-store';
+import { useFirebase, useCollection, useMemoFirebase, updateDocumentNonBlocking } from '@/firebase';
+import { collection, doc, Timestamp } from 'firebase/firestore';
+
 
 type ListFilter = 'all' | 'withDues' | 'noDues' | 'active' | 'inactive' | 'pending' | 'verified';
 
 export function InfoCard() {
   const searchParams = useSearchParams();
-  const { payments: initialPayments, updatePaymentStatus } = useDataStore();
   const role = searchParams.get('role') as UserRole | null;
   const currentUser = role ? findUserByRole(role) : null;
   
@@ -25,17 +25,28 @@ export function InfoCard() {
   const [selectedUserList, setSelectedUserList] = useState<User[]>([]);
   const [listTitle, setListTitle] = useState('');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [payments, setPayments] = useState<Payment[]>(initialPayments);
   const { toast } = useToast();
+  
+  const { firestore } = useFirebase();
+  const receiptsQuery = useMemoFirebase(() => collection(firestore, 'receipts'), [firestore]);
+  const { data: initialPayments, isLoading: paymentsLoading } = useCollection<Payment>(receiptsQuery);
+
+  const [payments, setPayments] = useState<Payment[]>([]);
+
+  useEffect(() => {
+    if (initialPayments) {
+        setPayments(initialPayments);
+    }
+  }, [initialPayments]);
 
   const dateFormatter = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
   const totalApartments = users.filter(u => u.role === 'Apartment').length;
-  const apartmentsWithDues = users.filter(u => u.role === 'Apartment' && initialPayments.some(p => p.userId === u.id && (p.status === 'Due' || p.status === 'Overdue'))).length;
+  const apartmentsWithDues = users.filter(u => u.role === 'Apartment' && payments.some(p => p.userId === u.id && (p.status === 'Due' || p.status === 'Overdue'))).length;
   const apartmentsNoDues = totalApartments - apartmentsWithDues;
   
   const totalContractors = users.filter(u => u.role === 'Contractor').length;
-  const contractorsWithDues = users.filter(u => u.role === 'Contractor' && initialPayments.some(p => p.userId === u.id && (p.status === 'Due' || p.status === 'Overdue'))).length;
+  const contractorsWithDues = users.filter(u => u.role === 'Contractor' && payments.some(p => p.userId === u.id && (p.status === 'Due' || p.status === 'Overdue'))).length;
   const contractorsNoDues = totalContractors - contractorsWithDues;
   
   const securityUsers = users.filter(u => u.role === 'Security');
@@ -43,8 +54,8 @@ export function InfoCard() {
   const activeSecurity = shifts.filter(s => s.status === 'Active' && securityUsers.some(u => u.name === s.personnel)).length;
   const inactiveSecurity = totalSecurity - activeSecurity;
 
-  const totalPayments = initialPayments.length;
-  const pendingPaymentsCount = initialPayments.filter(p => p.status === 'Pending Verification').length;
+  const totalPayments = payments.length;
+  const pendingPaymentsCount = payments.filter(p => p.status === 'Pending Verification').length;
   const verifiedPaymentsCount = totalPayments - pendingPaymentsCount;
 
   const kpiData: { title: string; value: { total: number; withDues?: number; noDues?: number; active?: number; inactive?: number; pending?: number; verified?: number; }; icon: React.ElementType; role: UserRole | 'All' | 'Payments' }[] = [
@@ -61,13 +72,13 @@ export function InfoCard() {
 
     if (role === 'Payments') {
         if (filter === 'pending') {
-            paymentList = initialPayments.filter(p => p.status === 'Pending Verification');
+            paymentList = payments.filter(p => p.status === 'Pending Verification');
             newTitle = 'Pending Payments';
         } else if (filter === 'verified') {
-            paymentList = initialPayments.filter(p => p.status !== 'Pending Verification');
+            paymentList = payments.filter(p => p.status !== 'Pending Verification');
             newTitle = 'Verified Payments';
         } else {
-            paymentList = initialPayments;
+            paymentList = payments;
             newTitle = 'All Payments';
         }
         setPayments(paymentList);
@@ -79,11 +90,11 @@ export function InfoCard() {
     const roleUsers = users.filter(u => u.role === role);
     switch (filter) {
         case 'withDues':
-            filteredUsers = roleUsers.filter(u => initialPayments.some(p => p.userId === u.id && (p.status === 'Due' || p.status === 'Overdue')));
+            filteredUsers = roleUsers.filter(u => payments.some(p => p.userId === u.id && (p.status === 'Due' || p.status === 'Overdue')));
             newTitle = `${title} with Dues`;
             break;
         case 'noDues':
-            filteredUsers = roleUsers.filter(u => !initialPayments.some(p => p.userId === u.id && (p.status === 'Due' || p.status === 'Overdue')));
+            filteredUsers = roleUsers.filter(u => !payments.some(p => p.userId === u.id && (p.status === 'Due' || p.status === 'Overdue')));
             newTitle = `${title} with No Dues`;
             break;
         case 'active':
@@ -110,6 +121,7 @@ export function InfoCard() {
     setSelectedUserList([]);
     setListTitle('');
     setSelectedUser(null);
+    if(initialPayments) setPayments(initialPayments);
   }
   
   const handleBackToUserList = () => {
@@ -149,7 +161,7 @@ export function InfoCard() {
                 paymentUser?.name || 'Unknown',
                 payment.description,
                 payment.amount,
-                new Date(payment.date).toISOString(),
+                (payment.date as Timestamp).toDate().toISOString(),
                 payment.status,
             ];
              csvRows.push(row.join(','));
@@ -171,7 +183,8 @@ export function InfoCard() {
   };
   
   const handleVerifyPayment = (paymentId: string) => {
-    updatePaymentStatus(paymentId, 'Paid');
+    const paymentDoc = doc(firestore, 'receipts', paymentId);
+    updateDocumentNonBlocking(paymentDoc, { status: 'Paid' });
     setPayments(prev => prev.map(p => p.id === paymentId ? { ...p, status: 'Paid' } : p));
     toast({
         title: "Payment Verified",
@@ -185,10 +198,10 @@ export function InfoCard() {
     const passPayments = payments.filter(p => p.userId === userId && p.description.includes('Pass') && p.status === 'Paid');
     if (passPayments.length === 0) return { active: false, expires: null };
 
-    const sortedPasses = passPayments.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const sortedPasses = passPayments.sort((a, b) => (b.date as Timestamp).toMillis() - (a.date as Timestamp).toMillis());
     const lastPass = sortedPasses[0];
 
-    const expiryDate = new Date(lastPass.date);
+    const expiryDate = (lastPass.date as Timestamp).toDate();
     if (lastPass.description.includes('1-Day')) expiryDate.setDate(expiryDate.getDate() + 1);
     else if (lastPass.description.includes('7-Day')) expiryDate.setDate(expiryDate.getDate() + 7);
     else if (lastPass.description.includes('1-Month')) expiryDate.setMonth(expiryDate.getMonth() + 1);
@@ -330,7 +343,7 @@ export function InfoCard() {
                           {payment.status === 'Paid' ? 'Verified' : payment.status}
                       </Badge>
                   </TableCell>
-                  <TableCell>{dateFormatter.format(new Date(payment.date)).replace(/ /g, '-')}</TableCell>
+                  <TableCell>{dateFormatter.format((payment.date as Timestamp).toDate()).replace(/ /g, '-')}</TableCell>
                   <TableCell className="text-right">₹{payment.amount.toLocaleString()}</TableCell>
                   <TableCell className="text-center">
                     {payment.status === 'Pending Verification' && (
@@ -356,6 +369,20 @@ export function InfoCard() {
     );
   }
   
+  if (paymentsLoading) {
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Info KPIs</CardTitle>
+                <CardDescription>An overview of key metrics across the system.</CardDescription>
+            </CardHeader>
+            <CardContent className="flex justify-center items-center h-48">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </CardContent>
+        </Card>
+    )
+  }
+
   return (
     <Card>
         <CardHeader>
