@@ -121,19 +121,19 @@ export default function UsersPage() {
                         <TableBody>
                             {filteredUsers.map((u, index) => (
                                 <TableRow key={u.id} className={cn("cursor-pointer", index % 2 === 0 && "bg-muted/50")} onClick={() => setSelectedUser(u)}>
-                                    <TableCell className="font-medium">{u.name}</TableCell>
+                                    <TableCell className="font-medium whitespace-normal break-words">{u.name}</TableCell>
                                     <TableCell><Badge variant={roleBadgeVariants[u.role]}>{roleDisplayNames[u.role]}</Badge></TableCell>
                                     <TableCell>
                                         <a href={`mailto:${u.email}`} onClick={e => e.stopPropagation()} className="flex items-center gap-2 text-primary hover:underline">
                                             <Mail className="h-4 w-4" />
-                                            <span>Email</span>
+                                            <span className="break-all">{u.email}</span>
                                         </a>
                                     </TableCell>
                                     <TableCell>
                                         {u.phone ? (
                                             <a href={`tel:${u.phone}`} onClick={e => e.stopPropagation()} className="flex items-center gap-2 text-primary hover:underline">
                                                 <Phone className="h-4 w-4" />
-                                                <span>Call</span>
+                                                <span className="whitespace-normal break-words">{u.phone}</span>
                                             </a>
                                         ) : (
                                             <span className="text-muted-foreground">N/A</span>

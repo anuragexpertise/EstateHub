@@ -124,8 +124,8 @@ export function PaymentHistoryCard() {
             <TableBody>
               {filteredPayments.map((payment, index) => (
                 <TableRow key={payment.id} className={cn(index % 2 === 0 && "bg-muted/50")}>
-                  {(role === 'Admin' || role === 'Security') && <TableCell className="font-medium">{userForPayment(payment.userId)}</TableCell>}
-                  <TableCell className="font-medium">{payment.description}</TableCell>
+                  {(role === 'Admin' || role === 'Security') && <TableCell className="font-medium whitespace-normal break-words">{userForPayment(payment.userId)}</TableCell>}
+                  <TableCell className="font-medium whitespace-normal break-words">{payment.description}</TableCell>
                   <TableCell>
                     <Badge 
                         variant={payment.status === 'Paid' ? 'secondary' : payment.status === 'Due' || payment.status === 'Overdue' || payment.status === 'Rejected' ? 'destructive' : 'default'}

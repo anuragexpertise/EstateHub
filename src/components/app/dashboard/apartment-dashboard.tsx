@@ -74,7 +74,7 @@ export function ApartmentDashboard() {
               <TableBody>
                 {userPayments.map((payment) => (
                   <TableRow key={payment.id}>
-                    <TableCell className="font-medium">{payment.description}</TableCell>
+                    <TableCell className="font-medium whitespace-normal break-words">{payment.description}</TableCell>
                     <TableCell>
                       <Badge variant={payment.status === 'Paid' ? 'secondary' : 'destructive'}>{payment.status}</Badge>
                     </TableCell>

@@ -74,7 +74,7 @@ export function SalaryHistoryCard() {
                 <TableBody>
                 {userPayments.map((payment, index) => (
                     <TableRow key={payment.id} className={cn(index % 2 === 0 && "bg-muted/50")}>
-                    <TableCell className="font-medium">{payment.description}</TableCell>
+                    <TableCell className="font-medium whitespace-normal break-words">{payment.description}</TableCell>
                     <TableCell>{dateTimeFormatter.format(payment.date).replace(',', '')}</TableCell>
                     <TableCell className="text-right text-green-600">₹{payment.amount.toLocaleString()}</TableCell>
                     </TableRow>

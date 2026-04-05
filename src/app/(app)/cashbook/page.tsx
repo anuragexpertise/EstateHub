@@ -136,19 +136,19 @@ export default function CashbookPage() {
                                     ledger.map((entry, index) => (
                                         <TableRow key={index} className={cn(index % 2 === 0 ? "bg-muted/50" : "")}>
                                             {/* Receipt Data */}
-                                            <TableCell>{entry.receiptAccount ? dateTimeFormatter.format(entry.date).replace(',', '') : ''}</TableCell>
-                                            <TableCell>{entry.receiptAccount}</TableCell>
-                                            <TableCell>{entry.receiptDescription}</TableCell>
-                                            <TableCell>{entry.receiptFolio}</TableCell>
+                                            <TableCell className="whitespace-normal break-words">{entry.receiptAccount ? dateTimeFormatter.format(entry.date).replace(',', '') : ''}</TableCell>
+                                            <TableCell className="whitespace-normal break-words">{entry.receiptAccount}</TableCell>
+                                            <TableCell className="whitespace-normal break-words">{entry.receiptDescription}</TableCell>
+                                            <TableCell className="whitespace-normal break-words">{entry.receiptFolio}</TableCell>
                                             <TableCell className="text-right text-green-600">{entry.receiptCash?.toLocaleString('en-IN')}</TableCell>
                                             <TableCell className="text-right text-green-600">{entry.receiptOther?.toLocaleString('en-IN')}</TableCell>
                                             <TableCell className="text-right font-semibold text-green-700">{entry.receiptTotal?.toLocaleString('en-IN')}</TableCell>
                                             
                                             {/* Payment Data */}
-                                            <TableCell className="border-l">{entry.paymentAccount ? dateTimeFormatter.format(entry.date).replace(',', '') : ''}</TableCell>
-                                            <TableCell>{entry.paymentAccount}</TableCell>
-                                            <TableCell>{entry.paymentDescription}</TableCell>
-                                            <TableCell>{entry.paymentFolio}</TableCell>
+                                            <TableCell className="border-l whitespace-normal break-words">{entry.paymentAccount ? dateTimeFormatter.format(entry.date).replace(',', '') : ''}</TableCell>
+                                            <TableCell className="whitespace-normal break-words">{entry.paymentAccount}</TableCell>
+                                            <TableCell className="whitespace-normal break-words">{entry.paymentDescription}</TableCell>
+                                            <TableCell className="whitespace-normal break-words">{entry.paymentFolio}</TableCell>
                                             <TableCell className="text-right text-red-600">{entry.paymentCash?.toLocaleString('en-IN')}</TableCell>
                                             <TableCell className="text-right text-red-600">{entry.paymentOther?.toLocaleString('en-IN')}</TableCell>
                                             <TableCell className="text-right font-semibold text-red-700">{entry.paymentTotal?.toLocaleString('en-IN')}</TableCell>

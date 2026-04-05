@@ -64,7 +64,7 @@ export default function PersonnelPage() {
                     <TableBody>
                     {userPayments.map((payment) => (
                         <TableRow key={payment.id}>
-                        <TableCell className="font-medium">{payment.description}</TableCell>
+                        <TableCell className="font-medium whitespace-normal break-words">{payment.description}</TableCell>
                         <TableCell>{dateFormatter.format(payment.date).replace(/ /g, '-')}</TableCell>
                         <TableCell className="text-right">₹{payment.amount.toLocaleString()}</TableCell>
                         </TableRow>

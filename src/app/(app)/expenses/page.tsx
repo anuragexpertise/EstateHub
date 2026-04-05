@@ -270,8 +270,8 @@ export default function ExpensesPage() {
                             {filteredExpenses.map((expense, index) => (
                                 <TableRow key={expense.id} className={cn(index % 2 === 0 && "bg-muted/50")}>
                                     <TableCell>{dateTimeFormatter.format(expense.date).replace(',', '')}</TableCell>
-                                    <TableCell>{accountName(expense.accountId)}</TableCell>
-                                    <TableCell>{expense.description}</TableCell>
+                                    <TableCell className="whitespace-normal break-words">{accountName(expense.accountId)}</TableCell>
+                                    <TableCell className="whitespace-normal break-words">{expense.description}</TableCell>
                                     <TableCell>
                                         <Badge variant={expense.status === 'Paid' ? 'secondary' : expense.status === 'Rejected' ? 'destructive' : 'default'} className={cn(expense.status === 'Pending' && 'bg-amber-500 text-white hover:bg-amber-500/80', expense.status === 'Paid' && 'bg-green-600 text-white hover:bg-green-600/80')}>
                                             {expense.status}

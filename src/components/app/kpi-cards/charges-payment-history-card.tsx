@@ -163,7 +163,7 @@ export function ChargesAndPaymentHistoryCard() {
                         {finalLedger.map((item, index) => (
                             <TableRow key={index}>
                                 <TableCell>{format(item.date, 'dd-MMM-yyyy')}</TableCell>
-                                <TableCell>{item.description}</TableCell>
+                                <TableCell className="whitespace-normal break-words">{item.description}</TableCell>
                                 <TableCell className="text-right text-red-600">
                                     {item.debit > 0 ? `₹${item.debit.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'}
                                 </TableCell>
@@ -191,4 +191,3 @@ export function ChargesAndPaymentHistoryCard() {
         </Card>
     );
 }
-

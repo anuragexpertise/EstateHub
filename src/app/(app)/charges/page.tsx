@@ -42,7 +42,7 @@ function ContractorCharges() {
                         {userCharges.map(charge => (
                              <TableRow key={charge.id}>
                                 <TableCell>{dateTimeFormatter.format(charge.date).replace(',', '')}</TableCell>
-                                <TableCell>{charge.description}</TableCell>
+                                <TableCell className="whitespace-normal break-words">{charge.description}</TableCell>
                                 <TableCell><Badge variant="destructive">{charge.status}</Badge></TableCell>
                                 <TableCell className="text-right text-red-600">₹{charge.amount.toLocaleString()}</TableCell>
                             </TableRow>

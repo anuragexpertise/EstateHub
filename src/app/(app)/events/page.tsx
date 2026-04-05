@@ -350,8 +350,8 @@ function EventList() {
                     <TableBody>
                         {visibleEvents.map((event, index) => (
                             <TableRow key={event.id} className={cn(index % 2 === 0 && "bg-muted/50")}>
-                                <TableCell className="font-medium">{event.name}</TableCell>
-                                <TableCell className="max-w-sm text-muted-foreground truncate">{event.description}</TableCell>
+                                <TableCell className="font-medium whitespace-normal break-words">{event.name}</TableCell>
+                                <TableCell className="text-muted-foreground whitespace-normal break-words">{event.description}</TableCell>
                                 <TableCell>{dateTimeFormatter.format(new Date(event.dateTime)).replace(',', '')}</TableCell>
                                 <TableCell>
                                     <div className="flex flex-wrap gap-1">

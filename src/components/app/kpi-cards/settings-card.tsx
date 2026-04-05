@@ -394,8 +394,8 @@ export function WorkShiftsCard() {
                     const user = users.find(u => u.name === shift.personnel);
                     return (
                         <TableRow key={shift.id}>
-                            <TableCell className="font-medium">{shift.personnel}</TableCell>
-                            <TableCell>{shift.shift}</TableCell>
+                            <TableCell className="font-medium whitespace-normal break-words">{shift.personnel}</TableCell>
+                            <TableCell className="whitespace-normal break-words">{shift.shift}</TableCell>
                             <TableCell>
                                 <Badge variant={shift.status === 'Active' ? 'default' : 'outline'}>{shift.status}</Badge>
                             </TableCell>
@@ -403,7 +403,7 @@ export function WorkShiftsCard() {
                                 {user ? (
                                     <a href={`mailto:${user.email}`} className="flex items-center gap-2 hover:underline text-primary">
                                         <Mail className="h-4 w-4" />
-                                        <span>Email</span>
+                                        <span className="break-all">{user.email}</span>
                                     </a>
                                 ) : (
                                     <span className="text-muted-foreground">N/A</span>
@@ -413,7 +413,7 @@ export function WorkShiftsCard() {
                                 {user?.phone ? (
                                     <a href={`tel:${user.phone}`} className="flex items-center gap-2 hover:underline text-primary">
                                         <Phone className="h-4 w-4" />
-                                        <span>Call</span>
+                                        <span className="whitespace-normal break-words">{user.phone}</span>
                                     </a>
                                 ) : (
                                     <span className="text-muted-foreground">N/A</span>

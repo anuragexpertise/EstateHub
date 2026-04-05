@@ -66,7 +66,7 @@ export function AccountsTableCard() {
                             const currentBalance = calculateCurrentBalance(account);
                             return (
                                 <TableRow key={account.id}>
-                                    <TableCell className="font-medium">{account.name}</TableCell>
+                                    <TableCell className="font-medium whitespace-normal break-words">{account.name}</TableCell>
                                     <TableCell>
                                         <Badge variant={account.type === 'Credit' ? 'secondary' : 'outline'}>{account.type}</Badge>
                                     </TableCell>
