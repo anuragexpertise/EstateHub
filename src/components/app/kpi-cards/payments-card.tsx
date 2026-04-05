@@ -1,4 +1,3 @@
-
 'use client';
 import * as React from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -16,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useGlobalStore } from '@/hooks/use-global-store';
 import { ChargesAndPaymentHistoryCard } from './charges-payment-history-card';
@@ -123,9 +122,9 @@ export function PaymentHistoryCard() {
             </TableHeader>
             <TableBody>
               {filteredPayments.map((payment, index) => (
-                <TableRow key={payment.id} className={cn(index % 2 === 0 && "bg-muted/50")}>
-                  {(role === 'Admin' || role === 'Security') && <TableCell className="font-medium whitespace-normal break-words">{userForPayment(payment.userId)}</TableCell>}
-                  <TableCell className="font-medium whitespace-normal break-words">{payment.description}</TableCell>
+                <TableRow key={payment.id} className={cn("whitespace-normal break-words", index % 2 === 0 && "bg-muted/50")}>
+                  {(role === 'Admin' || role === 'Security') && <TableCell className="font-medium">{userForPayment(payment.userId)}</TableCell>}
+                  <TableCell className="font-medium">{payment.description}</TableCell>
                   <TableCell>
                     <Badge 
                         variant={payment.status === 'Paid' ? 'secondary' : payment.status === 'Due' || payment.status === 'Overdue' || payment.status === 'Rejected' ? 'destructive' : 'default'}
@@ -233,6 +232,10 @@ export function PaymentsCard() {
         }
         return users.filter(u => selectedAccount.subAccountOf!.includes(u.role));
     }
+
+    const creditAccounts = accounts.filter(a => a.type === 'Credit');
+    const subAccounts = creditAccounts.filter(a => a.subAccountOf && a.subAccountOf.length > 0);
+    const commonAccounts = creditAccounts.filter(a => !a.subAccountOf || a.subAccountOf.length === 0);
   
     return (
         <Card>
@@ -263,11 +266,26 @@ export function PaymentsCard() {
                                         </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
-                                        {accounts.filter(a => a.type === 'Credit').map((a) => (
-                                            <SelectItem key={a.id} value={a.id}>
-                                                {a.name}
-                                            </SelectItem>
-                                        ))}
+                                        {subAccounts.length > 0 && (
+                                            <SelectGroup>
+                                                <SelectLabel>Entity-Specific Accounts</SelectLabel>
+                                                {subAccounts.map((a) => (
+                                                    <SelectItem key={a.id} value={a.id}>
+                                                        {a.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectGroup>
+                                        )}
+                                        {commonAccounts.length > 0 && (
+                                            <SelectGroup>
+                                                <SelectLabel>Common Accounts</SelectLabel>
+                                                {commonAccounts.map((a) => (
+                                                    <SelectItem key={a.id} value={a.id}>
+                                                        {a.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectGroup>
+                                        )}
                                     </SelectContent>
                                     </Select>
                                     <FormMessage />

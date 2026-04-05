@@ -1,4 +1,3 @@
-
 'use client';
 import * as React from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -13,7 +12,7 @@ import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { accounts, users, roleDisplayNames } from '@/lib/data';
 import type { Expense, Account } from '@/types';
@@ -87,6 +86,10 @@ function NewExpenseCard({ onAddExpense }: { onAddExpense: (expense: Expense) => 
         }
         return users.filter(u => selectedAccount.subAccountOf!.includes(u.role));
     }
+
+    const debitAccounts = accounts.filter(a => a.type === 'Debit');
+    const subAccounts = debitAccounts.filter(a => a.subAccountOf && a.subAccountOf.length > 0);
+    const commonAccounts = debitAccounts.filter(a => !a.subAccountOf || a.subAccountOf.length === 0);
   
     return (
         <Card>
@@ -117,11 +120,26 @@ function NewExpenseCard({ onAddExpense }: { onAddExpense: (expense: Expense) => 
                                     </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                    {accounts.filter(a => a.type === 'Debit').map((a) => (
-                                        <SelectItem key={a.id} value={a.id}>
-                                            {a.name}
-                                        </SelectItem>
-                                    ))}
+                                    {subAccounts.length > 0 && (
+                                        <SelectGroup>
+                                            <SelectLabel>Entity-Specific Accounts</SelectLabel>
+                                            {subAccounts.map((a) => (
+                                                <SelectItem key={a.id} value={a.id}>
+                                                    {a.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectGroup>
+                                    )}
+                                    {commonAccounts.length > 0 && (
+                                        <SelectGroup>
+                                            <SelectLabel>Common Accounts</SelectLabel>
+                                            {commonAccounts.map((a) => (
+                                                <SelectItem key={a.id} value={a.id}>
+                                                    {a.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectGroup>
+                                    )}
                                 </SelectContent>
                                 </Select>
                                 <FormMessage />
@@ -268,10 +286,10 @@ export default function ExpensesPage() {
                         </TableHeader>
                         <TableBody>
                             {filteredExpenses.map((expense, index) => (
-                                <TableRow key={expense.id} className={cn(index % 2 === 0 && "bg-muted/50")}>
+                                <TableRow key={expense.id} className={cn("whitespace-normal break-words", index % 2 === 0 && "bg-muted/50")}>
                                     <TableCell>{dateTimeFormatter.format(expense.date).replace(',', '')}</TableCell>
-                                    <TableCell className="whitespace-normal break-words">{accountName(expense.accountId)}</TableCell>
-                                    <TableCell className="whitespace-normal break-words">{expense.description}</TableCell>
+                                    <TableCell>{accountName(expense.accountId)}</TableCell>
+                                    <TableCell>{expense.description}</TableCell>
                                     <TableCell>
                                         <Badge variant={expense.status === 'Paid' ? 'secondary' : expense.status === 'Rejected' ? 'destructive' : 'default'} className={cn(expense.status === 'Pending' && 'bg-amber-500 text-white hover:bg-amber-500/80', expense.status === 'Paid' && 'bg-green-600 text-white hover:bg-green-600/80')}>
                                             {expense.status}
