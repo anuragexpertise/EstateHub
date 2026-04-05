@@ -1,9 +1,8 @@
-
 'use client';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { users, events, payments } from "@/lib/data";
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Building2, CalendarDays, CreditCard, Shield, Wrench } from "lucide-react";
+import { Building2, CalendarDays, CreditCard } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
@@ -15,8 +14,6 @@ export function ContractorDashboard() {
   const dateTimeFormatter = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
   
   const totalApartments = users.filter(u => u.role === 'Apartment').length;
-  const totalContractors = users.filter(u => u.role === 'Contractor').length;
-  const totalSecurity = users.filter(u => u.role === 'Security').length;
   const userPayments = payments.filter(p => p.userId === currentUser?.id).filter(p => p.status === 'Paid').reduce((sum, p) => sum + p.amount, 0);
   const visibleEvents = role ? events.filter(e => e.audience.includes('Contractor') && e.status === 'Sent') : [];
 
@@ -30,14 +27,12 @@ export function ContractorDashboard() {
 
   const kpis = [
     { title: "Apartment Owners", value: totalApartments, icon: Building2, page: 'users', filter: 'Apartment' },
-    { title: "Utility Contractors", value: totalContractors, icon: Wrench, page: 'users', filter: 'Contractor' },
-    { title: "Security Staff", value: totalSecurity, icon: Shield, page: 'users', filter: 'Security' },
     { title: "Total Payments", value: `₹${userPayments.toLocaleString()}`, icon: CreditCard, color: "text-green-600", page: 'payments' },
   ];
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2">
         {kpis.map(kpi => (
           <Card key={kpi.title}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
