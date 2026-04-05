@@ -126,17 +126,9 @@ export default function UsersPage() {
                             <TableRow>
                                 <TableHead>Name</TableHead>
                                 <TableHead>Role</TableHead>
-                                {isAdmin ? (
-                                    <>
-                                        <TableHead>Email</TableHead>
-                                        <TableHead>Phone</TableHead>
-                                        {userRoleFilter === 'Apartment' && <TableHead>Size (sqft)</TableHead>}
-                                    </>
-                                ) : (
-                                    <>
-                                        {userRoleFilter === 'Apartment' && <TableHead>Unit</TableHead>}
-                                    </>
-                                )}
+                                <TableHead>Email</TableHead>
+                                <TableHead>Phone</TableHead>
+                                {userRoleFilter === 'Apartment' && <TableHead>Unit</TableHead>}
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -144,36 +136,28 @@ export default function UsersPage() {
                                 <TableRow key={u.id} className={cn("whitespace-normal break-words", index % 2 === 0 && "bg-muted/50", isAdmin && "cursor-pointer")} onClick={() => isAdmin && setSelectedUser(u)}>
                                     <TableCell className="font-medium">{u.name}</TableCell>
                                     <TableCell><Badge variant={roleBadgeVariants[u.role]}>{roleDisplayNames[u.role]}</Badge></TableCell>
-                                    {isAdmin ? (
-                                        <>
-                                            <TableCell>
-                                                <a href={`mailto:${u.email}`} onClick={e => e.stopPropagation()} className="flex items-center gap-2 text-primary hover:underline">
-                                                    <Mail className="h-4 w-4" />
-                                                    <span className="break-all">{u.email}</span>
-                                                </a>
-                                            </TableCell>
-                                            <TableCell>
-                                                {u.phone ? (
-                                                    <a href={`tel:${u.phone}`} onClick={e => e.stopPropagation()} className="flex items-center gap-2 text-primary hover:underline">
-                                                        <Phone className="h-4 w-4" />
-                                                        <span className="whitespace-normal break-words">{u.phone}</span>
-                                                    </a>
-                                                ) : (
-                                                    <span className="text-muted-foreground">N/A</span>
-                                                )}
-                                            </TableCell>
-                                            {userRoleFilter === 'Apartment' && <TableCell>{u.details?.sqft}</TableCell>}
-                                        </>
-                                     ) : (
-                                        <>
-                                            {userRoleFilter === 'Apartment' && <TableCell>{u.details?.unit}</TableCell>}
-                                        </>
-                                     )}
+                                    <TableCell>
+                                        <a href={`mailto:${u.email}`} onClick={e => isAdmin && e.stopPropagation()} className="flex items-center gap-2 text-primary hover:underline">
+                                            <Mail className="h-4 w-4" />
+                                            <span className="break-all">{u.email}</span>
+                                        </a>
+                                    </TableCell>
+                                    <TableCell>
+                                        {u.phone ? (
+                                            <a href={`tel:${u.phone}`} onClick={e => isAdmin && e.stopPropagation()} className="flex items-center gap-2 text-primary hover:underline">
+                                                <Phone className="h-4 w-4" />
+                                                <span className="whitespace-normal break-words">{u.phone}</span>
+                                            </a>
+                                        ) : (
+                                            <span className="text-muted-foreground">N/A</span>
+                                        )}
+                                    </TableCell>
+                                    {userRoleFilter === 'Apartment' && <TableCell>{u.details?.unit}</TableCell>}
                                 </TableRow>
                             ))}
                             {filteredUsers.length === 0 && (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="text-center text-muted-foreground py-4">No users found for this filter.</TableCell>
+                                    <TableCell colSpan={userRoleFilter === 'Apartment' ? 5 : 4} className="text-center text-muted-foreground py-4">No users found for this filter.</TableCell>
                                 </TableRow>
                             )}
                         </TableBody>
@@ -183,4 +167,3 @@ export default function UsersPage() {
         </div>
     );
 }
-
