@@ -16,6 +16,7 @@ import {
   TrendingUp,
   TrendingDown,
   Users,
+  Clock,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -93,30 +94,41 @@ export const rates = {
 };
 
 export const allNavItems: NavItem[] = [
-  // Common
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['Admin', 'Apartment', 'Contractor', 'Security'] },
-  { href: '/events', label: 'Events', icon: CalendarDays, roles: ['Admin', 'Apartment', 'Contractor', 'Security'] },
-  
-  // Admin Only
+  // Admin
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['Admin'] },
   { href: '/cashbook', label: 'Cashbook', icon: Book, roles: ['Admin'] },
   { href: '/payments', label: 'Receipts', icon: TrendingUp, roles: ['Admin'] },
   { href: '/expenses', label: 'Expenses', icon: TrendingDown, roles: ['Admin'] },
   { href: '/enroll', label: 'Enroll', icon: UserCog, roles: ['Admin'] },
   { href: '/users', label: 'Users', icon: Users, roles: ['Admin'] },
+  { href: '/events', label: 'Events', icon: CalendarDays, roles: ['Admin'] },
   { href: '/scan', label: 'Evaluate Pass', icon: ScanLine, roles: ['Admin'] },
   { href: '/customize', label: 'Customize', icon: Brush, roles: ['Admin'] },
-  
-  // Apartment & Contractor
-  { href: '/cashbook', label: 'Cashbook', icon: Book, roles: ['Apartment', 'Contractor'] },
-  { href: '/payments', label: 'Payments', icon: CreditCard, roles: ['Apartment', 'Contractor'] },
-  { href: '/charges', label: 'Charges', icon: TrendingDown, roles: ['Apartment', 'Contractor'] },
-  
-  // Security
-  { href: '/cashbook', label: 'Cashbook', icon: Book, roles: ['Security'] },
-  { href: '/payments', label: 'New Receipt', icon: Receipt, roles: ['Security'] },
+  { href: '/settings', label: 'Settings', icon: Settings, roles: ['Admin'] },
 
-  // Common
-  { href: '/settings', label: 'Settings', icon: Settings, roles: ['Admin', 'Apartment', 'Contractor', 'Security'] },
+  // Apartment
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['Apartment'] },
+  { href: '/cashbook', label: 'Cashbook', icon: Book, roles: ['Apartment'] },
+  { href: '/payments', label: 'Payments', icon: CreditCard, roles: ['Apartment'] },
+  { href: '/charges', label: 'Charges', icon: TrendingDown, roles: ['Apartment'] },
+  { href: '/events', label: 'Events', icon: CalendarDays, roles: ['Apartment'] },
+  { href: '/settings', label: 'Settings', icon: Settings, roles: ['Apartment'] },
+  
+  // Contractor
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['Contractor'] },
+  { href: '/cashbook', label: 'Cashbook', icon: Book, roles: ['Contractor'] },
+  { href: '/payments', label: 'Payments', icon: CreditCard, roles: ['Contractor'] },
+  { href: '/charges', label: 'Charges', icon: TrendingDown, roles: ['Contractor'] },
+  { href: '/events', label: 'Events', icon: CalendarDays, roles: ['Contractor'] },
+  { href: '/settings', label: 'Settings', icon: Settings, roles: ['Contractor'] },
+
+  // Security
+  { href: '/scan', label: 'Pass Evaluation', icon: ScanLine, roles: ['Security'] },
+  { href: '/attendance', label: 'Attendance', icon: Clock, roles: ['Security'] },
+  { href: '/events', label: 'Events', icon: CalendarDays, roles: ['Security'] },
+  { href: '/payments', label: 'New Receipt', icon: Receipt, roles: ['Security'] },
+  { href: '/directory', label: 'Users', icon: Users, roles: ['Security'] },
+  { href: '/settings', label: 'Settings', icon: Settings, roles: ['Security'] },
 ];
 
 export const roleIcons: Record<UserRole, LucideIcon> = {
@@ -180,3 +192,4 @@ export const accounts: Account[] = [
   { id: 'acc-16', name: 'Uniforms', type: 'Debit', balanceForward: 0.00, description: 'Uniforms for contractors and security.', subAccountOf: ['Contractor', 'Security'] },
 ];
 
+    
