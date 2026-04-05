@@ -1,8 +1,9 @@
+
 'use client';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { users, events, payments } from "@/lib/data";
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Building2, CalendarDays, CreditCard } from "lucide-react";
+import { Building2, CalendarDays, CreditCard, Shield, Wrench } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
@@ -14,21 +15,29 @@ export function ContractorDashboard() {
   const dateTimeFormatter = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
   
   const totalApartments = users.filter(u => u.role === 'Apartment').length;
+  const totalContractors = users.filter(u => u.role === 'Contractor').length;
+  const totalSecurity = users.filter(u => u.role === 'Security').length;
   const userPayments = payments.filter(p => p.userId === currentUser?.id).filter(p => p.status === 'Paid').reduce((sum, p) => sum + p.amount, 0);
   const visibleEvents = role ? events.filter(e => e.audience.includes('Contractor') && e.status === 'Sent') : [];
 
-  const handleKpiClick = () => {
-    router.push(`/payments?role=${role}`);
+  const handleKpiClick = (page: 'payments' | 'users', filter?: string) => {
+    if (page === 'users') {
+        router.push(`/users?role=${role}&userRoleFilter=${filter}`);
+    } else {
+        router.push(`/${page}?role=${role}`);
+    }
   }
 
   const kpis = [
-    { title: "Apartment Owners", value: totalApartments, icon: Building2 },
+    { title: "Apartment Owners", value: totalApartments, icon: Building2, page: 'users', filter: 'Apartment' },
+    { title: "Utility Contractors", value: totalContractors, icon: Wrench, page: 'users', filter: 'Contractor' },
+    { title: "Security Staff", value: totalSecurity, icon: Shield, page: 'users', filter: 'Security' },
     { title: "Total Payments", value: `₹${userPayments.toLocaleString()}`, icon: CreditCard, color: "text-green-600", page: 'payments' },
   ];
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {kpis.map(kpi => (
           <Card key={kpi.title}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -38,7 +47,7 @@ export function ContractorDashboard() {
             <CardContent>
                <div 
                 className={cn("text-2xl font-bold", kpi.color, kpi.page && "cursor-pointer hover:underline")}
-                onClick={() => kpi.page && handleKpiClick()}
+                onClick={() => kpi.page && handleKpiClick(kpi.page as any, kpi.filter)}
               >
                 {kpi.value}
               </div>

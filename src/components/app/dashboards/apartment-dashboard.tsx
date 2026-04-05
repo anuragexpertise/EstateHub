@@ -1,3 +1,4 @@
+
 'use client';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { users, events, payments } from "@/lib/data";
@@ -23,14 +24,18 @@ export function ApartmentDashboard() {
   
   const visibleEvents = role ? events.filter(e => e.audience.includes('Apartment') && e.status === 'Sent') : [];
 
-  const handleKpiClick = (page: 'charges' | 'payments') => {
-    router.push(`/${page}?role=${role}`);
+  const handleKpiClick = (page: 'charges' | 'payments' | 'users', filter?: string) => {
+    if (page === 'users') {
+        router.push(`/users?role=${role}&userRoleFilter=${filter}`);
+    } else {
+        router.push(`/${page}?role=${role}`);
+    }
   };
 
   const kpis = [
-    { title: "Apartment Owners", value: totalApartments, icon: Building2 },
-    { title: "Utility Contractors", value: totalContractors, icon: Wrench },
-    { title: "Security Staff", value: totalSecurity, icon: Shield },
+    { title: "Apartment Owners", value: totalApartments, icon: Building2, page: 'users', filter: 'Apartment' },
+    { title: "Utility Contractors", value: totalContractors, icon: Wrench, page: 'users', filter: 'Contractor' },
+    { title: "Security Staff", value: totalSecurity, icon: Shield, page: 'users', filter: 'Security' },
     { title: "Dues", value: `₹${userDues.toLocaleString()}`, icon: IndianRupee, color: userDues > 0 ? "text-destructive" : "text-green-600", page: 'charges' },
     { title: "Total Charges", value: `₹${userCharges.toLocaleString()}`, icon: TrendingDown, color: "text-destructive", page: 'charges' },
     { title: "Total Payments", value: `₹${userPayments.toLocaleString()}`, icon: CreditCard, color: "text-green-600", page: 'payments' },
@@ -48,7 +53,7 @@ export function ApartmentDashboard() {
             <CardContent>
               <div 
                 className={cn("text-2xl font-bold", kpi.color, kpi.page && "cursor-pointer hover:underline")}
-                onClick={() => kpi.page && handleKpiClick(kpi.page as 'charges' | 'payments')}
+                onClick={() => kpi.page && handleKpiClick(kpi.page as any, kpi.filter)}
               >
                 {kpi.value}
               </div>

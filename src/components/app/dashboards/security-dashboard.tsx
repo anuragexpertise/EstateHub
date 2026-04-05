@@ -1,7 +1,8 @@
+
 'use client';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { users, events, shifts } from "@/lib/data";
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Building2, Wrench, Shield, CalendarDays, Clock, ScanLine, ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -11,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 
 export function SecurityDashboard() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const role = searchParams.get('role');
   const currentUser = users.find(u => u.role === 'Security'); // Simplified for demo
   const dateTimeFormatter = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
@@ -24,10 +26,16 @@ export function SecurityDashboard() {
   
   const visibleEvents = role ? events.filter(e => e.audience.includes('Security') && e.status === 'Sent') : [];
 
+  const handleKpiClick = (page: 'users', filter?: string) => {
+    if (page === 'users') {
+        router.push(`/users?role=${role}&userRoleFilter=${filter}`);
+    }
+  }
+
   const kpis = [
-    { title: "Apartment Owners", value: totalApartments, icon: Building2 },
-    { title: "Utility Contractors", value: totalContractors, icon: Wrench },
-    { title: "Security Staff", value: totalSecurity, icon: Shield },
+    { title: "Apartment Owners", value: totalApartments, icon: Building2, page: 'users', filter: 'Apartment' },
+    { title: "Utility Contractors", value: totalContractors, icon: Wrench, page: 'users', filter: 'Contractor' },
+    { title: "Security Staff", value: totalSecurity, icon: Shield, page: 'users', filter: 'Security' },
   ];
   
   const handleAttendance = (action: 'in' | 'out') => {
@@ -47,7 +55,12 @@ export function SecurityDashboard() {
               <kpi.icon className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{kpi.value}</div>
+              <div 
+                className={cn("text-2xl font-bold", kpi.page && "cursor-pointer hover:underline")}
+                onClick={() => kpi.page && handleKpiClick(kpi.page as any, kpi.filter)}
+              >
+                {kpi.value}
+              </div>
             </CardContent>
           </Card>
         ))}

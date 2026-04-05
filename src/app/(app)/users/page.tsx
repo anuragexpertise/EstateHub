@@ -15,44 +15,55 @@ import { UserProfileCard } from '@/components/app/dashboard/user-profile-card';
 export default function UsersPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const role = searchParams.get('role') as UserRole | null;
     const userRoleFilter = searchParams.get('userRoleFilter') as UserRole | null;
     const statusFilter = searchParams.get('statusFilter');
     const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
 
+    const isAdmin = role === 'Admin';
+
     const { filteredUsers, listTitle } = React.useMemo(() => {
+        let defaultTitle = isAdmin ? 'All Users' : 'User Directory';
+        let usersToFilter = isAdmin ? allUsers : allUsers.filter(u => u.role === userRoleFilter);
+
         if (!userRoleFilter) {
-            return { filteredUsers: allUsers, listTitle: 'All Users' };
+            return { filteredUsers: isAdmin ? allUsers : [], listTitle: defaultTitle };
         }
 
         let newTitle = '';
         let filtered = allUsers.filter(u => u.role === userRoleFilter);
         const roleName = roleDisplayNames[userRoleFilter] || userRoleFilter;
 
-        switch (statusFilter) {
-            case 'withDues':
-                filtered = filtered.filter(u => payments.some(p => p.userId === u.id && (p.status === 'Due' || p.status === 'Overdue')));
-                newTitle = `${roleName} with Dues`;
-                break;
-            case 'noDues':
-                filtered = filtered.filter(u => !payments.some(p => p.userId === u.id && (p.status === 'Due' || p.status === 'Overdue')));
-                newTitle = `${roleName} with No Dues`;
-                break;
-            case 'active':
-                filtered = filtered.filter(u => shifts.some(s => s.personnel === u.name && s.status === 'Active'));
-                 newTitle = `Active ${roleName}`;
-                break;
-            case 'inactive':
-                filtered = filtered.filter(u => !shifts.some(s => s.personnel === u.name && s.status === 'Active'));
-                newTitle = `Inactive ${roleName}`;
-                break;
-            case 'all':
-            default:
-                newTitle = `All ${roleName}`;
-                break;
+        if(isAdmin) {
+            switch (statusFilter) {
+                case 'withDues':
+                    filtered = filtered.filter(u => payments.some(p => p.userId === u.id && (p.status === 'Due' || p.status === 'Overdue')));
+                    newTitle = `${roleName} with Dues`;
+                    break;
+                case 'noDues':
+                    filtered = filtered.filter(u => !payments.some(p => p.userId === u.id && (p.status === 'Due' || p.status === 'Overdue')));
+                    newTitle = `${roleName} with No Dues`;
+                    break;
+                case 'active':
+                    filtered = filtered.filter(u => shifts.some(s => s.personnel === u.name && s.status === 'Active'));
+                    newTitle = `Active ${roleName}`;
+                    break;
+                case 'inactive':
+                    filtered = filtered.filter(u => !shifts.some(s => s.personnel === u.name && s.status === 'Active'));
+                    newTitle = `Inactive ${roleName}`;
+                    break;
+                case 'all':
+                default:
+                    newTitle = `All ${roleName}`;
+                    break;
+            }
+        } else {
+            newTitle = `All ${roleName}`;
         }
 
+
         return { filteredUsers: filtered, listTitle: newTitle };
-    }, [userRoleFilter, statusFilter]);
+    }, [userRoleFilter, statusFilter, isAdmin]);
 
     const handleExportCsv = () => {
         const headers = ['id', 'name', 'email', 'phone', 'role', 'unit', 'sqft', 'service', 'shift'];
@@ -77,7 +88,7 @@ export default function UsersPage() {
         }
     };
     
-    if (selectedUser) {
+    if (selectedUser && isAdmin) {
         return (
             <div>
                  <Button variant="outline" onClick={() => setSelectedUser(null)} className="mb-4">
@@ -94,18 +105,20 @@ export default function UsersPage() {
     return (
         <div className="space-y-6">
             <div className="flex items-center gap-4">
-                <Button variant="outline" size="icon" onClick={() => router.push('/dashboard?role=Admin')}>
+                <Button variant="outline" size="icon" onClick={() => router.push(`/dashboard?role=${role}`)}>
                     <ArrowLeft className="h-4 w-4" />
                 </Button>
                 <h1 className="text-2xl font-bold tracking-tight">{listTitle}</h1>
             </div>
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle>User Details</CardTitle>
-                    <Button variant="outline" size="icon" onClick={handleExportCsv}>
-                        <FileDown className="h-4 w-4" />
-                        <span className="sr-only">Export as CSV</span>
-                    </Button>
+                    <CardTitle>User Directory</CardTitle>
+                    {isAdmin && (
+                        <Button variant="outline" size="icon" onClick={handleExportCsv}>
+                            <FileDown className="h-4 w-4" />
+                            <span className="sr-only">Export as CSV</span>
+                        </Button>
+                    )}
                 </CardHeader>
                 <CardContent>
                     <Table>
@@ -113,38 +126,54 @@ export default function UsersPage() {
                             <TableRow>
                                 <TableHead>Name</TableHead>
                                 <TableHead>Role</TableHead>
-                                <TableHead>Email</TableHead>
-                                <TableHead>Phone</TableHead>
-                                {userRoleFilter === 'Apartment' && <TableHead>Size (sqft)</TableHead>}
+                                {isAdmin ? (
+                                    <>
+                                        <TableHead>Email</TableHead>
+                                        <TableHead>Phone</TableHead>
+                                        {userRoleFilter === 'Apartment' && <TableHead>Size (sqft)</TableHead>}
+                                    </>
+                                ) : (
+                                    <>
+                                        {userRoleFilter === 'Apartment' && <TableHead>Unit</TableHead>}
+                                    </>
+                                )}
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {filteredUsers.map((u, index) => (
-                                <TableRow key={u.id} className={cn("cursor-pointer", index % 2 === 0 && "bg-muted/50")} onClick={() => setSelectedUser(u)}>
-                                    <TableCell className="font-medium whitespace-normal break-words">{u.name}</TableCell>
+                                <TableRow key={u.id} className={cn("whitespace-normal break-words", index % 2 === 0 && "bg-muted/50", isAdmin && "cursor-pointer")} onClick={() => isAdmin && setSelectedUser(u)}>
+                                    <TableCell className="font-medium">{u.name}</TableCell>
                                     <TableCell><Badge variant={roleBadgeVariants[u.role]}>{roleDisplayNames[u.role]}</Badge></TableCell>
-                                    <TableCell>
-                                        <a href={`mailto:${u.email}`} onClick={e => e.stopPropagation()} className="flex items-center gap-2 text-primary hover:underline">
-                                            <Mail className="h-4 w-4" />
-                                            <span className="break-all">{u.email}</span>
-                                        </a>
-                                    </TableCell>
-                                    <TableCell>
-                                        {u.phone ? (
-                                            <a href={`tel:${u.phone}`} onClick={e => e.stopPropagation()} className="flex items-center gap-2 text-primary hover:underline">
-                                                <Phone className="h-4 w-4" />
-                                                <span className="whitespace-normal break-words">{u.phone}</span>
-                                            </a>
-                                        ) : (
-                                            <span className="text-muted-foreground">N/A</span>
-                                        )}
-                                    </TableCell>
-                                    {userRoleFilter === 'Apartment' && <TableCell>{u.details?.sqft}</TableCell>}
+                                    {isAdmin ? (
+                                        <>
+                                            <TableCell>
+                                                <a href={`mailto:${u.email}`} onClick={e => e.stopPropagation()} className="flex items-center gap-2 text-primary hover:underline">
+                                                    <Mail className="h-4 w-4" />
+                                                    <span className="break-all">{u.email}</span>
+                                                </a>
+                                            </TableCell>
+                                            <TableCell>
+                                                {u.phone ? (
+                                                    <a href={`tel:${u.phone}`} onClick={e => e.stopPropagation()} className="flex items-center gap-2 text-primary hover:underline">
+                                                        <Phone className="h-4 w-4" />
+                                                        <span className="whitespace-normal break-words">{u.phone}</span>
+                                                    </a>
+                                                ) : (
+                                                    <span className="text-muted-foreground">N/A</span>
+                                                )}
+                                            </TableCell>
+                                            {userRoleFilter === 'Apartment' && <TableCell>{u.details?.sqft}</TableCell>}
+                                        </>
+                                     ) : (
+                                        <>
+                                            {userRoleFilter === 'Apartment' && <TableCell>{u.details?.unit}</TableCell>}
+                                        </>
+                                     )}
                                 </TableRow>
                             ))}
                             {filteredUsers.length === 0 && (
                                 <TableRow>
-                                    <TableCell colSpan={userRoleFilter === 'Apartment' ? 5 : 4} className="text-center text-muted-foreground py-4">No users found for this filter.</TableCell>
+                                    <TableCell colSpan={5} className="text-center text-muted-foreground py-4">No users found for this filter.</TableCell>
                                 </TableRow>
                             )}
                         </TableBody>
@@ -154,3 +183,4 @@ export default function UsersPage() {
         </div>
     );
 }
+
