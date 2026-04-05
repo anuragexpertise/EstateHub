@@ -1,12 +1,13 @@
-
 'use client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { users, shifts } from "@/lib/data";
-import { CreditCard, Users } from "lucide-react";
+import { CreditCard, Users, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useDataStore } from "@/hooks/use-data-store";
+import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query, where, Timestamp } from 'firebase/firestore';
+import type { Expense } from "@/types";
 
 export function PersonnelCard() {
     const user = users.find(u => u.role === 'Security');
@@ -47,12 +48,23 @@ export function PersonnelCard() {
 
 export function SalaryHistoryCard() {
     const user = users.find(u => u.role === 'Security');
-    const { payments } = useDataStore();
+    const { firestore } = useFirebase();
+
+    const expensesQuery = useMemoFirebase(() => {
+        if (!user) return null;
+        return query(
+            collection(firestore, 'expenses'), 
+            where('userId', '==', user.id),
+            where('accountId', '==', 'acc-02') // Salary account
+        )
+    }, [firestore, user]);
+    
+    const { data: userPayments, isLoading } = useCollection<Expense>(expensesQuery);
 
     if (!user) {
         return null;
     }
-    const userPayments = payments.filter(p => p.userId === user.id);
+
     const dateTimeFormatter = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
     return (
@@ -74,14 +86,17 @@ export function SalaryHistoryCard() {
                 </TableRow>
                 </TableHeader>
                 <TableBody>
-                {userPayments.map((payment, index) => (
+                {isLoading ? (
+                    <TableRow>
+                        <TableCell colSpan={3} className="text-center"><Loader2 className="mx-auto h-6 w-6 animate-spin" /></TableCell>
+                    </TableRow>
+                ) : userPayments && userPayments.length > 0 ? userPayments.map((payment, index) => (
                     <TableRow key={payment.id} className={cn(index % 2 === 0 && "bg-muted/50")}>
                     <TableCell className="font-medium whitespace-normal break-words">{payment.description}</TableCell>
-                    <TableCell>{dateTimeFormatter.format(new Date(payment.date)).replace(',', '')}</TableCell>
+                    <TableCell>{dateTimeFormatter.format((payment.date as Timestamp).toDate()).replace(',', '')}</TableCell>
                     <TableCell className="text-right text-green-600">₹{payment.amount.toLocaleString()}</TableCell>
                     </TableRow>
-                ))}
-                    {userPayments.length === 0 && (
+                )) : (
                     <TableRow>
                         <TableCell colSpan={3} className="text-center">No payment history found.</TableCell>
                     </TableRow>

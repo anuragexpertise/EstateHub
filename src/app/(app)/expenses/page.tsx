@@ -16,8 +16,9 @@ import { useToast } from '@/hooks/use-toast';
 import { accounts, users, roleDisplayNames } from '@/lib/data';
 import type { Expense, Account, UserRole } from '@/types';
 import { cn } from '@/lib/utils';
-import { useDataStore } from '@/hooks/use-data-store';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useFirebase, useCollection, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
+import { collection, doc, serverTimestamp, Timestamp } from 'firebase/firestore';
 
 
 const expenseFormSchema = z.object({
@@ -27,8 +28,9 @@ const expenseFormSchema = z.object({
   description: z.string().min(2, 'Description must be at least 2 characters.'),
 });
 
-function NewExpenseCard({ onAddExpense }: { onAddExpense: (expense: Expense) => void }) {
+function NewExpenseCard() {
     const { toast } = useToast();
+    const { firestore } = useFirebase();
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     const [selectedAccount, setSelectedAccount] = React.useState<Account | null>(null);
     const [selectedRole, setSelectedRole] = React.useState<UserRole | null>(null);
@@ -65,45 +67,43 @@ function NewExpenseCard({ onAddExpense }: { onAddExpense: (expense: Expense) => 
 
     const handleAddExpense = (values: z.infer<typeof expenseFormSchema>) => {
         setIsSubmitting(true);
-        setTimeout(() => {
-            const account = accounts.find(a => a.id === values.accountId);
-            if (!account) {
-                toast({ variant: 'destructive', title: 'Error', description: 'Selected account not found.' });
-                setIsSubmitting(false);
-                return;
-            }
-
-            if (account?.subAccountOf?.length && !values.userId) {
-                toast({
-                    variant: 'destructive',
-                    title: "Validation Error",
-                    description: `Please select an entity for the ${account.name} account.`,
-                });
-                setIsSubmitting(false);
-                return;
-            }
-
-            const newExpense: Expense = {
-                id: `exp-${Date.now()}`,
-                accountId: values.accountId,
-                userId: values.userId,
-                amount: values.amount,
-                description: values.description,
-                date: new Date(),
-                status: 'Pending',
-            };
-    
-            onAddExpense(newExpense);
-    
-            toast({
-                title: "Expense Recorded",
-                description: `Expense of ₹${values.amount} for ${values.description} has been recorded as pending.`,
-            });
-            form.reset();
-            setSelectedAccount(null);
-            setSelectedRole(null);
+        const account = accounts.find(a => a.id === values.accountId);
+        if (!account) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Selected account not found.' });
             setIsSubmitting(false);
-        }, 1000);
+            return;
+        }
+
+        if (account?.subAccountOf?.length && !values.userId) {
+            toast({
+                variant: 'destructive',
+                title: "Validation Error",
+                description: `Please select an entity for the ${account.name} account.`,
+            });
+            setIsSubmitting(false);
+            return;
+        }
+
+        const newExpense = {
+            accountId: values.accountId,
+            userId: values.userId,
+            amount: values.amount,
+            description: values.description,
+            date: serverTimestamp(),
+            status: 'Pending',
+        };
+
+        const expensesCol = collection(firestore, 'expenses');
+        addDocumentNonBlocking(expensesCol, newExpense);
+
+        toast({
+            title: "Expense Recorded",
+            description: `Expense of ₹${values.amount} for ${values.description} has been recorded as pending.`,
+        });
+        form.reset();
+        setSelectedAccount(null);
+        setSelectedRole(null);
+        setIsSubmitting(false);
       }
       
     const getSubAccountUsers = () => {
@@ -249,7 +249,10 @@ function NewExpenseCard({ onAddExpense }: { onAddExpense: (expense: Expense) => 
 }
 
 function ExpensesPageContent() {
-    const { expenses: allExpenses, addExpense, updateExpenseStatus } = useDataStore();
+    const { firestore } = useFirebase();
+    const expensesQuery = useMemoFirebase(() => collection(firestore, 'expenses'), [firestore]);
+    const { data: allExpenses, isLoading } = useCollection<Expense>(expensesQuery);
+    
     const searchParams = useSearchParams();
     const router = useRouter();
     const status = searchParams.get('status');
@@ -260,17 +263,19 @@ function ExpensesPageContent() {
     const accountName = (accountId: string) => accounts.find(a => a.id === accountId)?.name || 'N/A';
 
     const handleVerifyExpense = (expenseId: string) => {
-        updateExpenseStatus(expenseId, 'Paid');
+        const expenseDoc = doc(firestore, 'expenses', expenseId);
+        updateDocumentNonBlocking(expenseDoc, { status: 'Paid' });
         toast({ title: "Expense Verified", description: "The expense has been marked as paid." });
     };
 
     const handleRejectExpense = (expenseId: string) => {
-        updateExpenseStatus(expenseId, 'Rejected');
+        const expenseDoc = doc(firestore, 'expenses', expenseId);
+        updateDocumentNonBlocking(expenseDoc, { status: 'Rejected' });
         toast({ variant: "destructive", title: "Expense Rejected", description: "The expense has been marked as rejected." });
     };
 
     const {filteredExpenses, listTitle} = React.useMemo(() => {
-        let expenses = allExpenses;
+        let expenses = allExpenses || [];
         let title = 'Expenses Log';
         if (status === 'pending') {
             expenses = expenses.filter(e => e.status === 'Pending');
@@ -282,9 +287,13 @@ function ExpensesPageContent() {
         return {filteredExpenses: expenses, listTitle: title};
     }, [allExpenses, status]);
 
+    if (isLoading) {
+        return <PageSkeleton />;
+    }
+
     return (
         <div className="space-y-6">
-            <NewExpenseCard onAddExpense={addExpense} />
+            <NewExpenseCard />
             <Card>
                 <CardHeader>
                     <div className="flex items-center gap-4">
@@ -317,7 +326,7 @@ function ExpensesPageContent() {
                         <TableBody>
                             {filteredExpenses.map((expense, index) => (
                                 <TableRow key={expense.id} className={cn("whitespace-normal break-words", index % 2 === 0 && "bg-muted/50")}>
-                                    <TableCell>{dateTimeFormatter.format(new Date(expense.date)).replace(',', '')}</TableCell>
+                                    <TableCell>{dateTimeFormatter.format((expense.date as Timestamp).toDate()).replace(',', '')}</TableCell>
                                     <TableCell>{accountName(expense.accountId)}</TableCell>
                                     <TableCell>{expense.description}</TableCell>
                                     <TableCell>

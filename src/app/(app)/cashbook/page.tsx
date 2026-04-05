@@ -3,13 +3,14 @@ import * as React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Book } from "lucide-react";
-import { users, accounts } from "@/lib/data";
+import { accounts } from "@/lib/data";
 import { useSearchParams } from "next/navigation";
 import { UserRole } from "@/types";
 import { ChargesAndPaymentHistoryCard } from "@/components/app/kpi-cards/charges-payment-history-card";
 import { cn } from "@/lib/utils";
-import { useDataStore } from "@/hooks/use-data-store";
 import { Skeleton } from '@/components/ui/skeleton';
+import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, Timestamp } from 'firebase/firestore';
 
 type LedgerEntry = {
     date: Date;
@@ -30,35 +31,44 @@ type LedgerEntry = {
 
 function CashbookPageContent() {
     const searchParams = useSearchParams();
+    const { firestore } = useFirebase();
     const role = searchParams.get('role') as UserRole | null;
-    const { payments, expenses } = useDataStore();
-    const user = users.find(u => u.role === role);
+    
+    const receiptsQuery = useMemoFirebase(() => collection(firestore, 'receipts'), [firestore]);
+    const expensesQuery = useMemoFirebase(() => collection(firestore, 'expenses'), [firestore]);
 
+    const { data: payments, isLoading: paymentsLoading } = useCollection(receiptsQuery);
+    const { data: expenses, isLoading: expensesLoading } = useCollection(expensesQuery);
+    
     if (role && role !== 'Admin') {
         return <ChargesAndPaymentHistoryCard />;
     }
     
+    if (paymentsLoading || expensesLoading) {
+        return <PageSkeleton />;
+    }
+
     const accountName = (accountId: string) => accounts.find(a => a.id === accountId)?.name || 'N/A';
 
-    const allReceipts = payments.filter(p => p.status === 'Paid').map(p => ({
+    const allReceipts = (payments || []).filter(p => p.status === 'Paid').map(p => ({
         type: 'receipt' as const,
-        date: p.date,
+        date: (p.date as Timestamp).toDate(),
         account: accountName(p.accountId),
         description: p.description,
         folio: p.userId,
         amount: p.amount,
     }));
 
-    const allPayments = expenses.filter(e => e.status === 'Paid').map(e => ({
+    const allPayments = (expenses || []).filter(e => e.status === 'Paid').map(e => ({
         type: 'payment' as const,
-        date: e.date,
+        date: (e.date as Timestamp).toDate(),
         account: accountName(e.accountId),
         description: e.description,
         folio: e.id,
         amount: e.amount,
     }));
 
-    const allTransactions = [...allReceipts, ...allPayments].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const allTransactions = [...allReceipts, ...allPayments].sort((a, b) => a.date.getTime() - b.date.getTime());
 
     let runningBalance = 0;
     const ledger: LedgerEntry[] = allTransactions.map(t => {

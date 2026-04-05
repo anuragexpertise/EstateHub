@@ -1,4 +1,3 @@
-
 'use client';
 import * as React from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -21,7 +20,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useGlobalStore } from '@/hooks/use-global-store';
 import { ChargesAndPaymentHistoryCard } from './charges-payment-history-card'; 
 import { cn } from '@/lib/utils';
-import { useDataStore } from '@/hooks/use-data-store';
+import { useFirebase, useCollection, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
+import { collection, doc, serverTimestamp, Timestamp } from 'firebase/firestore';
 
 const paymentFormSchema = z.object({
   accountId: z.string({ required_error: 'Please select an account.' }),
@@ -34,53 +34,56 @@ export function PaymentHistoryCard() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const { toast } = useToast();
+    const { firestore, user: currentUser } = useFirebase();
     const role = searchParams.get('role') as UserRole | null;
     const status = searchParams.get('status');
   
+    const receiptsQuery = useMemoFirebase(() => collection(firestore, 'receipts'), [firestore]);
+    const { data: payments, isLoading } = useCollection<Payment>(receiptsQuery);
+
     if(role === 'Apartment') {
         return <ChargesAndPaymentHistoryCard />;
     }
-
-    const user = users.find(u => u.role === role);
   
-    const { payments, updatePaymentStatus } = useDataStore();
     const dateTimeFormatter = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   
-    if (!user || !role) {
+    if (!currentUser || !role) {
       return <Card><CardContent><p>User role not found.</p></CardContent></Card>;
     }
 
     const handleVerifyPayment = (paymentId: string) => {
-        updatePaymentStatus(paymentId, 'Paid');
+        const paymentDoc = doc(firestore, 'receipts', paymentId);
+        updateDocumentNonBlocking(paymentDoc, { status: 'Paid' });
         toast({ title: "Payment Verified", description: "The payment has been marked as paid." });
     }
     
     const handleRejectPayment = (paymentId: string) => {
-        updatePaymentStatus(paymentId, 'Rejected');
+        const paymentDoc = doc(firestore, 'receipts', paymentId);
+        updateDocumentNonBlocking(paymentDoc, { status: 'Rejected' });
         toast({ variant: 'destructive', title: "Payment Rejected", description: "The payment has been marked as rejected." });
     }
 
     const { filteredPayments, listTitle } = React.useMemo(() => {
         let title = (role === 'Admin' || role === 'Security') ? 'Receipts' : 'Payment History';
-        let filtered = payments;
+        let filtered = payments || [];
 
         if (role === 'Admin' || role === 'Security') {
             if (status === 'pending') {
-                filtered = payments.filter(p => p.status === 'Pending Verification');
+                filtered = filtered.filter(p => p.status === 'Pending Verification');
                 title = 'Pending Receipts';
             } else if (status === 'verified') {
-                filtered = payments.filter(p => p.status === 'Paid');
+                filtered = filtered.filter(p => p.status === 'Paid');
                 title = 'Verified Receipts';
             }
         } else {
-            filtered = payments.filter(p => p.userId === user.id);
+            filtered = filtered.filter(p => p.userId === currentUser.uid);
         }
 
         return {
-            filteredPayments: filtered.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+            filteredPayments: filtered.sort((a, b) => (b.date as Timestamp).toMillis() - (a.date as Timestamp).toMillis()),
             listTitle: title
         };
-    }, [payments, role, status, user]);
+    }, [payments, role, status, currentUser]);
     
     const userForPayment = (userId: string) => {
         const paymentUser = users.find(u => u.id === userId);
@@ -119,7 +122,11 @@ export function PaymentHistoryCard() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredPayments.map((payment, index) => (
+              {isLoading ? (
+                  <TableRow>
+                      <TableCell colSpan={6} className="text-center"><Loader2 className="mx-auto h-6 w-6 animate-spin" /></TableCell>
+                  </TableRow>
+              ) : filteredPayments.length > 0 ? filteredPayments.map((payment, index) => (
                 <TableRow key={payment.id} className={cn("whitespace-normal break-words", index % 2 === 0 && "bg-muted/50")}>
                   {(role === 'Admin' || role === 'Security') && <TableCell className="font-medium">{userForPayment(payment.userId)}</TableCell>}
                   <TableCell className="font-medium">{payment.description}</TableCell>
@@ -131,7 +138,7 @@ export function PaymentHistoryCard() {
                       {payment.status}
                     </Badge>
                   </TableCell>
-                  <TableCell>{dateTimeFormatter.format(new Date(payment.date)).replace(',', '')}</TableCell>
+                  <TableCell>{dateTimeFormatter.format((payment.date as Timestamp).toDate()).replace(',', '')}</TableCell>
                   <TableCell className="text-right">₹{payment.amount.toLocaleString()}</TableCell>
                   {role === 'Admin' && (
                       <TableCell className="text-center">
@@ -150,8 +157,7 @@ export function PaymentHistoryCard() {
                       </TableCell>
                   )}
                 </TableRow>
-              ))}
-              {filteredPayments.length === 0 && (
+              )) : (
                 <TableRow>
                     <TableCell colSpan={(role === 'Admin' || role === 'Security') ? (role === 'Admin' ? 6 : 5) : 4} className="text-center text-muted-foreground py-4">No payments found.</TableCell>
                 </TableRow>
@@ -166,8 +172,8 @@ export function PaymentHistoryCard() {
 export function PaymentsCard() {
     const searchParams = useSearchParams();
     const { toast } = useToast();
+    const { firestore } = useFirebase();
     const role = searchParams.get('role') as UserRole | null;
-    const { addPayment } = useDataStore();
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     const { receiptQrUrl } = useGlobalStore();
     const [selectedAccount, setSelectedAccount] = React.useState<Account | null>(null);
@@ -216,27 +222,26 @@ export function PaymentsCard() {
         }
 
         setIsSubmitting(true);
-        setTimeout(() => {
-            const newPayment: Payment = {
-                id: `pay-${Date.now()}`,
-                accountId: values.accountId,
-                userId: values.userId || 'system',
-                amount: values.amount,
-                description: values.description,
-                date: new Date(),
-                status: role === 'Admin' ? 'Paid' : 'Pending Verification',
-            };
-    
-            addPayment(newPayment);
-            toast({
-                title: "Payment Recorded",
-                description: `Payment of ₹${values.amount} for ${values.userId ? users.find(u => u.id === values.userId)?.name : 'system'} has been recorded.`,
-            });
-            form.reset();
-            setSelectedAccount(null);
-            setSelectedRole(null);
-            setIsSubmitting(false);
-        }, 1000);
+        const newPayment = {
+            accountId: values.accountId,
+            userId: values.userId || 'system',
+            amount: values.amount,
+            description: values.description,
+            date: serverTimestamp(),
+            status: role === 'Admin' ? 'Paid' : 'Pending Verification',
+        };
+
+        const receiptsCol = collection(firestore, 'receipts');
+        addDocumentNonBlocking(receiptsCol, newPayment);
+
+        toast({
+            title: "Payment Recorded",
+            description: `Payment of ₹${values.amount} for ${values.userId ? users.find(u => u.id === values.userId)?.name : 'system'} has been recorded.`,
+        });
+        form.reset();
+        setSelectedAccount(null);
+        setSelectedRole(null);
+        setIsSubmitting(false);
       }
     
     const getSubAccountUsers = () => {
