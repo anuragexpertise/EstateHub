@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -249,12 +248,14 @@ function EventList() {
     const { visibleEvents, listTitle } = useMemo(() => {
         let eventsToFilter = eventsList;
         let title = 'Upcoming Events & Announcements';
+        
+        const effectiveStatus = role === 'Admin' ? (status || 'sent') : status;
 
-        if (role === 'Admin' && status) {
-            if (status === 'sent') {
+        if (role === 'Admin') {
+            if (effectiveStatus === 'sent') {
                 eventsToFilter = eventsList.filter(e => e.status === 'Sent' && e.dateTime > new Date());
                 title = 'Upcoming Sent Events';
-            } else if (status === 'drafts') {
+            } else if (effectiveStatus === 'drafts') {
                 eventsToFilter = eventsList.filter(e => e.status === 'Draft');
                 title = 'Draft Events';
             }
@@ -264,7 +265,7 @@ function EventList() {
             eventsToFilter = [];
         }
 
-        return { visibleEvents: eventsToFilter.sort((a,b) => a.dateTime.getTime() - b.dateTime.getTime()), listTitle: title };
+        return { visibleEvents: eventsToFilter.sort((a,b) => a.dateTime.getTime() - b.date.getTime()), listTitle: title };
     }, [role, status, eventsList]);
 
     const handleSendEvent = (eventId: string) => {
@@ -322,7 +323,7 @@ function EventList() {
                             {listTitle}
                         </CardTitle>
                     </div>
-                     {status && (
+                     {role === 'Admin' && (
                         <Button variant="outline" size="icon" onClick={handleExportCsv}>
                             <FileDown className="h-4 w-4" />
                             <span className="sr-only">Export as CSV</span>
@@ -331,7 +332,7 @@ function EventList() {
                 </div>
             </CardHeader>
             <CardContent>
-                {role === 'Admin' && status ? (
+                {role === 'Admin' ? (
                     <Table>
                         <TableHeader>
                             <TableRow>
