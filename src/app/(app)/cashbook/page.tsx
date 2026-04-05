@@ -3,7 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Book } from "lucide-react";
-import { users } from "@/lib/data";
+import { users, accounts } from "@/lib/data";
 import { useSearchParams } from "next/navigation";
 import { UserRole } from "@/types";
 import { ChargesAndPaymentHistoryCard } from "@/components/app/kpi-cards/charges-payment-history-card";
@@ -37,10 +37,12 @@ export default function CashbookPage() {
         return <ChargesAndPaymentHistoryCard />;
     }
     
+    const accountName = (accountId: string) => accounts.find(a => a.id === accountId)?.name || 'N/A';
+
     const allReceipts = payments.filter(p => p.status === 'Paid').map(p => ({
         type: 'receipt' as const,
         date: p.date,
-        account: 'Maintenance', // Simplified for now
+        account: accountName(p.accountId),
         description: p.description,
         folio: p.userId,
         amount: p.amount,
@@ -49,7 +51,7 @@ export default function CashbookPage() {
     const allPayments = expenses.filter(e => e.status === 'Paid').map(e => ({
         type: 'payment' as const,
         date: e.date,
-        account: e.accountId,
+        account: accountName(e.accountId),
         description: e.description,
         folio: e.id,
         amount: e.amount,
