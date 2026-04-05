@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -6,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import type { UserRole } from '@/types';
 import { Shield, Building2, Wrench, UserCog } from 'lucide-react';
 import * as React from 'react';
-import { roleDisplayNames } from '@/lib/data';
+import { roleDisplayNames, users } from '@/lib/data';
 
 const roles: { role: UserRole; icon: React.ElementType }[] = [
   { role: 'Admin', icon: UserCog },
@@ -19,6 +18,10 @@ export function LoginForm() {
   const router = useRouter();
 
   const handleLogin = (role: UserRole) => {
+    const user = users.find((u) => u.role === role);
+    if (user) {
+      localStorage.setItem('rememberedUserId', user.id);
+    }
     router.push(`/dashboard?role=${role}`);
   };
 
