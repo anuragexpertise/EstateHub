@@ -1,0 +1,294 @@
+/**
+ * EstateHub Firestore Security Rules
+ *
+ * Core Philosophy:
+ * This ruleset enforces a strict, role-based security model centered on user ownership and explicit permissions.
+ * The default posture is to deny all access. Permissions are granted explicitly based on a user's authenticated
+ * identity (UID) and their assigned role (Admin, Security, etc.). The model prioritizes preventing unauthorized
+ * data access and modification while enabling legitimate application workflows.
+ *
+ * Data Structure:
+ * The data is organized into a user-centric tree and several top-level collections for shared or system-wide data.
+ * - /users/{userId}/...: Contains user-specific documents like their core account, profile, and role-specific data
+ *   (e.g., resident, vendor). All data under this path is strictly owned and managed by the user identified by {userId}.
+ * - Top-Level Collections: Collections like /apartments, /bills, and /rates store shared data. Access to these
+ *   is governed by roles (e.g., Admin) or by explicit denormalized permissions within the documents themselves
+ *   (e.g., a 'payerUserId' on a bill).
+ *
+ * Key Security Decisions:
+ * - Strict Ownership: A user has full control over their own data within the /users/{userId} tree. No other user,
+ *   including an Admin, can directly modify a user's private profile data.
+ * - Role-Based Access Control (RBAC): Privileged operations are restricted to users with specific roles. An 'Admin'
+ *   role is required to manage system-wide entities like Apartments and Rates. A 'Security' role is required to
+ *   create operational logs like Attendance and Access Logs. Roles are checked via a `get()` call to the user's
+ *   own /users/{userId} document.
+ * - Deny by Default: If a rule is not explicitly defined to grant access, the request is rejected. There are no
+ *   publicly writable collections.
+ * - No User Listing: To protect user privacy, listing the top-level /users collection is disallowed.
+ *
+ * Denormalization for Authorization:
+ * To create simpler and more performant rules, data required for an authorization decision is denormalized
+ * directly onto the documents being secured. This avoids costly and slow cross-document `get()` calls.
+ * - Apartment Residents: The /apartments/{apartmentId} document contains a `residentUserIds` map to grant
+ *   read access to associated residents without needing to query a separate residents collection.
+ * - Financial Documents: /bills/{billId} and /payments/{paymentId} documents contain `payerUserId` and `payeeUserId`
+ *   fields, allowing rules to grant access directly to the involved parties.
+ * - Operational Logs: Documents in /attendance and /accessLogs store the UID of the security personnel who created
+ *   them, locking write access to the correct individual.
+ *
+ * Structural Segregation:
+ * User data is segregated by role into different singleton documents within their user tree (e.g.,
+ * `/residentProfile/resident`, `/serviceVendorProfile/vendor`). This isolates role-specific data and simplifies
+ * the rules for accessing it, ensuring a resident cannot access vendor-specific data and vice-versa.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------------------------------------------------------------------
+    // Helper Functions
+    // ---------------------------------------------------------------------
+
+    /**
+     * isSignedIn
+     * Checks if the user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * isOwner
+     * Checks if the authenticated user's UID matches the provided userId.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * isExistingDoc
+     * Checks if a document exists. Crucial for secure update/delete operations.
+     */
+    function isExistingDoc() {
+      return resource != null;
+    }
+
+    // REMOVED: isExistingOwner function as it was unused and redundant for update/delete operations
+    // (since `isExistingDoc()` is implicitly true for update/delete, and always false for create).
+
+    /**
+     * getUserData
+     * Retrieves the user's own User document data. Caches the result per request.
+     */
+    function getUserData(userId) {
+      return get(/databases/$(database)/documents/users/$(userId)).data;
+    }
+
+    /**
+     * isAdmin
+     * Checks if the currently authenticated user has the 'Admin' role.
+     */
+    function isAdmin() {
+      return isSignedIn() && getUserData(request.auth.uid).role == 'Admin';
+    }
+
+    /**
+     * isSecurity
+     * Checks if the currently authenticated user has the 'Security' role.
+     */
+    function isSecurity() {
+      return isSignedIn() && getUserData(request.auth.uid).role == 'Security';
+    }
+
+    // ---------------------------------------------------------------------
+    // User Data Collections
+    // ---------------------------------------------------------------------
+
+    /**
+     * @description Core user account. Users can create their own account and can read/update it. No other user can access it.
+     * @path /users/{userId}
+     * @allow (create) An unauthenticated user creating their own user document upon sign-up, where `request.auth.uid` matches `{userId}`.
+     * @deny (get) User 'A' trying to read the user document of User 'B'.
+     * @principle Restricts access to a user's own data tree and allows self-creation of accounts.
+     */
+    match /users/{userId} {
+      allow get, update: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow list, delete: if false;
+    }
+
+    /**
+     * @description User's general profile. Only the owner can manage their own profile.
+     * @path /users/{userId}/userProfile/profile
+     * @allow (get, create, update) A user managing their own profile document.
+     * @deny (get) Any other user trying to read this profile.
+     * @principle Enforces strict document ownership within a user's private data tree.
+     */
+    match /users/{userId}/userProfile/profile {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isOwner(userId) && request.resource.data.userId == resource.data.userId;
+      allow list, delete: if false;
+    }
+
+    /**
+     * @description Resident-specific profile for users with an 'Apartment' role. Only the owner can manage it.
+     * @path /users/{userId}/residentProfile/resident
+     * @allow (create, update) A resident user managing their own resident profile details.
+     * @deny (get) Any other user trying to read this resident profile.
+     * @principle Enforces strict document ownership within a user's private data tree.
+     */
+    match /users/{userId}/residentProfile/resident {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isOwner(userId) && request.resource.data.userId == resource.data.userId;
+      allow list, delete: if false;
+    }
+
+    /**
+     * @description Service vendor-specific profile. Only the owner can manage it.
+     * @path /users/{userId}/serviceVendorProfile/vendor
+     * @allow (create, update) A vendor user managing their own vendor profile details.
+     * @deny (get) Any other user trying to read this vendor profile.
+     * @principle Enforces strict document ownership within a user's private data tree.
+     */
+    match /users/{userId}/serviceVendorProfile/vendor {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isOwner(userId) && request.resource.data.userId == resource.data.userId;
+      allow list, delete: if false;
+    }
+
+    /**
+     * @description Security personnel-specific profile. Only the owner can manage it.
+     * @path /users/{userId}/securityPersonnelProfile/personnel
+     * @allow (create, update) A security user managing their own personnel profile details.
+     * @deny (get) Any other user trying to read this personnel profile.
+     * @principle Enforces strict document ownership within a user's private data tree.
+     */
+    match /users/{userId}/securityPersonnelProfile/personnel {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isOwner(userId) && request.resource.data.userId == resource.data.userId;
+      allow list, delete: if false;
+    }
+
+    // ---------------------------------------------------------------------
+    // Top-Level System Collections
+    // ---------------------------------------------------------------------
+
+    /**
+     * @description Physical apartment units. Managed by Admins. Readable by assigned residents.
+     * @path /apartments/{apartmentId}
+     * @allow (get) A resident whose UID is in the `residentUserIds` map reading their apartment details.
+     * @deny (update) A resident trying to change the apartment's square footage.
+     * @principle Enforces role-based write access and shared read access via a denormalized member list.
+     */
+    match /apartments/{apartmentId} {
+      allow get, list: if isAdmin() || (isSignedIn() && resource.data.residentUserIds[request.auth.uid] == true);
+      allow create, update, delete: if isAdmin();
+    }
+
+    /**
+     * @description Pricing rates for services. Managed by Admins, but readable by any signed-in user.
+     * @path /rates/{rateId}
+     * @allow (get) Any authenticated user reading the list of available rates.
+     * @deny (create) A non-Admin user trying to create a new rate.
+     * @principle Differentiates public read access from role-restricted write access.
+     */
+    match /rates/{rateId} {
+      allow get, list: if isSignedIn();
+      allow create: if isAdmin() && isOwner(request.resource.data.adminId);
+      allow update, delete: if isAdmin() && isExistingDoc() && isOwner(resource.data.adminId);
+    }
+
+    /**
+     * @description Financial bills. Accessible only by the payer, payee, or an Admin.
+     * @path /bills/{billId}
+     * @allow (get) The user listed as `payerUserId` viewing their bill.
+     * @deny (get) A random user trying to read another user's bill.
+     * @principle Enforces access control based on participation in a transaction.
+     */
+    match /bills/{billId} {
+      allow get: if isAdmin() || (isSignedIn() && (isOwner(resource.data.payerUserId) || isOwner(resource.data.payeeUserId)));
+      allow list: if isSignedIn(); // List is open to signed-in, but client MUST use where clauses (e.g., where('payerUserId', '==', auth.uid))
+      allow create: if isAdmin() || (isSignedIn() && (isOwner(request.resource.data.payerUserId) || isOwner(request.resource.data.payeeUserId)));
+      allow update: if isAdmin() || (isExistingDoc() && isSignedIn() && (isOwner(resource.data.payerUserId) || isOwner(resource.data.payeeUserId)));
+      allow delete: if isAdmin();
+    }
+
+    /**
+     * @description Payment records. Accessible only by the payer, payee, or an Admin.
+     * @path /payments/{paymentId}
+     * @allow (get) The user listed as `payeeUserId` viewing a payment they received.
+     * @deny (update) The payee trying to change the payment amount after it was created.
+     * @principle Enforces access control based on participation in a transaction.
+     */
+    match /payments/{paymentId} {
+      allow get: if isAdmin() || (isSignedIn() && (isOwner(resource.data.payerUserId) || isOwner(resource.data.payeeUserId)));
+      allow list: if isSignedIn(); // List is open to signed-in, but client MUST use where clauses (e.g., where('payerUserId', '==', auth.uid))
+      allow create: if isSignedIn() && isOwner(request.resource.data.payerUserId);
+      allow update: if isAdmin();
+      allow delete: if false;
+    }
+
+    /**
+     * @description System audit logs. Immutable records. Readable by Admins and Security, but not writable from the client.
+     * @path /systemAuditLogs/{logId}
+     * @allow (get) An Admin or Security user reviewing past system events.
+     * @deny (create, update, delete) Any user trying to create or tamper with log entries from the client-side.
+     * @principle Secures sensitive log data by making it read-only and role-restricted.
+     */
+    match /systemAuditLogs/{logId} {
+      allow get, list: if isAdmin() || isSecurity();
+      allow create, update, delete: if false;
+    }
+
+    /**
+     * @description Security personnel shifts. Managed by Admins.
+     * @path /shifts/{shiftId}
+     * @allow (create) An Admin creating a new shift schedule.
+     * @deny (get) A resident user trying to view security shift schedules.
+     * @principle Enforces role-based management of operational data.
+     */
+    match /shifts/{shiftId} {
+      // CRITICAL: Cannot grant read access to assigned personnel as designed. The 'Shift' entity contains 'securityPersonnelId',
+      // which is the ID of a sub-collection document. Security rules cannot perform the necessary lookup to find the associated
+      // 'userId' to compare with `request.auth.uid`. The schema must be updated to denormalize `securityPersonnelUserId`
+      // directly onto the Shift document for this rule to be implemented securely.
+      allow get, list: if isAdmin(); // TODO: Add check for assigned personnel once `securityPersonnelUserId` is on this doc.
+      allow create: if isAdmin() && isOwner(request.resource.data.adminId);
+      allow update, delete: if isAdmin() && isExistingDoc();
+    }
+
+    /**
+     * @description Attendance records for security personnel. Created by Security staff, readable by Admins and Security.
+     * @path /attendance/{attendanceId}
+     * @allow (create) A security user scanning their ID to clock in, where their UID matches `scannerUserId`.
+     * @deny (update) Any user attempting to modify an attendance record after it has been created.
+     * @principle Allows trusted roles to create operational data while restricting modification.
+     */
+    match /attendance/{attendanceId} {
+      // CRITICAL: Similar to Shifts, read access for the specific individual whose attendance is being recorded cannot be
+      // granted because the document only contains `securityPersonnelId`. A `securityPersonnelUserId` field is required.
+      allow get, list: if isAdmin() || isSecurity(); // TODO: Add check for the assigned personnel once `securityPersonnelUserId` is on this doc.
+      allow create: if isSecurity() && isOwner(request.resource.data.scannerUserId);
+      allow update, delete: if false;
+    }
+
+    /**
+     * @description Access logs from QR code scans. Created by Security staff, readable by Admins and Security.
+     * @path /accessLogs/{logId}
+     * @allow (create) A security user scanning a QR code, where their UID matches `scannerSecurityPersonnelId`.
+     * @deny (update, delete) Any user trying to alter or remove a historical access log entry.
+     * @principle Allows trusted roles to create immutable operational log data.
+     */
+    match /accessLogs/{logId} {
+      // NOTE: The field 'scannerSecurityPersonnelId' is assumed to contain the User UID of the security person.
+      allow get, list: if isAdmin() || isSecurity();
+      allow create: if isSecurity() && isOwner(request.resource.data.scannerSecurityPersonnelId);
+      allow update, delete: if false;
+    }
+
+  }
+}

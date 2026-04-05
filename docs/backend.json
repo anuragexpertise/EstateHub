@@ -1,0 +1,993 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents an authenticated user in the EstateHub system, assigned a specific role for access control.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the User entity."
+        },
+        "email": {
+          "type": "string",
+          "description": "The unique email address of the user, used for authentication and identification.",
+          "format": "email"
+        },
+        "role": {
+          "type": "string",
+          "description": "The assigned role of the user (e.g., Admin, Apartment, Contractor, Security), determining their access and permissions."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the user account was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the user account was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "role",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "UserProfile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserProfile",
+      "type": "object",
+      "description": "Stores general profile information for a user, independent of their specific role-based entity.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the UserProfile entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the associated User. (Relationship: User 1:1 UserProfile)"
+        },
+        "firstName": {
+          "type": "string",
+          "description": "The first name of the user."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "The last name of the user."
+        },
+        "phoneNumber": {
+          "type": "string",
+          "description": "The contact phone number of the user."
+        },
+        "address": {
+          "type": "string",
+          "description": "The physical address of the user."
+        },
+        "profileImageUrl": {
+          "type": "string",
+          "description": "URL to the user's profile image.",
+          "format": "uri"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the user profile was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the user profile was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "firstName",
+        "lastName",
+        "phoneNumber",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Apartment": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Apartment",
+      "type": "object",
+      "description": "Represents a physical apartment unit within the estate, used for tracking residents and related services.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Apartment entity."
+        },
+        "unitNumber": {
+          "type": "string",
+          "description": "The unique unit number of the apartment."
+        },
+        "building": {
+          "type": "string",
+          "description": "The building name or identifier where the apartment is located."
+        },
+        "squareFootage": {
+          "type": "number",
+          "description": "The total square footage area of the apartment unit."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the apartment record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the apartment record was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "unitNumber",
+        "building",
+        "squareFootage",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Resident": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Resident",
+      "type": "object",
+      "description": "Represents a person residing in an apartment, linked to an 'Apartment' role user and an 'Apartment' unit.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Resident entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the associated User with an 'Apartment' role. (Relationship: User 1:1 Resident)"
+        },
+        "apartmentId": {
+          "type": "string",
+          "description": "Reference to the Apartment unit the resident lives in. (Relationship: Apartment 1:N Resident)"
+        },
+        "firstName": {
+          "type": "string",
+          "description": "The first name of the resident."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "The last name of the resident."
+        },
+        "phoneNumber": {
+          "type": "string",
+          "description": "The primary contact phone number for the resident."
+        },
+        "emergencyContactName": {
+          "type": "string",
+          "description": "Name of the emergency contact person for the resident."
+        },
+        "emergencyContactNumber": {
+          "type": "string",
+          "description": "Phone number of the emergency contact person for the resident."
+        },
+        "startDate": {
+          "type": "string",
+          "description": "The date when the resident started living in the apartment.",
+          "format": "date"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "The date when the resident moved out of the apartment, if applicable.",
+          "format": "date"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the resident record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the resident record was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "apartmentId",
+        "firstName",
+        "lastName",
+        "phoneNumber",
+        "emergencyContactName",
+        "emergencyContactNumber",
+        "startDate",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ServiceVendor": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ServiceVendor",
+      "type": "object",
+      "description": "Represents an external service provider, such as a contractor or utility provider, linked to a 'Contractor' role user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ServiceVendor entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the associated User with a 'Contractor' role. (Relationship: User 1:1 ServiceVendor)"
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the company or individual service vendor."
+        },
+        "contactPerson": {
+          "type": "string",
+          "description": "The primary contact person for the vendor."
+        },
+        "phoneNumber": {
+          "type": "string",
+          "description": "The contact phone number of the vendor."
+        },
+        "email": {
+          "type": "string",
+          "description": "The contact email address of the vendor.",
+          "format": "email"
+        },
+        "type": {
+          "type": "string",
+          "description": "The type of service provided by the vendor (e.g., 'Contractor', 'UtilityProvider')."
+        },
+        "specialtyOrService": {
+          "type": "string",
+          "description": "A description of the vendor's specialty or specific service offered."
+        },
+        "qrCodeData": {
+          "type": "string",
+          "description": "Encoded data for the QR code generated for the vendor, if applicable (e.g., for Contractors)."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the service vendor record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the service vendor record was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "name",
+        "contactPerson",
+        "phoneNumber",
+        "email",
+        "type",
+        "specialtyOrService",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "SecurityPersonnel": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "SecurityPersonnel",
+      "type": "object",
+      "description": "Represents a security guard employed at the estate, linked to a 'Security' role user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the SecurityPersonnel entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the associated User with a 'Security' role. (Relationship: User 1:1 SecurityPersonnel)"
+        },
+        "firstName": {
+          "type": "string",
+          "description": "The first name of the security personnel."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "The last name of the security personnel."
+        },
+        "employeeId": {
+          "type": "string",
+          "description": "The unique employee ID assigned to the security personnel."
+        },
+        "contactNumber": {
+          "type": "string",
+          "description": "The contact phone number of the security personnel."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the security personnel record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the security personnel record was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "firstName",
+        "lastName",
+        "employeeId",
+        "contactNumber",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Rate": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Rate",
+      "type": "object",
+      "description": "Defines various pricing rates for services or passes within the estate, managed by administrators.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Rate entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "A descriptive name for the rate (e.g., '1-day Apartment Pass Rate')."
+        },
+        "rateType": {
+          "type": "string",
+          "description": "The type of rate calculation (e.g., 'fixed' amount or 'per_sqft')."
+        },
+        "baseRate": {
+          "type": "number",
+          "description": "The fixed monetary amount for the rate, if rateType is 'fixed'."
+        },
+        "ratePerUnit": {
+          "type": "number",
+          "description": "The monetary amount per unit (e.g., per square foot), if rateType is 'per_sqft'."
+        },
+        "unit": {
+          "type": "string",
+          "description": "The unit of measurement if ratePerUnit is used (e.g., 'sqft')."
+        },
+        "durationInDays": {
+          "type": "number",
+          "description": "The duration in days this rate applies for (e.g., 1, 7, 30 for passes)."
+        },
+        "appliesTo": {
+          "type": "string",
+          "description": "Specifies what this rate applies to (e.g., 'ApartmentPass')."
+        },
+        "validFrom": {
+          "type": "string",
+          "description": "The start date and time from which this rate is valid.",
+          "format": "date-time"
+        },
+        "validTo": {
+          "type": "string",
+          "description": "The end date and time until which this rate is valid. Null if indefinite.",
+          "format": "date-time"
+        },
+        "adminId": {
+          "type": "string",
+          "description": "Reference to the Admin User who created or last updated this rate. (Relationship: User 1:N Rate)"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the rate record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the rate record was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "rateType",
+        "appliesTo",
+        "validFrom",
+        "adminId",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Bill": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Bill",
+      "type": "object",
+      "description": "Represents a financial obligation or invoice issued to a user or entity for services or fees.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Bill entity."
+        },
+        "sourceEntityId": {
+          "type": "string",
+          "description": "The ID of the entity from which the bill originates (e.g., Apartment.id, ServiceVendor.id). This could be the source of the fee or service."
+        },
+        "sourceEntityType": {
+          "type": "string",
+          "description": "The type of the source entity (e.g., 'Apartment', 'ServiceVendor', 'SecurityPersonnel' for their payroll)."
+        },
+        "payerUserId": {
+          "type": "string",
+          "description": "Reference to the User who is responsible for paying this bill. (Relationship: User 1:N Bill)"
+        },
+        "payeeUserId": {
+          "type": "string",
+          "description": "Reference to the User who is entitled to receive payment for this bill. (Relationship: User 1:N Bill)"
+        },
+        "amount": {
+          "type": "number",
+          "description": "The total monetary amount of the bill."
+        },
+        "currency": {
+          "type": "string",
+          "description": "The currency of the bill (e.g., 'INR', 'USD')."
+        },
+        "issueDate": {
+          "type": "string",
+          "description": "The date and time when the bill was issued.",
+          "format": "date-time"
+        },
+        "dueDate": {
+          "type": "string",
+          "description": "The date and time by which the bill is due for payment.",
+          "format": "date-time"
+        },
+        "status": {
+          "type": "string",
+          "description": "The current status of the bill (e.g., 'issued', 'paid', 'overdue', 'cancelled')."
+        },
+        "description": {
+          "type": "string",
+          "description": "A brief description or purpose of the bill."
+        },
+        "relatedRateId": {
+          "type": "string",
+          "description": "Reference to a Rate entity if this bill is generated based on a specific rate. (Relationship: Rate 1:N Bill)"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the bill record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the bill record was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "sourceEntityId",
+        "sourceEntityType",
+        "payerUserId",
+        "payeeUserId",
+        "amount",
+        "currency",
+        "issueDate",
+        "dueDate",
+        "status",
+        "description",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Payment": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Payment",
+      "type": "object",
+      "description": "Records a specific payment transaction made to settle a bill or other financial obligation.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Payment entity."
+        },
+        "billId": {
+          "type": "string",
+          "description": "Reference to the Bill this payment is settling. (Relationship: Bill 1:N Payment)"
+        },
+        "payerUserId": {
+          "type": "string",
+          "description": "Reference to the User who initiated this payment. (Relationship: User 1:N Payment)"
+        },
+        "payeeUserId": {
+          "type": "string",
+          "description": "Reference to the User who received this payment. (Relationship: User 1:N Payment)"
+        },
+        "amountPaid": {
+          "type": "number",
+          "description": "The monetary amount paid in this transaction."
+        },
+        "paymentDate": {
+          "type": "string",
+          "description": "The date and time when the payment was processed.",
+          "format": "date-time"
+        },
+        "paymentMethod": {
+          "type": "string",
+          "description": "The method used for the payment (e.g., 'Credit Card', 'Bank Transfer', 'Cash')."
+        },
+        "transactionIdExternal": {
+          "type": "string",
+          "description": "An ID provided by an external payment gateway or system for this transaction."
+        },
+        "status": {
+          "type": "string",
+          "description": "The status of the payment (e.g., 'completed', 'failed', 'pending')."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the payment record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the payment record was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "billId",
+        "payerUserId",
+        "payeeUserId",
+        "amountPaid",
+        "paymentDate",
+        "paymentMethod",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "SystemAuditLog": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "SystemAuditLog",
+      "type": "object",
+      "description": "A secure log of critical system activities and transactions, often requiring Admin verification.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the SystemAuditLog entry."
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "The date and time when the action or transaction occurred.",
+          "format": "date-time"
+        },
+        "actorUserId": {
+          "type": "string",
+          "description": "Reference to the User who performed the action. (Relationship: User 1:N SystemAuditLog)"
+        },
+        "actionType": {
+          "type": "string",
+          "description": "A classification of the action (e.g., 'RateUpdate', 'UserEnrollment', 'AccessScanVerdict', 'AttendanceEvent', 'PaymentVerification')."
+        },
+        "targetEntityId": {
+          "type": "string",
+          "description": "The ID of the primary entity affected by this action (e.g., rateId, residentId, accessLogId)."
+        },
+        "targetEntityType": {
+          "type": "string",
+          "description": "The type of the primary entity affected (e.g., 'Rate', 'Resident', 'AccessLog')."
+        },
+        "details": {
+          "type": "string",
+          "description": "A detailed description of the action, potentially including a JSON string of changes."
+        },
+        "method": {
+          "type": "string",
+          "description": "The method through which the action was initiated (e.g., 'UI', 'API', 'QRScan')."
+        },
+        "verifiedByUserId": {
+          "type": "string",
+          "description": "Reference to the Admin User who verified the method of this transaction. (Relationship: User 1:N SystemAuditLog)"
+        },
+        "verificationStatus": {
+          "type": "string",
+          "description": "The status of the method verification (e.g., 'pending', 'verified', 'rejected')."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the log entry was created.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "timestamp",
+        "actorUserId",
+        "actionType",
+        "details",
+        "method",
+        "createdAt"
+      ]
+    },
+    "Shift": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Shift",
+      "type": "object",
+      "description": "Schedules a work shift for a specific security personnel.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Shift entity."
+        },
+        "securityPersonnelId": {
+          "type": "string",
+          "description": "Reference to the SecurityPersonnel assigned to this shift. (Relationship: SecurityPersonnel 1:N Shift)"
+        },
+        "shiftDate": {
+          "type": "string",
+          "description": "The date of the scheduled shift.",
+          "format": "date"
+        },
+        "startTime": {
+          "type": "string",
+          "description": "The scheduled start time of the shift.",
+          "format": "time"
+        },
+        "endTime": {
+          "type": "string",
+          "description": "The scheduled end time of the shift.",
+          "format": "time"
+        },
+        "status": {
+          "type": "string",
+          "description": "The current status of the shift (e.g., 'scheduled', 'completed', 'cancelled')."
+        },
+        "adminId": {
+          "type": "string",
+          "description": "Reference to the Admin User who created or managed this shift. (Relationship: User 1:N Shift)"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the shift record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the shift record was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "securityPersonnelId",
+        "shiftDate",
+        "startTime",
+        "endTime",
+        "status",
+        "adminId",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Attendance": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Attendance",
+      "type": "object",
+      "description": "Records the clock-in and clock-out events for security personnel, often linked to a shift.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Attendance entity."
+        },
+        "securityPersonnelId": {
+          "type": "string",
+          "description": "Reference to the SecurityPersonnel whose attendance is being recorded. (Relationship: SecurityPersonnel 1:N Attendance)"
+        },
+        "shiftId": {
+          "type": "string",
+          "description": "Reference to the Shift this attendance event is associated with. (Relationship: Shift 1:N Attendance)"
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "The date and time of the attendance event (clock-in or clock-out).",
+          "format": "date-time"
+        },
+        "eventType": {
+          "type": "string",
+          "description": "The type of attendance event ('clock_in' or 'clock_out')."
+        },
+        "scannerUserId": {
+          "type": "string",
+          "description": "Reference to the Security User who performed the scanning for this attendance event, if it was a relayed scan. (Relationship: User 1:N Attendance)"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the attendance record was created.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "securityPersonnelId",
+        "timestamp",
+        "eventType",
+        "scannerUserId",
+        "createdAt"
+      ]
+    },
+    "AccessLog": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AccessLog",
+      "type": "object",
+      "description": "Records the outcome of security pass evaluations based on scanned QR codes.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the AccessLog entry."
+        },
+        "scannedAt": {
+          "type": "string",
+          "description": "The date and time when the QR code was scanned.",
+          "format": "date-time"
+        },
+        "scannerSecurityPersonnelId": {
+          "type": "string",
+          "description": "Reference to the SecurityPersonnel who performed the scan. (Relationship: SecurityPersonnel 1:N AccessLog)"
+        },
+        "scannedEntityId": {
+          "type": "string",
+          "description": "The ID of the entity whose QR code was scanned (e.g., Resident.id, ServiceVendor.id)."
+        },
+        "scannedEntityType": {
+          "type": "string",
+          "description": "The type of entity whose QR code was scanned ('Resident' or 'ServiceVendor')."
+        },
+        "verdict": {
+          "type": "string",
+          "description": "The result of the pass evaluation ('PASS' or 'FAIL')."
+        },
+        "reason": {
+          "type": "string",
+          "description": "A brief explanation if the verdict is 'FAIL' (e.g., 'Expired Pass', 'Not Authorized')."
+        },
+        "relatedBillId": {
+          "type": "string",
+          "description": "Reference to a Bill entity if access is directly tied to a payment or pass associated with a bill. (Relationship: Bill 1:N AccessLog)"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the access log entry was created.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "scannedAt",
+        "scannerSecurityPersonnelId",
+        "scannedEntityId",
+        "scannedEntityType",
+        "verdict",
+        "createdAt"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores core user authentication details and assigned role. Document ID is `userId`."
+        }
+      },
+      {
+        "path": "/users/{userId}/userProfile/profile",
+        "definition": {
+          "entityName": "UserProfile",
+          "schema": {
+            "$ref": "#/backend/entities/UserProfile"
+          },
+          "description": "Stores general profile information for a user. Document ID is `profile`. Includes denormalized `userId` for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/residentProfile/resident",
+        "definition": {
+          "entityName": "Resident",
+          "schema": {
+            "$ref": "#/backend/entities/Resident"
+          },
+          "description": "Stores specific resident details for users with an 'Apartment' role. Document ID is `resident`. Includes denormalized `userId` and `apartmentId` for authorization independence and queryability.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who is a resident."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/serviceVendorProfile/vendor",
+        "definition": {
+          "entityName": "ServiceVendor",
+          "schema": {
+            "$ref": "#/backend/entities/ServiceVendor"
+          },
+          "description": "Stores specific service vendor details for users with a 'Contractor' role. Document ID is `vendor`. Includes denormalized `userId` for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who is a service vendor."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/securityPersonnelProfile/personnel",
+        "definition": {
+          "entityName": "SecurityPersonnel",
+          "schema": {
+            "$ref": "#/backend/entities/SecurityPersonnel"
+          },
+          "description": "Stores specific security personnel details for users with a 'Security' role. Document ID is `personnel`. Includes denormalized `userId` for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who is security personnel."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/apartments/{apartmentId}",
+        "definition": {
+          "entityName": "Apartment",
+          "schema": {
+            "$ref": "#/backend/entities/Apartment"
+          },
+          "description": "Stores details for physical apartment units. Managed by Admin. Documents should include a denormalized `residentUserIds` map `{uid: true}` to grant read access to associated residents for authorization independence.",
+          "params": [
+            {
+              "name": "apartmentId",
+              "description": "The unique identifier for the apartment."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/rates/{rateId}",
+        "definition": {
+          "entityName": "Rate",
+          "schema": {
+            "$ref": "#/backend/entities/Rate"
+          },
+          "description": "Defines various pricing rates. Managed by Admin. Includes `adminId` for authorization independence.",
+          "params": [
+            {
+              "name": "rateId",
+              "description": "The unique identifier for the rate."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/bills/{billId}",
+        "definition": {
+          "entityName": "Bill",
+          "schema": {
+            "$ref": "#/backend/entities/Bill"
+          },
+          "description": "Represents financial invoices. Accessible by `payerUserId`, `payeeUserId`, and Admin. Includes denormalized `payerUserId`, `payeeUserId`, `sourceEntityId`, and `sourceEntityType` for authorization independence and efficient querying (QAPs).",
+          "params": [
+            {
+              "name": "billId",
+              "description": "The unique identifier for the bill."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/payments/{paymentId}",
+        "definition": {
+          "entityName": "Payment",
+          "schema": {
+            "$ref": "#/backend/entities/Payment"
+          },
+          "description": "Records payment transactions. Accessible by `payerUserId`, `payeeUserId`, and Admin. Includes denormalized `payerUserId`, `payeeUserId`, and `billId` for authorization independence and efficient querying (QAPs).",
+          "params": [
+            {
+              "name": "paymentId",
+              "description": "The unique identifier for the payment."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/systemAuditLogs/{logId}",
+        "definition": {
+          "entityName": "SystemAuditLog",
+          "schema": {
+            "$ref": "#/backend/entities/SystemAuditLog"
+          },
+          "description": "Secure log of critical system activities. Read-only for Admin/Security roles. Includes denormalized `actorUserId` and `verifiedByUserId` for authorization independence and queryability.",
+          "params": [
+            {
+              "name": "logId",
+              "description": "The unique identifier for the system audit log entry."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/shifts/{shiftId}",
+        "definition": {
+          "entityName": "Shift",
+          "schema": {
+            "$ref": "#/backend/entities/Shift"
+          },
+          "description": "Schedules work shifts for security personnel. Managed by Admin, readable by assigned Security Personnel. Includes denormalized `securityPersonnelId` and `adminId` for authorization independence and efficient querying (QAPs).",
+          "params": [
+            {
+              "name": "shiftId",
+              "description": "The unique identifier for the shift."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/attendance/{attendanceId}",
+        "definition": {
+          "entityName": "Attendance",
+          "schema": {
+            "$ref": "#/backend/entities/Attendance"
+          },
+          "description": "Records attendance events for security personnel. Writeable by `scannerUserId` (Security), readable by associated `securityPersonnelId` and Admin/Security. Includes denormalized `securityPersonnelId`, `shiftId`, and `scannerUserId` for authorization independence and efficient querying (QAPs).",
+          "params": [
+            {
+              "name": "attendanceId",
+              "description": "The unique identifier for the attendance record."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/accessLogs/{logId}",
+        "definition": {
+          "entityName": "AccessLog",
+          "schema": {
+            "$ref": "#/backend/entities/AccessLog"
+          },
+          "description": "Logs security pass evaluations. Writeable by `scannerSecurityPersonnelId`, readable by Admin/Security. Includes denormalized `scannerSecurityPersonnelId`, `scannedEntityId`, and `scannedEntityType` for authorization independence and efficient querying (QAPs).",
+          "params": [
+            {
+              "name": "logId",
+              "description": "The unique identifier for the access log entry."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The recommended Firestore data structure prioritizes Authorization Independence and QAPs (Queryable Access Patterns) through strategic denormalization and structural segregation, enabling simple, robust, and easily debuggable security rules. \n\n**Authorization Independence (Denormalization Strategy):**\n1.  **User Profiles and Role-Specific Entities:** `UserProfile`, `Resident`, `ServiceVendor`, and `SecurityPersonnel` are treated as direct extensions of the `User` entity. They are nested under `/users/{userId}/` as single documents (e.g., `/users/{userId}/userProfile/profile`). Each of these documents directly includes the `userId` field (or the parent `userId` is implicit in the path), eliminating the need for `get()` calls to the parent `User` document for authorization checks. For instance, a `Resident` document includes its `userId` and `apartmentId`, making it self-sufficient for ownership and related apartment access.\n2.  **Apartment Access:** To allow residents to access their associated `Apartment` details without a `get()` call, the `Apartment` document itself will be denormalized to include a map of `residentUserIds: {uid1: true, uid2: true}`. This allows a direct check `resource.data.residentUserIds[request.auth.uid]` in security rules.\n3.  **Financial Transactions (`Bill`, `Payment`):** Both `Bill` and `Payment` documents explicitly store `payerUserId` and `payeeUserId`. This denormalization is crucial for enabling secure `list` operations (QAPs) where users can only view bills/payments they are directly involved in, without needing to `get()` related user or entity documents.\n4.  **Admin-Managed Entities (`Rate`, `Shift`):** `Rate` documents include `adminId`, and `Shift` documents include both `securityPersonnelId` and `adminId`. This allows security rules to directly verify ownership or management rights.\n5.  **Log Entries (`SystemAuditLog`, `Attendance`, `AccessLog`):** Each log entry includes relevant `userId`s (e.g., `actorUserId`, `verifiedByUserId`, `securityPersonnelId`, `scannerUserId`, `scannerSecurityPersonnelId`) directly within the document. This ensures that a user can list their own related logs, or an Admin/Security can list all, without needing to `get()` other documents.\n\n**QAPs (Queryable Access Patterns) Support:**\n*   **Path-Based Ownership:** The `/users/{userId}/...` structure naturally supports QAPs for user-specific data. A user can query their own `userProfile`, `residentProfile`, `serviceVendorProfile`, or `securityPersonnelProfile` by simply querying within their designated path.\n*   **Role-Specific List Operations:** Collections like `/bills`, `/payments`, `/shifts`, `/attendance`, and `/accessLogs` are designed for efficient `list` operations for specific roles or users. For example, a security rule for `/shifts` can leverage `where('securityPersonnelId', '==', request.auth.uid)` because `securityPersonnelId` is denormalized within each `Shift` document. Similarly, the explicit `payerUserId` and `payeeUserId` fields in `Bill` and `Payment` documents allow users to query only their own transactions, upholding the "
+  }
+}
