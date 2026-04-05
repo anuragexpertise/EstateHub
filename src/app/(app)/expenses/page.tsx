@@ -1,3 +1,4 @@
+
 'use client';
 import * as React from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -15,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { accounts, users, roleDisplayNames } from '@/lib/data';
-import type { Expense, Account } from '@/types';
+import type { Expense, Account, UserRole } from '@/types';
 import { cn } from '@/lib/utils';
 
 
@@ -30,6 +31,7 @@ function NewExpenseCard({ onAddExpense }: { onAddExpense: (expense: Expense) => 
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     const [selectedAccount, setSelectedAccount] = React.useState<Account | null>(null);
+    const [selectedRole, setSelectedRole] = React.useState<UserRole | null>(null);
   
     const form = useForm<z.infer<typeof expenseFormSchema>>({
       resolver: zodResolver(expenseFormSchema),
@@ -43,11 +45,23 @@ function NewExpenseCard({ onAddExpense }: { onAddExpense: (expense: Expense) => 
 
     React.useEffect(() => {
         if(accountId) {
-            setSelectedAccount(accounts.find(a => a.id === accountId) || null);
+            const account = accounts.find(a => a.id === accountId) || null;
+            setSelectedAccount(account);
+            setSelectedRole(null);
+            form.resetField('userId');
+            if (account?.subAccountOf?.length === 1) {
+                setSelectedRole(account.subAccountOf[0]);
+            }
         } else {
             setSelectedAccount(null);
+            setSelectedRole(null);
+            form.resetField('userId');
         }
-    }, [accountId]);
+    }, [accountId, form]);
+    
+    React.useEffect(() => {
+        form.resetField('userId');
+    }, [selectedRole, form]);
 
     const handleAddExpense = (values: z.infer<typeof expenseFormSchema>) => {
         setIsSubmitting(true);
@@ -55,6 +69,16 @@ function NewExpenseCard({ onAddExpense }: { onAddExpense: (expense: Expense) => 
             const account = accounts.find(a => a.id === values.accountId);
             if (!account) {
                 toast({ variant: 'destructive', title: 'Error', description: 'Selected account not found.' });
+                setIsSubmitting(false);
+                return;
+            }
+
+            if (account?.subAccountOf?.length && !values.userId) {
+                toast({
+                    variant: 'destructive',
+                    title: "Validation Error",
+                    description: `Please select an entity for the ${account.name} account.`,
+                });
                 setIsSubmitting(false);
                 return;
             }
@@ -76,15 +100,15 @@ function NewExpenseCard({ onAddExpense }: { onAddExpense: (expense: Expense) => 
                 description: `Expense of ₹${values.amount} for ${values.description} has been recorded as pending.`,
             });
             form.reset();
+            setSelectedAccount(null);
+            setSelectedRole(null);
             setIsSubmitting(false);
         }, 1000);
       }
       
     const getSubAccountUsers = () => {
-        if (!selectedAccount || !selectedAccount.subAccountOf || selectedAccount.subAccountOf.length === 0) {
-            return [];
-        }
-        return users.filter(u => selectedAccount.subAccountOf!.includes(u.role));
+        if (!selectedRole) return [];
+        return users.filter(u => u.role === selectedRole);
     }
 
     const debitAccounts = accounts.filter(a => a.type === 'Debit');
@@ -109,11 +133,7 @@ function NewExpenseCard({ onAddExpense }: { onAddExpense: (expense: Expense) => 
                             render={({ field }) => (
                             <FormItem>
                                 <FormLabel>Account</FormLabel>
-                                <Select onValueChange={(value) => {
-                                    field.onChange(value);
-                                    setSelectedAccount(accounts.find(a => a.id === value) || null);
-                                    form.resetField('userId');
-                                }} defaultValue={field.value}>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
                                     <SelectTrigger>
                                     <SelectValue placeholder="Select a debit account" />
@@ -146,17 +166,36 @@ function NewExpenseCard({ onAddExpense }: { onAddExpense: (expense: Expense) => 
                             </FormItem>
                             )}
                         />
-                        {selectedAccount && selectedAccount.subAccountOf && selectedAccount.subAccountOf.length > 0 && (
+                        {selectedAccount?.subAccountOf && selectedAccount.subAccountOf.length > 1 && (
+                             <FormItem>
+                                <FormLabel>Entity Role</FormLabel>
+                                <Select onValueChange={(value: UserRole) => setSelectedRole(value)} value={selectedRole || ''}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select an entity role" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        {selectedAccount.subAccountOf.map((role) => (
+                                            <SelectItem key={role} value={role}>
+                                                {roleDisplayNames[role]}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </FormItem>
+                        )}
+                        {selectedAccount?.subAccountOf && selectedRole && (
                             <FormField
                                 control={form.control}
                                 name="userId"
                                 render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Entity</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <Select onValueChange={field.onChange} value={field.value || ''}>
                                     <FormControl>
                                         <SelectTrigger>
-                                        <SelectValue placeholder={`Select a ${roleDisplayNames[selectedAccount.subAccountOf![0]]}`} />
+                                        <SelectValue placeholder={`Select a ${roleDisplayNames[selectedRole]}`} />
                                         </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>

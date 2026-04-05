@@ -1,3 +1,4 @@
+
 'use client';
 import * as React from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -173,6 +174,7 @@ export function PaymentsCard() {
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     const { receiptQrUrl } = useGlobalStore();
     const [selectedAccount, setSelectedAccount] = React.useState<Account | null>(null);
+    const [selectedRole, setSelectedRole] = React.useState<UserRole | null>(null);
   
     const form = useForm<z.infer<typeof paymentFormSchema>>({
       resolver: zodResolver(paymentFormSchema),
@@ -186,11 +188,24 @@ export function PaymentsCard() {
 
     React.useEffect(() => {
         if(accountId) {
-            setSelectedAccount(accounts.find(a => a.id === accountId) || null);
+            const account = accounts.find(a => a.id === accountId) || null;
+            setSelectedAccount(account);
+            setSelectedRole(null);
+            form.resetField('userId');
+
+            if (account?.subAccountOf?.length === 1) {
+                setSelectedRole(account.subAccountOf[0]);
+            }
         } else {
             setSelectedAccount(null);
+            setSelectedRole(null);
+            form.resetField('userId');
         }
-    }, [accountId]);
+    }, [accountId, form]);
+    
+    React.useEffect(() => {
+        form.resetField('userId');
+    }, [selectedRole, form]);
 
 
     const handleAddPayment = (values: z.infer<typeof paymentFormSchema>) => {
@@ -222,15 +237,14 @@ export function PaymentsCard() {
             });
             form.reset();
             setSelectedAccount(null);
+            setSelectedRole(null);
             setIsSubmitting(false);
         }, 1000);
       }
     
     const getSubAccountUsers = () => {
-        if (!selectedAccount || !selectedAccount.subAccountOf || selectedAccount.subAccountOf.length === 0) {
-            return [];
-        }
-        return users.filter(u => selectedAccount.subAccountOf!.includes(u.role));
+        if (!selectedRole) return [];
+        return users.filter(u => u.role === selectedRole);
     }
 
     const creditAccounts = accounts.filter(a => a.type === 'Credit');
@@ -256,10 +270,7 @@ export function PaymentsCard() {
                                 render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Account</FormLabel>
-                                    <Select onValueChange={(value) => {
-                                        field.onChange(value);
-                                        form.resetField('userId');
-                                    }} defaultValue={field.value}>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
                                     <FormControl>
                                         <SelectTrigger>
                                         <SelectValue placeholder="Select a credit account" />
@@ -292,17 +303,36 @@ export function PaymentsCard() {
                                 </FormItem>
                                 )}
                             />
-                            {selectedAccount && selectedAccount.subAccountOf && selectedAccount.subAccountOf.length > 0 && (
+                            {selectedAccount?.subAccountOf && selectedAccount.subAccountOf.length > 1 && (
+                                <FormItem>
+                                    <FormLabel>Entity Role</FormLabel>
+                                    <Select onValueChange={(value: UserRole) => setSelectedRole(value)} value={selectedRole || ''}>
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select an entity role" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            {selectedAccount.subAccountOf.map((role) => (
+                                                <SelectItem key={role} value={role}>
+                                                    {roleDisplayNames[role]}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </FormItem>
+                            )}
+                            {selectedAccount?.subAccountOf && selectedRole && (
                                 <FormField
                                     control={form.control}
                                     name="userId"
                                     render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Entity</FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <Select onValueChange={field.onChange} value={field.value || ''}>
                                         <FormControl>
                                             <SelectTrigger>
-                                            <SelectValue placeholder={`Select a ${roleDisplayNames[selectedAccount.subAccountOf![0]]}`} />
+                                            <SelectValue placeholder={`Select a ${roleDisplayNames[selectedRole]}`} />
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
