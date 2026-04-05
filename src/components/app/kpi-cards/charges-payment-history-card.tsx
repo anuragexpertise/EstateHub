@@ -2,11 +2,12 @@
 'use client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { users, payments, rates } from "@/lib/data";
+import { users, rates } from "@/lib/data";
 import { useGlobalStore } from "@/hooks/use-global-store";
 import { eachMonthOfInterval, startOfMonth, format, isAfter, differenceInDays } from 'date-fns';
 import { Receipt } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useDataStore } from "@/hooks/use-data-store";
 
 type LedgerItem = {
     date: Date;
@@ -19,6 +20,7 @@ type LedgerItem = {
 
 export function ChargesAndPaymentHistoryCard() {
     const { calculationStartDate } = useGlobalStore();
+    const { payments } = useDataStore();
     const user = users.find(u => u.role === 'Apartment');
 
     if (!user) {
@@ -56,7 +58,7 @@ export function ChargesAndPaymentHistoryCard() {
     
     const userPayments = payments
         .filter(p => p.userId === user.id && p.description.includes('Maintenance') && p.status === 'Paid')
-        .map(p => ({ date: p.date, amount: p.amount, type: 'payment' as const, description: 'Payment Received' }));
+        .map(p => ({ date: new Date(p.date), amount: p.amount, type: 'payment' as const, description: 'Payment Received' }));
 
     const monthlyCharges = eachMonthOfInterval({ start: startDate, end: today }).map(month => ({
         date: startOfMonth(month),
@@ -162,7 +164,7 @@ export function ChargesAndPaymentHistoryCard() {
                     <TableBody>
                         {finalLedger.map((item, index) => (
                             <TableRow key={index}>
-                                <TableCell>{format(item.date, 'dd-MMM-yyyy')}</TableCell>
+                                <TableCell>{format(new Date(item.date), 'dd-MMM-yyyy')}</TableCell>
                                 <TableCell className="whitespace-normal break-words">{item.description}</TableCell>
                                 <TableCell className="text-right text-red-600">
                                     {item.debit > 0 ? `₹${item.debit.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'}

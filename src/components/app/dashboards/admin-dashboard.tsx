@@ -2,18 +2,20 @@
 'use client';
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { users, payments as initialPayments, expenses as initialExpenses, events as initialEvents } from "@/lib/data";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"; 
+import { users, events as initialEvents } from "@/lib/data";
 import type { UserRole } from '@/types';
-import { Building2, Shield, Wrench, IndianRupee, TrendingUp, TrendingDown, CalendarDays } from "lucide-react";
+import { Building2, Shield, Wrench, IndianRupee, TrendingUp, TrendingDown, CalendarDays } from "lucide-react"; 
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { useDataStore } from '@/hooks/use-data-store';
 
 type ListFilter = 'all' | 'withDues' | 'noDues' | 'pending' | 'verified' | 'paid' | 'drafts' | 'sent';
 
 export function AdminDashboard() {
     const router = useRouter();
     const { toast } = useToast();
+    const { payments: initialPayments, expenses: initialExpenses } = useDataStore();
 
     // KPI Calculations
     const apartments = users.filter(u => u.role === 'Apartment');
@@ -27,12 +29,12 @@ export function AdminDashboard() {
     const totalCredits = initialPayments.filter(p => p.status === 'Paid').reduce((sum, p) => sum + p.amount, 0);
     const totalDebits = initialExpenses.filter(e => e.status === 'Paid').reduce((sum, e) => sum + e.amount, 0);
     const balance = totalCredits - totalDebits;
-    const pendingCredits = initialPayments.filter(p => p.status === 'Pending Verification').reduce((sum, p) => sum + p.amount, 0);
+    
     const verifiedCredits = totalCredits;
-    const pendingDebits = initialExpenses.filter(e => e.status === 'Pending').reduce((sum, p) => sum + p.amount, 0);
+    
     const paidDebits = totalDebits;
     
-    const upcomingEvents = initialEvents.filter(e => e.status === 'Sent' && e.dateTime > new Date()).length;
+    const upcomingEvents = initialEvents.filter(e => e.status === 'Sent' && new Date(e.dateTime) > new Date()).length;
     const draftEvents = initialEvents.filter(e => e.status === 'Draft').length;
 
     const kpis = [

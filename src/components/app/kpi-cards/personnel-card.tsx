@@ -3,9 +3,10 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { payments, users, shifts } from "@/lib/data";
+import { users, shifts } from "@/lib/data";
 import { CreditCard, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useDataStore } from "@/hooks/use-data-store";
 
 export function PersonnelCard() {
     const user = users.find(u => u.role === 'Security');
@@ -46,6 +47,7 @@ export function PersonnelCard() {
 
 export function SalaryHistoryCard() {
     const user = users.find(u => u.role === 'Security');
+    const { payments } = useDataStore();
 
     if (!user) {
         return null;
@@ -75,7 +77,7 @@ export function SalaryHistoryCard() {
                 {userPayments.map((payment, index) => (
                     <TableRow key={payment.id} className={cn(index % 2 === 0 && "bg-muted/50")}>
                     <TableCell className="font-medium whitespace-normal break-words">{payment.description}</TableCell>
-                    <TableCell>{dateTimeFormatter.format(payment.date).replace(',', '')}</TableCell>
+                    <TableCell>{dateTimeFormatter.format(new Date(payment.date)).replace(',', '')}</TableCell>
                     <TableCell className="text-right text-green-600">₹{payment.amount.toLocaleString()}</TableCell>
                     </TableRow>
                 ))}

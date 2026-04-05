@@ -1,21 +1,24 @@
+
 'use client';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { users, events, payments } from "@/lib/data";
+import { users, events } from "@/lib/data";
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Building2, CalendarDays, CreditCard } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { useDataStore } from "@/hooks/use-data-store";
 
 export function ContractorDashboard() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { payments } = useDataStore();
   const role = searchParams.get('role');
   const currentUser = users.find(u => u.role === 'Contractor'); // Simplified for demo
   const dateTimeFormatter = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
   
   const totalApartments = users.filter(u => u.role === 'Apartment').length;
   const userPayments = payments.filter(p => p.userId === currentUser?.id).filter(p => p.status === 'Paid').reduce((sum, p) => sum + p.amount, 0);
-  const visibleEvents = role ? events.filter(e => e.audience.includes('Contractor') && e.status === 'Sent') : [];
+  const visibleEvents = role ? events.filter(e => e.audience.includes('Contractor') && e.status === 'Sent' && new Date(e.dateTime) > new Date()) : [];
 
   const handleKpiClick = (page: 'payments' | 'users', filter?: string) => {
     if (page === 'users') {
@@ -65,7 +68,7 @@ export function ContractorDashboard() {
                             <h3 className="font-semibold">{event.name}</h3>
                             <p className="text-sm text-muted-foreground">{event.description}</p>
                         </div>
-                        <Badge variant="outline">{dateTimeFormatter.format(event.dateTime)}</Badge>
+                        <Badge variant="outline">{dateTimeFormatter.format(new Date(event.dateTime))}</Badge>
                     </div>
                 </div>
             )) : (

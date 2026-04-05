@@ -9,7 +9,7 @@ import Image from 'next/image';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { users, payments as initialPayments, roleDisplayNames, accounts } from "@/lib/data";
+import { users, roleDisplayNames, accounts } from "@/lib/data";
 import type { UserRole, Payment, Account } from '@/types';
 import { Receipt, Check, PlusCircle, Loader2, X, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -19,8 +19,9 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useGlobalStore } from '@/hooks/use-global-store';
-import { ChargesAndPaymentHistoryCard } from './charges-payment-history-card';
+import { ChargesAndPaymentHistoryCard } from './charges-payment-history-card'; 
 import { cn } from '@/lib/utils';
+import { useDataStore } from '@/hooks/use-data-store';
 
 const paymentFormSchema = z.object({
   accountId: z.string({ required_error: 'Please select an account.' }),
@@ -42,7 +43,7 @@ export function PaymentHistoryCard() {
 
     const user = users.find(u => u.role === role);
   
-    const [payments, setPayments] = React.useState<Payment[]>(initialPayments);
+    const { payments, updatePaymentStatus } = useDataStore();
     const dateTimeFormatter = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   
     if (!user || !role) {
@@ -50,16 +51,12 @@ export function PaymentHistoryCard() {
     }
 
     const handleVerifyPayment = (paymentId: string) => {
-        const paymentIndex = initialPayments.findIndex(p => p.id === paymentId);
-        if (paymentIndex > -1) initialPayments[paymentIndex].status = 'Paid';
-        setPayments(prev => prev.map(p => p.id === paymentId ? { ...p, status: 'Paid' } : p));
+        updatePaymentStatus(paymentId, 'Paid');
         toast({ title: "Payment Verified", description: "The payment has been marked as paid." });
     }
     
     const handleRejectPayment = (paymentId: string) => {
-        const paymentIndex = initialPayments.findIndex(p => p.id === paymentId);
-        if (paymentIndex > -1) initialPayments[paymentIndex].status = 'Rejected';
-        setPayments(prev => prev.map(p => p.id === paymentId ? { ...p, status: 'Rejected' } : p));
+        updatePaymentStatus(paymentId, 'Rejected');
         toast({ variant: 'destructive', title: "Payment Rejected", description: "The payment has been marked as rejected." });
     }
 
@@ -80,7 +77,7 @@ export function PaymentHistoryCard() {
         }
 
         return {
-            filteredPayments: filtered.sort((a, b) => b.date.getTime() - a.date.getTime()),
+            filteredPayments: filtered.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
             listTitle: title
         };
     }, [payments, role, status, user]);
@@ -134,7 +131,7 @@ export function PaymentHistoryCard() {
                       {payment.status}
                     </Badge>
                   </TableCell>
-                  <TableCell>{dateTimeFormatter.format(payment.date).replace(',', '')}</TableCell>
+                  <TableCell>{dateTimeFormatter.format(new Date(payment.date)).replace(',', '')}</TableCell>
                   <TableCell className="text-right">₹{payment.amount.toLocaleString()}</TableCell>
                   {role === 'Admin' && (
                       <TableCell className="text-center">
@@ -170,7 +167,7 @@ export function PaymentsCard() {
     const searchParams = useSearchParams();
     const { toast } = useToast();
     const role = searchParams.get('role') as UserRole | null;
-    const [payments, setPayments] = React.useState<Payment[]>(initialPayments);
+    const { addPayment } = useDataStore();
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     const { receiptQrUrl } = useGlobalStore();
     const [selectedAccount, setSelectedAccount] = React.useState<Account | null>(null);
@@ -230,7 +227,7 @@ export function PaymentsCard() {
                 status: role === 'Admin' ? 'Paid' : 'Pending Verification',
             };
     
-            setPayments(prev => [newPayment, ...prev]);
+            addPayment(newPayment);
             toast({
                 title: "Payment Recorded",
                 description: `Payment of ₹${values.amount} for ${values.userId ? users.find(u => u.id === values.userId)?.name : 'system'} has been recorded.`,

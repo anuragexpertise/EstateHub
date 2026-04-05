@@ -2,10 +2,9 @@
 'use client';
 import * as React from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"; 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { expenses as initialExpenses } from "@/lib/data";
 import { TrendingDown, PlusCircle, Loader2, ArrowLeft, Check, X } from "lucide-react";
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -18,6 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { accounts, users, roleDisplayNames } from '@/lib/data';
 import type { Expense, Account, UserRole } from '@/types';
 import { cn } from '@/lib/utils';
+import { useDataStore } from '@/hooks/use-data-store';
 
 
 const expenseFormSchema = z.object({
@@ -250,7 +250,7 @@ function NewExpenseCard({ onAddExpense }: { onAddExpense: (expense: Expense) => 
 
 
 export default function ExpensesPage() {
-    const [allExpenses, setAllExpenses] = React.useState(initialExpenses);
+    const { expenses: allExpenses, addExpense, updateExpenseStatus } = useDataStore();
     const searchParams = useSearchParams();
     const router = useRouter();
     const status = searchParams.get('status');
@@ -258,23 +258,15 @@ export default function ExpensesPage() {
 
     const dateTimeFormatter = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
     
-    const handleAddExpense = (newExpense: Expense) => {
-        setAllExpenses(prevExpenses => [newExpense, ...prevExpenses].sort((a, b) => b.date.getTime() - a.date.getTime()));
-    }
-    
     const accountName = (accountId: string) => accounts.find(a => a.id === accountId)?.name || 'N/A';
 
     const handleVerifyExpense = (expenseId: string) => {
-        const expenseIndex = allExpenses.findIndex(e => e.id === expenseId);
-        if (expenseIndex > -1) initialExpenses[expenseIndex].status = 'Paid';
-        setAllExpenses(prev => prev.map(e => e.id === expenseId ? { ...e, status: 'Paid' } : e));
+        updateExpenseStatus(expenseId, 'Paid');
         toast({ title: "Expense Verified", description: "The expense has been marked as paid." });
     };
 
     const handleRejectExpense = (expenseId: string) => {
-        const expenseIndex = allExpenses.findIndex(e => e.id === expenseId);
-        if (expenseIndex > -1) initialExpenses[expenseIndex].status = 'Rejected';
-        setAllExpenses(prev => prev.map(e => e.id === expenseId ? { ...e, status: 'Rejected' } : e));
+        updateExpenseStatus(expenseId, 'Rejected');
         toast({ variant: "destructive", title: "Expense Rejected", description: "The expense has been marked as rejected." });
     };
 
@@ -293,7 +285,7 @@ export default function ExpensesPage() {
 
     return (
         <div className="space-y-6">
-            <NewExpenseCard onAddExpense={handleAddExpense} />
+            <NewExpenseCard onAddExpense={addExpense} />
             <Card>
                 <CardHeader>
                     <div className="flex items-center gap-4">
@@ -326,7 +318,7 @@ export default function ExpensesPage() {
                         <TableBody>
                             {filteredExpenses.map((expense, index) => (
                                 <TableRow key={expense.id} className={cn("whitespace-normal break-words", index % 2 === 0 && "bg-muted/50")}>
-                                    <TableCell>{dateTimeFormatter.format(expense.date).replace(',', '')}</TableCell>
+                                    <TableCell>{dateTimeFormatter.format(new Date(expense.date)).replace(',', '')}</TableCell>
                                     <TableCell>{accountName(expense.accountId)}</TableCell>
                                     <TableCell>{expense.description}</TableCell>
                                     <TableCell>

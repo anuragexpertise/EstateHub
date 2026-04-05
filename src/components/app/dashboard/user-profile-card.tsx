@@ -3,7 +3,7 @@
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User, UserRole } from "@/types";
-import { roleDisplayNames, payments, shifts, rates, roleIcons, roleTextColors } from "@/lib/data";
+import { roleDisplayNames, shifts, rates, roleIcons, roleTextColors } from "@/lib/data";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { Building2, Wrench, Shield, Mail, Phone, Hash, Copy, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useAvatarStore } from "@/hooks/use-avatar-store";
@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useGlobalStore } from "@/hooks/use-global-store";
 import { differenceInDays, endOfMonth, format, isAfter, startOfMonth, eachMonthOfInterval } from 'date-fns';
+import { useDataStore } from "@/hooks/use-data-store";
 
 interface UserProfileCardProps {
     user: User;
@@ -20,6 +21,7 @@ interface UserProfileCardProps {
 
 const NoticeCard = ({ user }: { user: User }) => {
     const { calculationStartDate } = useGlobalStore();
+    const { payments } = useDataStore();
 
     let title = 'Status';
     let amountDue: number | null = null;
@@ -41,7 +43,7 @@ const NoticeCard = ({ user }: { user: User }) => {
 
             const userPayments = payments
                 .filter(p => p.userId === user.id && p.description.includes('Maintenance') && p.status === 'Paid')
-                .map(p => ({ date: p.date, amount: p.amount, type: 'payment' as const }));
+                .map(p => ({ date: new Date(p.date), amount: p.amount, type: 'payment' as const }));
 
             const monthlyCharges = eachMonthOfInterval({ start: startDate, end: today }).map(month => ({
                 date: startOfMonth(month),
@@ -114,7 +116,7 @@ const NoticeCard = ({ user }: { user: User }) => {
     } else if (user.role === 'Contractor') {
         title = 'Pass Status';
         const passPayments = payments.filter(p => p.userId === user.id && p.description.includes('Pass') && p.status === 'Paid');
-        const lastPass = passPayments.sort((a, b) => b.date.getTime() - a.date.getTime())[0];
+        const lastPass = passPayments.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
         
         if (lastPass) {
             const expiryDate = new Date(lastPass.date);

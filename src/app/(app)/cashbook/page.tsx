@@ -3,11 +3,12 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Book } from "lucide-react";
-import { payments, expenses, users } from "@/lib/data";
+import { users } from "@/lib/data";
 import { useSearchParams } from "next/navigation";
 import { UserRole } from "@/types";
 import { ChargesAndPaymentHistoryCard } from "@/components/app/kpi-cards/charges-payment-history-card";
 import { cn } from "@/lib/utils";
+import { useDataStore } from "@/hooks/use-data-store";
 
 type LedgerEntry = {
     date: Date;
@@ -29,6 +30,7 @@ type LedgerEntry = {
 export default function CashbookPage() {
     const searchParams = useSearchParams();
     const role = searchParams.get('role') as UserRole | null;
+    const { payments, expenses } = useDataStore();
     const user = users.find(u => u.role === role);
 
     if (role && role !== 'Admin') {
@@ -53,7 +55,7 @@ export default function CashbookPage() {
         amount: e.amount,
     }));
 
-    const allTransactions = [...allReceipts, ...allPayments].sort((a, b) => a.date.getTime() - b.date.getTime());
+    const allTransactions = [...allReceipts, ...allPayments].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     let runningBalance = 0;
     const ledger: LedgerEntry[] = allTransactions.map(t => {
@@ -136,7 +138,7 @@ export default function CashbookPage() {
                                     ledger.map((entry, index) => (
                                         <TableRow key={index} className={cn(index % 2 === 0 ? "bg-muted/50" : "")}>
                                             {/* Receipt Data */}
-                                            <TableCell className="whitespace-normal break-words">{entry.receiptAccount ? dateTimeFormatter.format(entry.date).replace(',', '') : ''}</TableCell>
+                                            <TableCell className="whitespace-normal break-words">{entry.receiptAccount ? dateTimeFormatter.format(new Date(entry.date)).replace(',', '') : ''}</TableCell>
                                             <TableCell className="whitespace-normal break-words">{entry.receiptAccount}</TableCell>
                                             <TableCell className="whitespace-normal break-words">{entry.receiptDescription}</TableCell>
                                             <TableCell className="whitespace-normal break-words">{entry.receiptFolio}</TableCell>
@@ -145,7 +147,7 @@ export default function CashbookPage() {
                                             <TableCell className="text-right font-semibold text-green-700">{entry.receiptTotal?.toLocaleString('en-IN')}</TableCell>
                                             
                                             {/* Payment Data */}
-                                            <TableCell className="border-l whitespace-normal break-words">{entry.paymentAccount ? dateTimeFormatter.format(entry.date).replace(',', '') : ''}</TableCell>
+                                            <TableCell className="border-l whitespace-normal break-words">{entry.paymentAccount ? dateTimeFormatter.format(new Date(entry.date)).replace(',', '') : ''}</TableCell>
                                             <TableCell className="whitespace-normal break-words">{entry.paymentAccount}</TableCell>
                                             <TableCell className="whitespace-normal break-words">{entry.paymentDescription}</TableCell>
                                             <TableCell className="whitespace-normal break-words">{entry.paymentFolio}</TableCell>

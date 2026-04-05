@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useSearchParams } from 'next/navigation';
 import type { UserRole, Payment } from '@/types';
 import { TrendingDown } from 'lucide-react';
-import { users, payments, rates } from '@/lib/data';
+import { users, rates } from '@/lib/data';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 

@@ -8,10 +8,11 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { CheckCircle2, XCircle, ScanLine, Loader2, Video, Camera, SwitchCamera, Play, StopCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { payments, users } from '@/lib/data';
+import { users } from '@/lib/data';
 import type { User } from '@/types';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import jsQR from 'jsqr';
+import { useDataStore } from '@/hooks/use-data-store';
 
 
 type Verdict = 'PASS' | 'FAIL' | null;
@@ -22,6 +23,7 @@ export function ScanCard() {
   const [isLoading, setIsLoading] = useState(false);
   const [scannedUser, setScannedUser] = useState<string | null>(null);
   const { toast } = useToast();
+  const { payments } = useDataStore();
   const [hasCameraPermission, setHasCameraPermission] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -77,7 +79,7 @@ export function ScanCard() {
         if (user.role === 'Apartment') {
             const lastPayment = payments
                 .filter(p => p.userId === user.id && p.status === 'Paid' && p.description.includes('Maintenance'))
-                .sort((a,b) => b.date.getTime() - a.date.getTime())[0];
+                .sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
 
             if (!lastPayment) {
                  setVerdict('FAIL');
@@ -108,7 +110,7 @@ export function ScanCard() {
                 return;
             }
 
-            const lastPass = passPayments.sort((a, b) => b.date.getTime() - a.date.getTime())[0];
+            const lastPass = passPayments.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
             const expiryDate = new Date(lastPass.date);
             if (lastPass.description.includes('1-Day')) expiryDate.setDate(expiryDate.getDate() + 1);
             else if (lastPass.description.includes('7-Day')) expiryDate.setDate(expiryDate.getDate() + 7);
@@ -146,7 +148,7 @@ export function ScanCard() {
         }, 5000);
       }
     }, 1000);
-  }, [toast, isLoading, isScanning]);
+  }, [toast, isLoading, isScanning, payments]);
 
   const scanQRCode = useCallback(() => {
     if (!isScanning) return;

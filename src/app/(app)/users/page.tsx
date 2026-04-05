@@ -5,16 +5,18 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { users as allUsers, payments, shifts, roleDisplayNames, roleBadgeVariants } from "@/lib/data";
+import { users as allUsers, shifts, roleDisplayNames, roleBadgeVariants } from "@/lib/data";
 import type { User, UserRole } from '@/types';
 import { ArrowLeft, FileDown, Mail, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { UserProfileCard } from '@/components/app/dashboard/user-profile-card';
+import { useDataStore } from '@/hooks/use-data-store';
 
 export default function UsersPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const { payments } = useDataStore();
     const role = searchParams.get('role') as UserRole | null;
     const userRoleFilter = searchParams.get('userRoleFilter') as UserRole | null;
     const statusFilter = searchParams.get('statusFilter');
@@ -63,7 +65,7 @@ export default function UsersPage() {
 
 
         return { filteredUsers: filtered, listTitle: newTitle };
-    }, [userRoleFilter, statusFilter, isAdmin]);
+    }, [userRoleFilter, statusFilter, isAdmin, payments]);
 
     const handleExportCsv = () => {
         const headers = ['id', 'name', 'email', 'phone', 'role', 'unit', 'sqft', 'service', 'shift'];

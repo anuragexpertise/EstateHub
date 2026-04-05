@@ -5,17 +5,19 @@ import { useSearchParams } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { transactions, users, payments as initialPayments, rates, shifts, findUserByRole } from "@/lib/data";
+import { users, rates, shifts, findUserByRole } from "@/lib/data";
 import type { User, UserRole, Payment } from '@/types';
 import { ArrowLeft, Building2, Shield, Wrench, FileDown, Check, CreditCard, Mail, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from '@/hooks/use-toast';
 import { UserProfileCard } from '@/components/app/dashboard/user-profile-card';
+import { useDataStore } from '@/hooks/use-data-store';
 
 type ListFilter = 'all' | 'withDues' | 'noDues' | 'active' | 'inactive' | 'pending' | 'verified';
 
 export function InfoCard() {
   const searchParams = useSearchParams();
+  const { payments: initialPayments, updatePaymentStatus } = useDataStore();
   const role = searchParams.get('role') as UserRole | null;
   const currentUser = role ? findUserByRole(role) : null;
   
@@ -29,11 +31,11 @@ export function InfoCard() {
   const dateFormatter = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
   const totalApartments = users.filter(u => u.role === 'Apartment').length;
-  const apartmentsWithDues = users.filter(u => u.role === 'Apartment' && payments.some(p => p.userId === u.id && (p.status === 'Due' || p.status === 'Overdue'))).length;
+  const apartmentsWithDues = users.filter(u => u.role === 'Apartment' && initialPayments.some(p => p.userId === u.id && (p.status === 'Due' || p.status === 'Overdue'))).length;
   const apartmentsNoDues = totalApartments - apartmentsWithDues;
   
   const totalContractors = users.filter(u => u.role === 'Contractor').length;
-  const contractorsWithDues = users.filter(u => u.role === 'Contractor' && payments.some(p => p.userId === u.id && (p.status === 'Due' || p.status === 'Overdue'))).length;
+  const contractorsWithDues = users.filter(u => u.role === 'Contractor' && initialPayments.some(p => p.userId === u.id && (p.status === 'Due' || p.status === 'Overdue'))).length;
   const contractorsNoDues = totalContractors - contractorsWithDues;
   
   const securityUsers = users.filter(u => u.role === 'Security');
@@ -147,7 +149,7 @@ export function InfoCard() {
                 paymentUser?.name || 'Unknown',
                 payment.description,
                 payment.amount,
-                payment.date.toISOString(),
+                new Date(payment.date).toISOString(),
                 payment.status,
             ];
              csvRows.push(row.join(','));
@@ -169,13 +171,8 @@ export function InfoCard() {
   };
   
   const handleVerifyPayment = (paymentId: string) => {
-    const newPayments = payments.map(p => p.id === paymentId ? { ...p, status: 'Paid' } : p);
-    setPayments(newPayments);
-    // also update the main state
-    const allPayments = initialPayments.map(p => p.id === paymentId ? { ...p, status: 'Paid' } : p);
-    // this is a hacky way to update the global state
-    Object.assign(initialPayments, allPayments);
-
+    updatePaymentStatus(paymentId, 'Paid');
+    setPayments(prev => prev.map(p => p.id === paymentId ? { ...p, status: 'Paid' } : p));
     toast({
         title: "Payment Verified",
         description: "The payment has been marked as paid.",
@@ -188,7 +185,7 @@ export function InfoCard() {
     const passPayments = payments.filter(p => p.userId === userId && p.description.includes('Pass') && p.status === 'Paid');
     if (passPayments.length === 0) return { active: false, expires: null };
 
-    const sortedPasses = passPayments.sort((a, b) => b.date.getTime() - a.date.getTime());
+    const sortedPasses = passPayments.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     const lastPass = sortedPasses[0];
 
     const expiryDate = new Date(lastPass.date);
@@ -274,7 +271,7 @@ export function InfoCard() {
                                   {isApartmentList && <TableCell className="cursor-pointer" onClick={() => setSelectedUser(u)}>{u.details?.sqft}</TableCell>}
                                   {isApartmentList && <TableCell className="cursor-pointer" onClick={() => setSelectedUser(u)}>
                                       <Badge variant={passStatus.active ? 'secondary' : 'outline'} className={passStatus.active ? 'bg-green-500 text-white' : ''}>
-                                          {passStatus.active ? `Active (Expires ${dateFormatter.format(passStatus.expires!).replace(/ /g, '-')})` : 'Inactive'}
+                                          {passStatus.active && passStatus.expires ? `Active (Expires ${dateFormatter.format(passStatus.expires).replace(/ /g, '-')})` : 'Inactive'}
                                       </Badge>
                                   </TableCell>}
                               </TableRow>
@@ -333,7 +330,7 @@ export function InfoCard() {
                           {payment.status === 'Paid' ? 'Verified' : payment.status}
                       </Badge>
                   </TableCell>
-                  <TableCell>{dateFormatter.format(payment.date).replace(/ /g, '-')}</TableCell>
+                  <TableCell>{dateFormatter.format(new Date(payment.date)).replace(/ /g, '-')}</TableCell>
                   <TableCell className="text-right">₹{payment.amount.toLocaleString()}</TableCell>
                   <TableCell className="text-center">
                     {payment.status === 'Pending Verification' && (

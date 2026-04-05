@@ -1,15 +1,17 @@
 
 'use client';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { users, events, payments } from "@/lib/data";
+import { users, events } from "@/lib/data";
 import { User, Building2, Wrench, Shield, CalendarDays, TrendingDown, CreditCard, IndianRupee } from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { useDataStore } from "@/hooks/use-data-store";
 
 export function ApartmentDashboard() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { payments } = useDataStore();
   const role = searchParams.get('role');
   const currentUser = users.find(u => u.role === 'Apartment'); // Simplified for demo
   const dateTimeFormatter = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
@@ -22,7 +24,7 @@ export function ApartmentDashboard() {
   const userPayments = payments.filter(p => p.userId === currentUser?.id).filter(p => p.status === 'Paid').reduce((sum, p) => sum + p.amount, 0);
   const userDues = userCharges > 0 ? userCharges - userPayments : 0;
   
-  const visibleEvents = role ? events.filter(e => e.audience.includes('Apartment') && e.status === 'Sent') : [];
+  const visibleEvents = role ? events.filter(e => e.audience.includes('Apartment') && e.status === 'Sent' && new Date(e.dateTime) > new Date()) : [];
 
   const handleKpiClick = (page: 'charges' | 'payments' | 'users', filter?: string) => {
     if (page === 'users') {
@@ -76,7 +78,7 @@ export function ApartmentDashboard() {
                             <h3 className="font-semibold">{event.name}</h3>
                             <p className="text-sm text-muted-foreground">{event.description}</p>
                         </div>
-                        <Badge variant="outline">{dateTimeFormatter.format(event.dateTime)}</Badge>
+                        <Badge variant="outline">{dateTimeFormatter.format(new Date(event.dateTime))}</Badge>
                     </div>
                 </div>
             )) : (
