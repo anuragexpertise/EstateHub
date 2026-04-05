@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -339,7 +340,7 @@ function EventList() {
                     <TableHeader>
                         <TableRow>
                             <TableHead>Name</TableHead>
-                            <TableHead className="hidden md:table-cell">Description</TableHead>
+                            <TableHead>Description</TableHead>
                             <TableHead>Date & Time</TableHead>
                             <TableHead>Audience</TableHead>
                             <TableHead>Status</TableHead>
@@ -350,7 +351,7 @@ function EventList() {
                         {visibleEvents.map((event, index) => (
                             <TableRow key={event.id} className={cn(index % 2 === 0 && "bg-muted/50")}>
                                 <TableCell className="font-medium">{event.name}</TableCell>
-                                <TableCell className="hidden md:table-cell max-w-sm text-muted-foreground truncate">{event.description}</TableCell>
+                                <TableCell className="max-w-sm text-muted-foreground truncate">{event.description}</TableCell>
                                 <TableCell>{dateTimeFormatter.format(new Date(event.dateTime)).replace(',', '')}</TableCell>
                                 <TableCell>
                                     <div className="flex flex-wrap gap-1">
