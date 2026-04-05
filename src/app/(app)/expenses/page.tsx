@@ -28,7 +28,7 @@ const expenseFormSchema = z.object({
   description: z.string().min(2, 'Description must be at least 2 characters.'),
 });
 
-function NewExpenseCard() {
+function NewExpenseCard({ role }: { role: UserRole | null }) {
     const { toast } = useToast();
     const { firestore } = useFirebase();
     const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -90,7 +90,7 @@ function NewExpenseCard() {
             amount: values.amount,
             description: values.description,
             date: serverTimestamp(),
-            status: 'Pending',
+            status: role === 'Admin' ? 'Paid' : 'Pending',
         };
 
         const expensesCol = collection(firestore, 'expenses');
@@ -98,7 +98,7 @@ function NewExpenseCard() {
 
         toast({
             title: "Expense Recorded",
-            description: `Expense of ₹${values.amount} for ${values.description} has been recorded as pending.`,
+            description: `Expense of ₹${values.amount} for ${values.description} has been recorded as ${newExpense.status}.`,
         });
         form.reset();
         setSelectedAccount(null);
@@ -256,6 +256,7 @@ function ExpensesPageContent() {
     
     const searchParams = useSearchParams();
     const router = useRouter();
+    const role = searchParams.get('role') as UserRole | null;
     const status = searchParams.get('status');
     const { toast } = useToast();
 
@@ -288,13 +289,26 @@ function ExpensesPageContent() {
         return {filteredExpenses: expenses, listTitle: title};
     }, [allExpenses, status]);
 
+    if (!user && !isAuthLoading) {
+      return (
+        <Card>
+          <CardHeader>
+            <CardTitle>Access Denied</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p>You must be logged in to view this page.</p>
+          </CardContent>
+        </Card>
+      )
+    }
+
     if (isAuthLoading || isLoading) {
         return <PageSkeleton />;
     }
 
     return (
         <div className="space-y-6">
-            <NewExpenseCard />
+            <NewExpenseCard role={role} />
             <Card>
                 <CardHeader>
                     <div className="flex items-center gap-4">
