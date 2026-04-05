@@ -125,7 +125,7 @@ export default function UsersPage() {
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Name</TableHead>
-                                <TableHead>Role</TableHead>
+                                <TableHead className="hidden md:table-cell">Role</TableHead>
                                 <TableHead>Email</TableHead>
                                 <TableHead>Phone</TableHead>
                                 {userRoleFilter === 'Apartment' && <TableHead>Unit</TableHead>}
@@ -135,18 +135,20 @@ export default function UsersPage() {
                             {filteredUsers.map((u, index) => (
                                 <TableRow key={u.id} className={cn("whitespace-normal break-words", index % 2 === 0 && "bg-muted/50", isAdmin && "cursor-pointer")} onClick={() => isAdmin && setSelectedUser(u)}>
                                     <TableCell className="font-medium">{u.name}</TableCell>
-                                    <TableCell><Badge variant={roleBadgeVariants[u.role]}>{roleDisplayNames[u.role]}</Badge></TableCell>
+                                    <TableCell className="hidden md:table-cell">
+                                        <Badge variant={roleBadgeVariants[u.role]}>{roleDisplayNames[u.role]}</Badge>
+                                    </TableCell>
                                     <TableCell>
                                         <a href={`mailto:${u.email}`} onClick={e => isAdmin && e.stopPropagation()} className="flex items-center gap-2 text-primary hover:underline">
                                             <Mail className="h-4 w-4" />
-                                            <span className="break-all">{u.email}</span>
+                                            <span className="hidden md:inline break-all">{u.email}</span>
                                         </a>
                                     </TableCell>
                                     <TableCell>
                                         {u.phone ? (
                                             <a href={`tel:${u.phone}`} onClick={e => isAdmin && e.stopPropagation()} className="flex items-center gap-2 text-primary hover:underline">
                                                 <Phone className="h-4 w-4" />
-                                                <span className="whitespace-normal break-words">{u.phone}</span>
+                                                <span className="hidden md:inline whitespace-normal break-words">{u.phone}</span>
                                             </a>
                                         ) : (
                                             <span className="text-muted-foreground">N/A</span>
