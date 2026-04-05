@@ -265,7 +265,7 @@ function EventList() {
             eventsToFilter = [];
         }
 
-        return { visibleEvents: eventsToFilter.sort((a,b) => a.dateTime.getTime() - b.date.getTime()), listTitle: title };
+        return { visibleEvents: eventsToFilter.sort((a,b) => b.dateTime.getTime() - a.dateTime.getTime()), listTitle: title };
     }, [role, status, eventsList]);
 
     const handleSendEvent = (eventId: string) => {
@@ -330,76 +330,61 @@ function EventList() {
                         </Button>
                     )}
                 </div>
+                 <CardDescription>
+                    A list of all events and announcements.
+                 </CardDescription>
             </CardHeader>
             <CardContent>
-                {role === 'Admin' ? (
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Name</TableHead>
-                                <TableHead className="hidden md:table-cell">Description</TableHead>
-                                <TableHead>Date & Time</TableHead>
-                                <TableHead>Audience</TableHead>
-                                <TableHead>Status</TableHead>
-                                {status === 'drafts' && <TableHead className="text-center">Actions</TableHead>}
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {visibleEvents.map((event, index) => (
-                                <TableRow key={event.id} className={cn(index % 2 === 0 && "bg-muted/50")}>
-                                    <TableCell className="font-medium">{event.name}</TableCell>
-                                    <TableCell className="hidden md:table-cell max-w-sm text-muted-foreground truncate">{event.description}</TableCell>
-                                    <TableCell>{dateTimeFormatter.format(new Date(event.dateTime)).replace(',', '')}</TableCell>
-                                    <TableCell>
-                                        <div className="flex flex-wrap gap-1">
-                                            {event.audience.map(role => (
-                                                <Badge key={role} variant={roleBadgeVariants[role as UserRole]}>{roleDisplayNames[role as UserRole]}</Badge>
-                                            ))}
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Name</TableHead>
+                            <TableHead className="hidden md:table-cell">Description</TableHead>
+                            <TableHead>Date & Time</TableHead>
+                            <TableHead>Audience</TableHead>
+                            <TableHead>Status</TableHead>
+                            {status === 'drafts' && <TableHead className="text-center">Actions</TableHead>}
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {visibleEvents.map((event, index) => (
+                            <TableRow key={event.id} className={cn(index % 2 === 0 && "bg-muted/50")}>
+                                <TableCell className="font-medium">{event.name}</TableCell>
+                                <TableCell className="hidden md:table-cell max-w-sm text-muted-foreground truncate">{event.description}</TableCell>
+                                <TableCell>{dateTimeFormatter.format(new Date(event.dateTime)).replace(',', '')}</TableCell>
+                                <TableCell>
+                                    <div className="flex flex-wrap gap-1">
+                                        {event.audience.map(role => (
+                                            <Badge key={role} variant={roleBadgeVariants[role as UserRole]}>{roleDisplayNames[role as UserRole]}</Badge>
+                                        ))}
+                                    </div>
+                                </TableCell>
+                                <TableCell>
+                                    <Badge variant={event.status === 'Sent' ? 'secondary' : 'default'} className={cn(event.status === 'Draft' && 'bg-amber-500 text-white hover:bg-amber-500/80')}>
+                                        {event.status}
+                                    </Badge>
+                                </TableCell>
+                                {status === 'drafts' && (
+                                    <TableCell className="text-center">
+                                        <div className="flex items-center justify-center gap-2">
+                                            <Button size="sm" onClick={() => handleSendEvent(event.id)}>
+                                                <Send className="mr-2 h-4 w-4" /> Send
+                                            </Button>
+                                            <Button size="sm" variant="destructive" onClick={() => handleRejectEvent(event.id)}>
+                                                <X className="mr-2 h-4 w-4" /> Reject
+                                            </Button>
                                         </div>
                                     </TableCell>
-                                    <TableCell>
-                                        <Badge variant={event.status === 'Sent' ? 'secondary' : 'default'} className={cn(event.status === 'Draft' && 'bg-amber-500 text-white hover:bg-amber-500/80')}>
-                                            {event.status}
-                                        </Badge>
-                                    </TableCell>
-                                    {status === 'drafts' && (
-                                        <TableCell className="text-center">
-                                            <div className="flex items-center justify-center gap-2">
-                                                <Button size="sm" onClick={() => handleSendEvent(event.id)}>
-                                                    <Send className="mr-2 h-4 w-4" /> Send
-                                                </Button>
-                                                <Button size="sm" variant="destructive" onClick={() => handleRejectEvent(event.id)}>
-                                                    <X className="mr-2 h-4 w-4" /> Reject
-                                                </Button>
-                                            </div>
-                                        </TableCell>
-                                    )}
-                                </TableRow>
-                            ))}
-                            {visibleEvents.length === 0 && (
-                                <TableRow>
-                                    <TableCell colSpan={status === 'drafts' ? 6 : 5} className="text-center text-muted-foreground py-4">No events found.</TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                ) : (
-                    <div className="space-y-4">
-                        {visibleEvents.length > 0 ? visibleEvents.map((event, index) => (
-                            <div key={event.id} className={cn("p-4 border rounded-lg", index % 2 !== 0 && "bg-muted/50")}>
-                                <div className="flex justify-between items-start">
-                                    <div>
-                                        <h3 className="font-semibold">{event.name}</h3>
-                                        <p className="text-sm text-muted-foreground">{event.description}</p>
-                                    </div>
-                                    <Badge variant="outline">{dateTimeFormatter.format(event.dateTime)}</Badge>
-                                </div>
-                            </div>
-                        )) : (
-                            <p className="text-muted-foreground">No upcoming events or announcements.</p>
+                                )}
+                            </TableRow>
+                        ))}
+                        {visibleEvents.length === 0 && (
+                            <TableRow>
+                                <TableCell colSpan={status === 'drafts' ? 6 : 5} className="text-center text-muted-foreground py-4">No events found.</TableCell>
+                            </TableRow>
                         )}
-                    </div>
-                )}
+                    </TableBody>
+                </Table>
             </CardContent>
         </Card>
     );
