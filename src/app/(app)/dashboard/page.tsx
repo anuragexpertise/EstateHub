@@ -1,4 +1,3 @@
-
 'use client';
 import * as React from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -44,7 +43,7 @@ const RoleSpecificDashboard = ({ role }: { role: UserRole }) => {
     }
 }
 
-export default function DashboardPage() {
+function DashboardPageContent() {
   const searchParams = useSearchParams();
   const role = searchParams.get('role') as UserRole | null;
   
@@ -57,9 +56,13 @@ export default function DashboardPage() {
       );
   }
 
+  return <RoleSpecificDashboard role={role} />;
+}
+
+export default function DashboardPage() {
   return (
     <React.Suspense fallback={<DashboardSkeleton />}>
-        <RoleSpecificDashboard role={role} />
+        <DashboardPageContent />
     </React.Suspense>
   );
 }

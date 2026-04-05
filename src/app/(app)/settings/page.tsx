@@ -1,4 +1,3 @@
-
 'use client';
 import * as React from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -17,6 +16,7 @@ import { ApplicationSettingsCard } from '@/components/app/kpi-cards/application-
 import { AccountSettingsCard } from '@/components/app/kpi-cards/account-settings-card';
 import { AccountsTableCard } from '@/components/app/kpi-cards/accounts-table-card';
 import { CreateAccountCard } from '@/components/app/kpi-cards/create-account-card';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const AdminSettings = () => (
     <TabsContent value="admin" className="space-y-4">
@@ -49,7 +49,7 @@ const AccountSettings = () => (
     </TabsContent>
 )
 
-export default function SettingsPage() {
+function SettingsPageContent() {
   const searchParams = useSearchParams();
   const role = searchParams.get('role') as UserRole | null;
 
@@ -89,4 +89,27 @@ export default function SettingsPage() {
         </Tabs>
     </div>
   );
+}
+
+function PageSkeleton() {
+    return (
+        <div className="space-y-6">
+            <div className="space-y-2">
+                <Skeleton className="h-8 w-48" />
+                <Skeleton className="h-4 w-96" />
+            </div>
+            <div className="space-y-4">
+                <Skeleton className="h-10 w-[400px]" />
+                <Skeleton className="h-96 w-full" />
+            </div>
+        </div>
+    );
+}
+
+export default function SettingsPage() {
+    return (
+        <React.Suspense fallback={<PageSkeleton />}>
+            <SettingsPageContent />
+        </React.Suspense>
+    );
 }

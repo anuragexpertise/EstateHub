@@ -1,4 +1,3 @@
-
 'use client';
 import * as React from 'react';
 import { useSearchParams, usePathname } from 'next/navigation';
@@ -15,7 +14,7 @@ function PageSkeleton() {
     )
 }
 
-export default function PaymentsPage() {
+function PaymentsPageContent() {
   const searchParams = useSearchParams();
   const role = searchParams.get('role') as UserRole | null;
   
@@ -47,9 +46,13 @@ export default function PaymentsPage() {
     }
   }
 
+  return renderContent();
+}
+
+export default function PaymentsPage() {
   return (
     <React.Suspense fallback={<PageSkeleton />}>
-        {renderContent()}
+        <PaymentsPageContent />
     </React.Suspense>
   );
 }

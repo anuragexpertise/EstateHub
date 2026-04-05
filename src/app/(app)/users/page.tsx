@@ -1,4 +1,3 @@
-
 'use client';
 import * as React from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -12,8 +11,9 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { UserProfileCard } from '@/components/app/dashboard/user-profile-card';
 import { useDataStore } from '@/hooks/use-data-store';
+import { Skeleton } from '@/components/ui/skeleton';
 
-export default function UsersPage() {
+function UsersPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { payments } = useDataStore();
@@ -169,5 +169,32 @@ export default function UsersPage() {
                 </CardContent>
             </Card>
         </div>
+    );
+}
+
+function PageSkeleton() {
+    return (
+        <div className="space-y-6">
+            <div className="flex items-center gap-4">
+                <Skeleton className="h-10 w-10" />
+                <Skeleton className="h-8 w-48" />
+            </div>
+            <Card>
+                <CardHeader>
+                    <Skeleton className="h-8 w-48" />
+                </CardHeader>
+                <CardContent>
+                    <Skeleton className="h-64 w-full" />
+                </CardContent>
+            </Card>
+        </div>
+    );
+}
+
+export default function UsersPage() {
+    return (
+        <React.Suspense fallback={<PageSkeleton />}>
+            <UsersPageContent />
+        </React.Suspense>
     );
 }

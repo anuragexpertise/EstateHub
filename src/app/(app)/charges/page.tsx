@@ -1,5 +1,5 @@
-
 'use client';
+import * as React from 'react';
 import { ChargesAndPaymentHistoryCard } from '@/components/app/kpi-cards/charges-payment-history-card';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useSearchParams } from 'next/navigation';
@@ -8,6 +8,7 @@ import { TrendingDown } from 'lucide-react';
 import { users, rates } from '@/lib/data';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 
 function ContractorCharges() {
     const user = users.find(u => u.role === 'Contractor');
@@ -54,7 +55,7 @@ function ContractorCharges() {
     )
 }
 
-export default function ChargesPage() {
+function ChargesPageContent() {
     const searchParams = useSearchParams();
     const role = searchParams.get('role') as UserRole | null;
     
@@ -78,5 +79,26 @@ export default function ChargesPage() {
                 <p className="text-muted-foreground">No charges applicable for your role.</p>
             </CardContent>
         </Card>
+    );
+}
+
+function PageSkeleton() {
+    return (
+        <Card>
+            <CardHeader>
+                <Skeleton className="h-8 w-48" />
+            </CardHeader>
+            <CardContent>
+                <Skeleton className="h-64 w-full" />
+            </CardContent>
+        </Card>
+    );
+}
+
+export default function ChargesPage() {
+    return (
+        <React.Suspense fallback={<PageSkeleton />}>
+            <ChargesPageContent />
+        </React.Suspense>
     );
 }

@@ -1,4 +1,3 @@
-
 'use client';
 import * as React from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -18,6 +17,7 @@ import { accounts, users, roleDisplayNames } from '@/lib/data';
 import type { Expense, Account, UserRole } from '@/types';
 import { cn } from '@/lib/utils';
 import { useDataStore } from '@/hooks/use-data-store';
+import { Skeleton } from '@/components/ui/skeleton';
 
 
 const expenseFormSchema = z.object({
@@ -248,8 +248,7 @@ function NewExpenseCard({ onAddExpense }: { onAddExpense: (expense: Expense) => 
     );
 }
 
-
-export default function ExpensesPage() {
+function ExpensesPageContent() {
     const { expenses: allExpenses, addExpense, updateExpenseStatus } = useDataStore();
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -351,5 +350,22 @@ export default function ExpensesPage() {
                 </CardContent>
             </Card>
         </div>
+    );
+}
+
+function PageSkeleton() {
+    return (
+        <div className="space-y-6">
+            <Skeleton className="h-96 w-full" />
+            <Skeleton className="h-96 w-full" />
+        </div>
+    );
+}
+
+export default function ExpensesPage() {
+    return (
+        <React.Suspense fallback={<PageSkeleton/>}>
+            <ExpensesPageContent />
+        </React.Suspense>
     );
 }

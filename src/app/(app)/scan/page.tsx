@@ -1,4 +1,3 @@
-
 'use client';
 import * as React from 'react';
 import { useSearchParams, usePathname } from 'next/navigation';
@@ -39,7 +38,7 @@ function PageSkeleton() {
     )
 }
 
-export default function ScanPage() {
+function ScanPageContent() {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const role = searchParams.get('role') as UserRole | null;
@@ -61,24 +60,30 @@ export default function ScanPage() {
   const layout = getLayout(layoutKey);
 
   return (
+    <div className="space-y-6">
+        {layout.map(cardId => (
+            <div key={cardId}>
+                {cardComponents[cardId]}
+            </div>
+        ))}
+        {layout.length ===  0 && (
+            <Card>
+                <CardHeader>
+                    <CardTitle>Evaluate Pass</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p>This page is empty. Go to the 'Customize' page to add some cards!</p>
+                </CardContent>
+            </Card>
+        )}
+    </div>
+  );
+}
+
+export default function ScanPage() {
+  return (
     <React.Suspense fallback={<PageSkeleton />}>
-        <div className="space-y-6">
-            {layout.map(cardId => (
-                <div key={cardId}>
-                    {cardComponents[cardId]}
-                </div>
-            ))}
-            {layout.length ===  0 && (
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Evaluate Pass</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p>This page is empty. Go to the 'Customize' page to add some cards!</p>
-                    </CardContent>
-                </Card>
-            )}
-        </div>
+        <ScanPageContent />
     </React.Suspense>
   );
 }

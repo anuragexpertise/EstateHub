@@ -1,6 +1,6 @@
-
 'use client';
 import { useState, useMemo } from 'react';
+import * as React from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -21,6 +21,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const eventFormSchema = z.object({
   name: z.string().min(3, { message: 'Event name must be at least 3 characters.' }),
@@ -391,7 +392,7 @@ function EventList() {
     );
 }
 
-export default function EventsPage() {
+function EventsPageContent() {
     const searchParams = useSearchParams();
     const role = searchParams.get('role') as UserRole | null;
     const [events, setEvents] = useState(initialEvents);
@@ -405,5 +406,22 @@ export default function EventsPage() {
             {role === 'Admin' && <CreateEventCard onAddEvent={handleAddEvent} />}
             <EventList />
         </div>
+    );
+}
+
+function PageSkeleton() {
+    return (
+        <div className="space-y-6">
+            <Skeleton className="h-96 w-full" />
+            <Skeleton className="h-96 w-full" />
+        </div>
+    );
+}
+
+export default function EventsPage() {
+    return (
+        <React.Suspense fallback={<PageSkeleton />}>
+            <EventsPageContent />
+        </React.Suspense>
     );
 }

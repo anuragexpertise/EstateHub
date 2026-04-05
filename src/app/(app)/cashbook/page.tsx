@@ -1,5 +1,5 @@
-
 'use client';
+import * as React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Book } from "lucide-react";
@@ -9,6 +9,7 @@ import { UserRole } from "@/types";
 import { ChargesAndPaymentHistoryCard } from "@/components/app/kpi-cards/charges-payment-history-card";
 import { cn } from "@/lib/utils";
 import { useDataStore } from "@/hooks/use-data-store";
+import { Skeleton } from '@/components/ui/skeleton';
 
 type LedgerEntry = {
     date: Date;
@@ -27,7 +28,7 @@ type LedgerEntry = {
     balance: number;
 }
 
-export default function CashbookPage() {
+function CashbookPageContent() {
     const searchParams = useSearchParams();
     const role = searchParams.get('role') as UserRole | null;
     const { payments, expenses } = useDataStore();
@@ -170,5 +171,27 @@ export default function CashbookPage() {
                 </CardContent>
             </Card>
         </div>
+    );
+}
+
+function PageSkeleton() {
+    return (
+        <Card>
+            <CardHeader>
+                <Skeleton className="h-8 w-48" />
+                <Skeleton className="h-4 w-96" />
+            </CardHeader>
+            <CardContent>
+                <Skeleton className="h-[400px] w-full" />
+            </CardContent>
+        </Card>
+    );
+}
+
+export default function CashbookPage() {
+    return (
+        <React.Suspense fallback={<PageSkeleton />}>
+            <CashbookPageContent />
+        </React.Suspense>
     );
 }
