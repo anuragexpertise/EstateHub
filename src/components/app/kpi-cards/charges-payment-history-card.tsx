@@ -49,7 +49,6 @@ export function ChargesAndPaymentHistoryCard() {
         );
     }
     
-    let runningBalance = 0;
     const ledger: LedgerItem[] = [];
 
     const startDate = startOfMonth(new Date(calculationStartDate));
@@ -71,13 +70,12 @@ export function ChargesAndPaymentHistoryCard() {
 
     for (const item of combined) {
         if (item.type === 'charge') {
-            runningBalance -= item.amount;
             ledger.push({
                 date: item.date,
                 description: item.description,
                 debit: item.amount,
                 credit: 0,
-                balance: runningBalance,
+                balance: 0, // temp value
                 type: 'charge'
             });
         } else if (item.type === 'payment') {
@@ -85,41 +83,39 @@ export function ChargesAndPaymentHistoryCard() {
             const correspondingCharge = monthlyCharges.find(c => c.date.getTime() === chargeMonthStart.getTime());
             
             if (correspondingCharge && isAfter(item.date, correspondingCharge.date)) {
-                // Apply one-time late fee
-                runningBalance -= rates.fines.latePaymentFee;
+                // Add late fee fine to the ledger
                 ledger.push({
                     date: item.date, // Fine applied on payment date
                     description: `Late Fee for ${format(chargeMonthStart, 'MMMM yyyy')}`,
                     debit: rates.fines.latePaymentFee,
                     credit: 0,
-                    balance: runningBalance,
+                    balance: 0, // temp value
                     type: 'fine'
                 });
                 
-                // Apply daily fine
+                // Add daily fine to the ledger
                 const lateDays = differenceInDays(item.date, correspondingCharge.date);
                 if (lateDays > 0) {
                     const dailyFineRate = (correspondingCharge.amount * rates.fines.finePercentPerDay) / 100;
                     const totalDailyFine = lateDays * dailyFineRate;
-                    runningBalance -= totalDailyFine;
-                        ledger.push({
+                    ledger.push({
                         date: item.date, // Fine applied on payment date
                         description: `Daily Fine for ${format(chargeMonthStart, 'MMMM yyyy')} (${lateDays} days)`,
                         debit: totalDailyFine,
                         credit: 0,
-                        balance: runningBalance,
+                        balance: 0, // temp value
                         type: 'fine'
                     });
                 }
             }
 
-            runningBalance += item.amount;
+            // Add the payment itself to the ledger
             ledger.push({
                 date: item.date,
                 description: item.description,
                 debit: 0,
                 credit: item.amount,
-                balance: runningBalance,
+                balance: 0, // temp value
                 type: 'payment'
             });
         }
@@ -128,7 +124,7 @@ export function ChargesAndPaymentHistoryCard() {
     // Sort again to ensure fines are interleaved correctly by date
     const sortedLedger = ledger.sort((a,b) => a.date.getTime() - b.date.getTime());
     
-    // Recalculate running balance based on sorted ledger
+    // Recalculate running balance based on the final sorted ledger
     let finalRunningBalance = 0;
     const finalLedger = sortedLedger.map(item => {
         if(item.type === 'charge' || item.type === 'fine') {
