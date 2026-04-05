@@ -159,10 +159,24 @@ export const findUserByRole = (role: UserRole) => users.find((user) => user.role
 
 
 export const accounts: Account[] = [
-  { id: 'acc-01', name: 'Maintenance Fees', type: 'Credit', balanceForward: 15000.00, description: 'Monthly maintenance collections', subAccountOf: ['Apartment'] },
-  { id: 'acc-02', name: 'Security Salaries', type: 'Debit', balanceForward: 5000.00, description: 'Salaries for security personnel' },
-  { id: 'acc-03', name: 'Capital Goods', type: 'Debit', balanceForward: 0.00, description: 'Assets and equipment', depreciationRate: 10 },
-  { id: 'acc-04', name: 'Fines Collected', type: 'Credit', balanceForward: 2500.00, description: 'Late payment fines', subAccountOf: ['Apartment'] },
-  { id: 'acc-05', name: 'Contractor Pass Fees', type: 'Credit', balanceForward: 1000.00, description: 'Fees collected for contractor passes', subAccountOf: ['Contractor'] },
-  { id: 'acc-06', name: 'Utilities', type: 'Debit', balanceForward: 800.00, description: 'Common area utilities' },
+  // Credit Accounts
+  { id: 'acc-01', name: 'Maintenance', type: 'Credit', balanceForward: 15000.00, description: 'Monthly maintenance collections from apartment owners.', subAccountOf: ['Apartment'] },
+  { id: 'acc-05', name: 'Entry Fee', type: 'Credit', balanceForward: 1000.00, description: 'Fees collected for contractor passes.', subAccountOf: ['Contractor'] },
+  { id: 'acc-04', name: 'Fines', type: 'Credit', balanceForward: 2500.00, description: 'Fines for late payments or other violations.', subAccountOf: ['Apartment', 'Contractor', 'Security'] },
+  { id: 'acc-07', name: 'Donations', type: 'Credit', balanceForward: 0.00, description: 'General donations received.' },
+  { id: 'acc-08', name: 'Events', type: 'Credit', balanceForward: 0.00, description: 'Sponsorship or fees for events.', subAccountOf: ['Apartment', 'Contractor', 'Security'] },
+  { id: 'acc-09', name: 'Society NOC Charges', type: 'Credit', balanceForward: 0.00, description: 'Charges for issuing No Objection Certificates.', subAccountOf: ['Apartment', 'Contractor', 'Security'] },
+  
+  // Debit Accounts
+  { id: 'acc-02', name: 'Salary', type: 'Debit', balanceForward: 5000.00, description: 'Salaries for contractors and security personnel.', subAccountOf: ['Contractor', 'Security'] },
+  { id: 'acc-10', name: 'Miscellaneous', type: 'Debit', balanceForward: 0.00, description: 'General miscellaneous expenses.' },
+  { id: 'acc-11', name: 'Machinery', type: 'Debit', balanceForward: 0.00, description: 'Purchase and maintenance of machinery.', depreciationRate: 15 },
+  { id: 'acc-03', name: 'Furniture', type: 'Debit', balanceForward: 0.00, description: 'Purchase and maintenance of furniture.', depreciationRate: 10 },
+  { id: 'acc-06', name: 'Electricity', type: 'Debit', balanceForward: 800.00, description: 'Common area electricity bills.' },
+  { id: 'acc-12', name: 'Water', type: 'Debit', balanceForward: 0.00, description: 'Common area water bills.' },
+  { id: 'acc-13', name: 'Software', type: 'Debit', balanceForward: 0.00, description: 'Software licenses and subscriptions.', depreciationRate: 20 },
+  { id: 'acc-14', name: 'Bank Charges', type: 'Debit', balanceForward: 0.00, description: 'Charges levied by the bank.' },
+  { id: 'acc-15', name: 'Stationery', type: 'Debit', balanceForward: 0.00, description: 'Office stationery expenses.' },
+  { id: 'acc-16', name: 'Uniforms', type: 'Debit', balanceForward: 0.00, description: 'Uniforms for contractors and security.', subAccountOf: ['Contractor', 'Security'] },
 ];
+
