@@ -17,6 +17,7 @@ Our application empowers administrators with robust financial tools, enhances se
 *   **Enhanced Security**: Implement a secure and efficient QR code-based system for resident, vendor, and staff access.
 *   **Role-Based Access**: Provide tailored portals for Admins, Apartment Owners, Contractors, and Security personnel, ensuring everyone has the tools they need.
 *   **Fully Customizable**: From application branding to individual page layouts, EstateHub adapts to your society's unique requirements.
+*   **Streamlined Login**: A smart login screen remembers your device, allowing you to log in faster with just your password.
 
 ---
 
@@ -30,10 +31,24 @@ Our application empowers administrators with robust financial tools, enhances se
 *   **Role-Based User Directory**: A central user directory accessible to all, with appropriate permissions for each role.
 *   **Customizable Page Layouts**: Admins can visually design the page layouts for *any* user role, creating the perfect experience for their community.
 *   **Entity Enrollment & Management**: Easily enroll new users one-by-one or import hundreds at once via CSV.
+*   **Remembered Logins**: The application securely remembers users on their trusted devices, presenting a direct password prompt for a faster login experience.
 
 ---
 
-### 3. User Portals: A Tailored Experience for Everyone
+### 3. Login & Access
+
+EstateHub provides a secure and convenient login experience.
+
+*   **First-Time Login**: The first time you visit the EstateHub portal on a new device, you will be greeted with a role selection screen. Simply choose your role (e.g., Apartment Owner, Admin) to proceed.
+    `[Screenshot of the role selection login screen]`
+*   **Returning User Login**: After your first successful login, EstateHub will remember you on that device. On subsequent visits, you will be greeted by name and prompted to enter only your password, bypassing the role selection step for a faster, more personal experience.
+    `[Screenshot of the returning user password prompt]`
+*   **Switching Users**: If you are on a shared device or need to log in as a different user, simply click the "Not you?" link to return to the main role selection screen.
+*   **Personal QR Pass**: Once logged in, every user has access to their personal QR code. This code acts as a digital identity pass for various functions, such as security verification at entry points.
+
+---
+
+### 4. User Portals: A Tailored Experience for Everyone
 
 EstateHub provides four distinct portals, each designed for a specific role, offering a consistent and intuitive user experience.
 
@@ -65,7 +80,7 @@ Residents get a clean, simple portal to manage their finances and access.
     `[Screenshot of the Apartment Owner Dashboard with KPIs and Events]`
 *   **Charges & Payment History**: Accessible via the dashboard drill-down, this page provides a detailed, itemized ledger showing exactly how their balance is calculated, including charges, fines, and payments.
     `[Screenshot of the 'Charges & Payment History' card with debits, credits, and a running balance]`
-*   **User Directory**: View a directory of other residents, contractors, and security staff.
+*   **User Directory**: View a directory of other residents, contractors, and security staff with convenient contact links.
 *   **Personal Pass & Settings**: View their personal QR code pass and update their contact information or password.
 
 #### C. The Security Portal: Efficient and Secure
@@ -89,7 +104,7 @@ Vendors and contractors have a straightforward portal to manage their access and
 
 ---
 
-### 4. Getting Started with EstateHub
+### 5. Getting Started with EstateHub
 
 Adopting EstateHub is a seamless process. Our powerful import tools and configurable settings mean you can be up and running in no time. With its user-friendly interface and robust feature set, EstateHub is the last estate management application you'll ever need.
 
