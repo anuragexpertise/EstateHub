@@ -34,11 +34,11 @@ export function PaymentHistoryCard() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const { toast } = useToast();
-    const { firestore, user: currentUser } = useFirebase();
+    const { firestore, user: currentUser, isUserLoading: isAuthLoading } = useFirebase();
     const role = searchParams.get('role') as UserRole | null;
     const status = searchParams.get('status');
   
-    const receiptsQuery = useMemoFirebase(() => collection(firestore, 'receipts'), [firestore]);
+    const receiptsQuery = useMemoFirebase(() => currentUser ? collection(firestore, 'receipts') : null, [firestore, currentUser]);
     const { data: payments, isLoading } = useCollection<Payment>(receiptsQuery);
 
     if(role === 'Apartment') {
@@ -48,7 +48,22 @@ export function PaymentHistoryCard() {
     const dateTimeFormatter = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   
     if (!currentUser || !role) {
-      return <Card><CardContent><p>User role not found.</p></CardContent></Card>;
+        if(isAuthLoading) {
+            return (
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <Receipt className="h-5 w-5" />
+                            Payment History
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex items-center justify-center h-48">
+                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                    </CardContent>
+                </Card>
+            )
+        }
+      return <Card><CardContent><p>User role not found or user not logged in.</p></CardContent></Card>;
     }
 
     const handleVerifyPayment = (paymentId: string) => {
@@ -122,7 +137,7 @@ export function PaymentHistoryCard() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? (
+              {isLoading || isAuthLoading ? (
                   <TableRow>
                       <TableCell colSpan={6} className="text-center"><Loader2 className="mx-auto h-6 w-6 animate-spin" /></TableCell>
                   </TableRow>
