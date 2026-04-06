@@ -6,9 +6,10 @@ import type { UserRole } from '@/types';
 import { Shield, Building2, Wrench, UserCog, Loader2 } from 'lucide-react';
 import * as React from 'react';
 import { roleDisplayNames, users } from '@/lib/data';
-import { useAuth } from '@/firebase';
+import { useFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 const roles: { role: UserRole; icon: React.ElementType }[] = [
   { role: 'Admin', icon: UserCog },
@@ -19,57 +20,72 @@ const roles: { role: UserRole; icon: React.ElementType }[] = [
 
 export function LoginForm() {
   const router = useRouter();
-  const auth = useAuth();
+  const { auth, firestore } = useFirebase();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = React.useState<UserRole | null>(null);
 
   const handleLogin = async (role: UserRole) => {
     setIsLoading(role);
-    const user = users.find((u) => u.role === role);
+    const mockUser = users.find((u) => u.role === role);
     
-    if (!user) {
+    if (!mockUser) {
         toast({ variant: 'destructive', title: 'Error', description: 'User for this role not found in mock data.' });
         setIsLoading(null);
         return;
     }
     
-    if (!auth) {
-        toast({ variant: 'destructive', title: 'Login Failed', description: 'Auth service not available.' });
+    if (!auth || !firestore) {
+        toast({ variant: 'destructive', title: 'Login Failed', description: 'Auth or Firestore service not available.' });
         setIsLoading(null);
         return;
     }
 
     const password = 'password'; // Use a default password for this flow
+    let userCredential;
 
     try {
-        await signInWithEmailAndPassword(auth, user.email, password);
-        // User exists and password is correct
+        userCredential = await signInWithEmailAndPassword(auth, mockUser.email, password);
     } catch (error: any) {
         if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
             try {
-                await createUserWithEmailAndPassword(auth, user.email, password);
-                // New user created
+                userCredential = await createUserWithEmailAndPassword(auth, mockUser.email, password);
             } catch (signUpError: any) {
                 toast({ variant: 'destructive', title: 'Sign Up Failed', description: signUpError.message });
                 setIsLoading(null);
-                return; // Stop execution
+                return;
             }
         } else if (error.code === 'auth/wrong-password') {
-            // This case might happen if the user was created with a different password before.
-            // For this demo, we'll just show an error.
              toast({ variant: 'destructive', title: 'Login Failed', description: 'Incorrect password for mock user.' });
              setIsLoading(null);
-             return; // Stop execution
+             return;
         } else {
             toast({ variant: 'destructive', title: 'Login Failed', description: error.message });
             setIsLoading(null);
-            return; // Stop execution
+            return;
         }
     }
     
-    // If login or signup was successful
-    localStorage.setItem('rememberedUserId', user.id);
-    toast({ title: 'Login Successful', description: `Logged in as ${user.name}` });
+    // If login or signup was successful, ensure user document exists in Firestore
+    if (userCredential) {
+        const user = userCredential.user;
+        const userDocRef = doc(firestore, 'users', user.uid);
+        try {
+            await setDoc(userDocRef, {
+                id: user.uid,
+                email: user.email,
+                role: mockUser.role,
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+            }, { merge: true });
+        } catch (dbError: any) {
+             toast({ variant: 'destructive', title: 'Database Error', description: `Could not save user data: ${dbError.message}` });
+             setIsLoading(null);
+             return;
+        }
+    }
+    
+    localStorage.setItem('rememberedUserId', mockUser.id);
+    toast({ title: 'Login Successful', description: `Logged in as ${mockUser.name}` });
     router.push(`/dashboard?role=${role}`);
   };
 
