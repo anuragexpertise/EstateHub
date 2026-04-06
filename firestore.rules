@@ -300,7 +300,7 @@ service cloud.firestore {
 
     match /expenses/{expenseId} {
       allow get: if isAdmin() || (isSignedIn() && resource.data.userId != null && resource.data.userId == request.auth.uid);
-      allow list: if isAdmin();
+      allow list: if isAdmin() || isSecurity();
       allow create: if isAdmin();
       allow update, delete: if isAdmin();
     }
