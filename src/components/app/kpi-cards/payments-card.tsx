@@ -47,7 +47,7 @@ export function PaymentHistoryCard() {
   
     const dateTimeFormatter = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   
-    if (!currentUser || !role) {
+    if (!currentUser && !isAuthLoading) {
         if(isAuthLoading) {
             return (
                 <Card>
@@ -187,7 +187,7 @@ export function PaymentHistoryCard() {
 export function PaymentsCard() {
     const searchParams = useSearchParams();
     const { toast } = useToast();
-    const { firestore } = useFirebase();
+    const { firestore, user, isUserLoading } = useFirebase();
     const role = searchParams.get('role') as UserRole | null;
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     const { receiptQrUrl } = useGlobalStore();
@@ -227,6 +227,11 @@ export function PaymentsCard() {
 
 
     const handleAddPayment = (values: z.infer<typeof paymentFormSchema>) => {
+        if (!user) {
+            toast({ variant: 'destructive', title: 'Authentication Error', description: 'You must be logged in to add a receipt.' });
+            return;
+        }
+
         if (selectedAccount?.subAccountOf?.length && !values.userId) {
             toast({
                 variant: 'destructive',
@@ -391,8 +396,8 @@ export function PaymentsCard() {
                                 </FormItem>
                                 )}
                             />
-                            <Button type="submit" disabled={isSubmitting}>
-                                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            <Button type="submit" disabled={isSubmitting || isUserLoading}>
+                                {(isSubmitting || isUserLoading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 Add Receipt
                             </Button>
                         </form>

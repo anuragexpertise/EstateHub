@@ -30,7 +30,7 @@ const expenseFormSchema = z.object({
 
 function NewExpenseCard({ role }: { role: UserRole | null }) {
     const { toast } = useToast();
-    const { firestore } = useFirebase();
+    const { firestore, user, isUserLoading } = useFirebase();
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     const [selectedAccount, setSelectedAccount] = React.useState<Account | null>(null);
     const [selectedRole, setSelectedRole] = React.useState<UserRole | null>(null);
@@ -66,6 +66,10 @@ function NewExpenseCard({ role }: { role: UserRole | null }) {
     }, [selectedRole, form]);
 
     const handleAddExpense = (values: z.infer<typeof expenseFormSchema>) => {
+        if (!user) {
+            toast({ variant: 'destructive', title: 'Authentication Error', description: 'You must be logged in to add an expense.' });
+            return;
+        }
         setIsSubmitting(true);
         const account = accounts.find(a => a.id === values.accountId);
         if (!account) {
@@ -237,8 +241,8 @@ function NewExpenseCard({ role }: { role: UserRole | null }) {
                             </FormItem>
                             )}
                         />
-                        <Button type="submit" disabled={isSubmitting}>
-                            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        <Button type="submit" disabled={isSubmitting || isUserLoading}>
+                            {(isSubmitting || isUserLoading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Add Expense
                         </Button>
                     </form>
