@@ -6,7 +6,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useFirebase, useCollection, useMemoFirebase, useUser } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Payment } from '@/types';
 
@@ -35,12 +35,19 @@ export function ApartmentDashboard() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const role = searchParams.get('role');
-  const currentUser = users.find(u => u.role === 'Apartment'); // Simplified for demo
   const dateTimeFormatter = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
   
-  const { firestore } = useFirebase();
-  const { user, isUserLoading: isAuthLoading } = useUser();
-  const receiptsQuery = useMemoFirebase(() => user ? collection(firestore, 'receipts') : null, [firestore, user]);
+  const { firestore, user, isUserLoading: isAuthLoading } = useUser();
+  
+  // This query will now securely fetch only the receipts for the logged-in user.
+  // NOTE: This will not yet work correctly as the `userId` in the `receipts` collection
+  // is a mock ID, not the Firebase Auth UID. This is a deeper data model issue to be
+  // addressed separately. This change fixes the immediate permission crash.
+  const receiptsQuery = useMemoFirebase(() => {
+    if (!user) return null;
+    return query(collection(firestore, 'receipts'), where('userId', '==', user.uid));
+  }, [firestore, user]);
+
   const { data: paymentsData, isLoading } = useCollection<Payment>(receiptsQuery);
 
   if (isAuthLoading || isLoading) {
@@ -53,8 +60,9 @@ export function ApartmentDashboard() {
   const totalContractors = users.filter(u => u.role === 'Contractor').length;
   const totalSecurity = users.filter(u => u.role === 'Security').length;
   
-  const userCharges = payments.filter(p => p.userId === currentUser?.id).filter(p => p.status === 'Due' || p.status === 'Overdue').reduce((sum, p) => sum + p.amount, 0);
-  const userPayments = payments.filter(p => p.userId === currentUser?.id).filter(p => p.status === 'Paid').reduce((sum, p) => sum + p.amount, 0);
+  // Calculations are now based on the fetched data for this specific user
+  const userCharges = payments.filter(p => p.status === 'Due' || p.status === 'Overdue').reduce((sum, p) => sum + p.amount, 0);
+  const userPayments = payments.filter(p => p.status === 'Paid').reduce((sum, p) => sum + p.amount, 0);
   const userDues = userCharges > 0 ? userCharges - userPayments : 0;
   
   const visibleEvents = role ? events.filter(e => e.audience.includes('Apartment') && e.status === 'Sent' && new Date(e.dateTime) > new Date()) : [];

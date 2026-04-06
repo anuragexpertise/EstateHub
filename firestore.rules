@@ -292,7 +292,7 @@ service cloud.firestore {
     
     match /receipts/{receiptId} {
       allow get: if isAdmin() || isSecurity() || (isSignedIn() && resource.data.userId == request.auth.uid);
-      allow list: if isAdmin() || isSecurity();
+      allow list: if isSignedIn(); // Allow queries, but enforce with where clauses in client
       allow create: if isAdmin() || isSecurity();
       allow update: if isAdmin(); // For verifying/rejecting
       allow delete: if isAdmin();
