@@ -20,7 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useGlobalStore } from '@/hooks/use-global-store';
 import { cn } from '@/lib/utils';
 import { useFirebase, useCollection, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
-import { collection, doc, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { collection, doc, serverTimestamp, Timestamp, query, where } from 'firebase/firestore';
 
 const paymentFormSchema = z.object({
   accountId: z.string({ required_error: 'Please select an account.' }),
@@ -37,30 +37,27 @@ export function PaymentHistoryCard() {
     const role = searchParams.get('role') as UserRole | null;
     const status = searchParams.get('status');
   
-    const receiptsQuery = useMemoFirebase(() => currentUser ? collection(firestore, 'receipts') : null, [firestore, currentUser]);
+    const receiptsQuery = useMemoFirebase(() => {
+        if (!currentUser) return null;
+
+        const baseQuery = collection(firestore, 'receipts');
+
+        if (role === 'Admin' || role === 'Security') {
+            if (status === 'pending') {
+                return query(baseQuery, where('status', '==', 'Pending Verification'));
+            } else if (status === 'verified') {
+                return query(baseQuery, where('status', '==', 'Paid'));
+            }
+            return baseQuery;
+        } else {
+            return query(baseQuery, where('userId', '==', currentUser.uid));
+        }
+    }, [firestore, currentUser, role, status]);
+    
     const { data: payments, isLoading } = useCollection<Payment>(receiptsQuery);
   
     const dateTimeFormatter = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   
-    if (!currentUser && !isAuthLoading) {
-        if(isAuthLoading) {
-            return (
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <Receipt className="h-5 w-5" />
-                            Payment History
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex items-center justify-center h-48">
-                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                    </CardContent>
-                </Card>
-            )
-        }
-      return <Card><CardContent><p>User role not found or user not logged in.</p></CardContent></Card>;
-    }
-
     const handleVerifyPayment = (paymentId: string) => {
         const paymentDoc = doc(firestore, 'receipts', paymentId);
         updateDocumentNonBlocking(paymentDoc, { status: 'Paid' });
@@ -73,27 +70,16 @@ export function PaymentHistoryCard() {
         toast({ variant: 'destructive', title: "Payment Rejected", description: "The payment has been marked as rejected." });
     }
 
-    const { filteredPayments, listTitle } = React.useMemo(() => {
+    const { sortedPayments, listTitle } = React.useMemo(() => {
         let title = (role === 'Admin' || role === 'Security') ? 'Receipts' : 'Payment History';
-        let filtered = payments || [];
-
         if (role === 'Admin' || role === 'Security') {
-            if (status === 'pending') {
-                filtered = filtered.filter(p => p.status === 'Pending Verification');
-                title = 'Pending Receipts';
-            } else if (status === 'verified') {
-                filtered = filtered.filter(p => p.status === 'Paid');
-                title = 'Verified Receipts';
-            }
-        } else {
-            filtered = filtered.filter(p => p.userId === currentUser.uid);
+            if (status === 'pending') title = 'Pending Receipts';
+            else if (status === 'verified') title = 'Verified Receipts';
         }
-
-        return {
-            filteredPayments: filtered.sort((a, b) => (b.date as Timestamp).toMillis() - (a.date as Timestamp).toMillis()),
-            listTitle: title
-        };
-    }, [payments, role, status, currentUser]);
+        
+        const sorted = (payments || []).sort((a, b) => (b.date as Timestamp).toMillis() - (a.date as Timestamp).toMillis());
+        return { sortedPayments: sorted, listTitle: title };
+    }, [payments, role, status]);
     
     const userForPayment = (userId: string) => {
         const paymentUser = users.find(u => u.id === userId);
@@ -134,9 +120,11 @@ export function PaymentHistoryCard() {
             <TableBody>
               {isLoading || isAuthLoading ? (
                   <TableRow>
-                      <TableCell colSpan={6} className="text-center"><Loader2 className="mx-auto h-6 w-6 animate-spin" /></TableCell>
+                      <TableCell colSpan={(role === 'Admin' || role === 'Security') ? (role === 'Admin' ? 6 : 5) : 4} className="text-center py-10">
+                          <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
+                      </TableCell>
                   </TableRow>
-              ) : filteredPayments.length > 0 ? filteredPayments.map((payment, index) => (
+              ) : sortedPayments.length > 0 ? sortedPayments.map((payment, index) => (
                 <TableRow key={payment.id} className={cn("whitespace-normal break-words", index % 2 === 0 && "bg-muted/50")}>
                   {(role === 'Admin' || role === 'Security') && <TableCell className="font-medium">{userForPayment(payment.userId)}</TableCell>}
                   <TableCell className="font-medium">{payment.description}</TableCell>
@@ -169,7 +157,7 @@ export function PaymentHistoryCard() {
                 </TableRow>
               )) : (
                 <TableRow>
-                    <TableCell colSpan={(role === 'Admin' || role === 'Security') ? (role === 'Admin' ? 6 : 5) : 4} className="text-center text-muted-foreground py-4">No payments found.</TableCell>
+                    <TableCell colSpan={(role === 'Admin' || role === 'Security') ? (role === 'Admin' ? 6 : 5) : 4} className="text-center text-muted-foreground py-10">No payments found.</TableCell>
                 </TableRow>
               )}
             </TableBody>
