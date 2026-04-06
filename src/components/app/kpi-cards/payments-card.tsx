@@ -40,10 +40,6 @@ export function PaymentHistoryCard() {
   
     const receiptsQuery = useMemoFirebase(() => currentUser ? collection(firestore, 'receipts') : null, [firestore, currentUser]);
     const { data: payments, isLoading } = useCollection<Payment>(receiptsQuery);
-
-    if(role === 'Apartment') {
-        return <ChargesAndPaymentHistoryCard />;
-    }
   
     const dateTimeFormatter = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   

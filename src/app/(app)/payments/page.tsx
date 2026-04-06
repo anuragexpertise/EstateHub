@@ -5,6 +5,7 @@ import type { UserRole } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PaymentsCard, PaymentHistoryCard } from '@/components/app/kpi-cards/payments-card';
+import { ChargesAndPaymentHistoryCard } from '@/components/app/kpi-cards/charges-payment-history-card';
 
 function PageSkeleton() {
     return (
@@ -39,6 +40,7 @@ function PaymentsPageContent() {
         case 'Security':
             return <PaymentsCard />;
         case 'Apartment':
+            return <ChargesAndPaymentHistoryCard />;
         case 'Contractor':
             return <PaymentHistoryCard />;
         default:
