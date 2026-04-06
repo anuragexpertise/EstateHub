@@ -77,7 +77,11 @@ export function PaymentHistoryCard() {
             else if (status === 'verified') title = 'Verified Receipts';
         }
         
-        const sorted = (payments || []).sort((a, b) => (b.date as Timestamp).toMillis() - (a.date as Timestamp).toMillis());
+        const sorted = (payments || []).sort((a, b) => {
+            const dateA = a.date ? (a.date as Timestamp).toMillis() : 0;
+            const dateB = b.date ? (b.date as Timestamp).toMillis() : 0;
+            return dateB - dateA;
+        });
         return { sortedPayments: sorted, listTitle: title };
     }, [payments, role, status]);
     
@@ -136,7 +140,7 @@ export function PaymentHistoryCard() {
                       {payment.status}
                     </Badge>
                   </TableCell>
-                  <TableCell>{dateTimeFormatter.format((payment.date as Timestamp).toDate()).replace(',', '')}</TableCell>
+                  <TableCell>{payment.date ? dateTimeFormatter.format((payment.date as Timestamp).toDate()).replace(',', '') : 'Pending...'}</TableCell>
                   <TableCell className="text-right">₹{payment.amount.toLocaleString()}</TableCell>
                   {role === 'Admin' && (
                       <TableCell className="text-center">
