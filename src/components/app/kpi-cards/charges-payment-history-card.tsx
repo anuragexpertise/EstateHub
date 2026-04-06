@@ -81,7 +81,7 @@ export function ChargesAndPaymentHistoryCard() {
     const monthlyChargeAmount = user.details.sqft * rates.apartment['1month'];
     
     const userPayments = (payments || [])
-        .filter(p => p.userId === user.id && p.description.includes('Maintenance') && p.status === 'Paid')
+        .filter(p => p.userId === user.id && p.description.includes('Maintenance') && p.status === 'Paid' && p.date)
         .map(p => ({ date: (p.date as Timestamp).toDate(), amount: p.amount, type: 'payment' as const, description: 'Payment Received' }));
 
     const monthlyCharges = eachMonthOfInterval({ start: startDate, end: today }).map(month => ({
