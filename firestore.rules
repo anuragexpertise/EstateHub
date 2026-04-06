@@ -291,14 +291,16 @@ service cloud.firestore {
     }
     
     match /receipts/{receiptId} {
-      allow read: if isAdmin() || isSecurity() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow get: if isAdmin() || isSecurity() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow list: if isAdmin() || isSecurity();
       allow create: if isAdmin() || isSecurity();
       allow update: if isAdmin(); // For verifying/rejecting
       allow delete: if isAdmin();
     }
 
     match /expenses/{expenseId} {
-      allow read: if isAdmin() || (isSignedIn() && resource.data.userId != null && resource.data.userId == request.auth.uid);
+      allow get: if isAdmin() || (isSignedIn() && resource.data.userId != null && resource.data.userId == request.auth.uid);
+      allow list: if isAdmin();
       allow create: if isAdmin();
       allow update, delete: if isAdmin();
     }
