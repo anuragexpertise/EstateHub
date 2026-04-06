@@ -37,12 +37,9 @@ export function ApartmentDashboard() {
   const role = searchParams.get('role');
   const dateTimeFormatter = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
   
-  const { firestore, user, isUserLoading: isAuthLoading } = useUser();
+  const { user, isUserLoading: isAuthLoading } = useUser();
+  const { firestore } = useFirebase();
   
-  // This query will now securely fetch only the receipts for the logged-in user.
-  // NOTE: This will not yet work correctly as the `userId` in the `receipts` collection
-  // is a mock ID, not the Firebase Auth UID. This is a deeper data model issue to be
-  // addressed separately. This change fixes the immediate permission crash.
   const receiptsQuery = useMemoFirebase(() => {
     if (!user) return null;
     return query(collection(firestore, 'receipts'), where('userId', '==', user.uid));

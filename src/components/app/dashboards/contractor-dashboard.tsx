@@ -2,11 +2,11 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { users, events } from "@/lib/data";
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Building2, CalendarDays, CreditCard } from "lucide-react";
+import { Building2, CalendarDays, CreditCard, Wrench } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useFirebase, useCollection, useMemoFirebase, useUser } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Payment } from '@/types';
 
@@ -35,12 +35,11 @@ export function ContractorDashboard() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const role = searchParams.get('role');
-  const currentUser = users.find(u => u.role === 'Contractor'); // Simplified for demo
   const dateTimeFormatter = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
   
   const { firestore } = useFirebase();
   const { user, isUserLoading: isAuthLoading } = useUser();
-  const receiptsQuery = useMemoFirebase(() => user ? collection(firestore, 'receipts') : null, [firestore, user]);
+  const receiptsQuery = useMemoFirebase(() => user ? query(collection(firestore, 'receipts'), where('userId', '==', user.uid)) : null, [firestore, user]);
   const { data: paymentsData, isLoading } = useCollection<Payment>(receiptsQuery);
 
   if (isAuthLoading || isLoading) {
@@ -50,7 +49,7 @@ export function ContractorDashboard() {
   const payments = paymentsData || [];
   
   const totalApartments = users.filter(u => u.role === 'Apartment').length;
-  const userPayments = payments.filter(p => p.userId === currentUser?.id).filter(p => p.status === 'Paid').reduce((sum, p) => sum + p.amount, 0);
+  const userPayments = payments.filter(p => p.status === 'Paid').reduce((sum, p) => sum + p.amount, 0);
   const visibleEvents = role ? events.filter(e => e.audience.includes('Contractor') && e.status === 'Sent' && new Date(e.dateTime) > new Date()) : [];
 
   const handleKpiClick = (page: 'payments' | 'users', filter?: string) => {
