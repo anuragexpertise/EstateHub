@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 
 import { LoginForm } from '@/components/app/login-form';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -16,29 +17,47 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { useAuth } from '@/firebase';
 
 function ReloginForm({ user, onSwitchUser }: { user: User; onSwitchUser: () => void }) {
   const router = useRouter();
   const { toast } = useToast();
+  const auth = useAuth();
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const userAvatar = PlaceHolderImages.find((img) => img.id === user.avatarId);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!auth) {
+        toast({ variant: 'destructive', title: 'Login Failed', description: 'Auth service not available.' });
+        return;
+    }
     setIsLoading(true);
 
-    // NOTE: This is for demonstration purposes only.
-    // In a real application, you would make a secure API call to verify the password.
-    setTimeout(() => {
-      if (password === 'password') {
+    try {
+        await signInWithEmailAndPassword(auth, user.email, password);
         toast({ title: 'Login Successful', description: `Welcome back, ${user.name}!` });
         router.push(`/dashboard?role=${user.role}`);
-      } else {
-        toast({ variant: 'destructive', title: 'Login Failed', description: 'Incorrect password.' });
-        setIsLoading(false);
-      }
-    }, 1000);
+    } catch (error: any) {
+        if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
+            // This shouldn't happen in re-login flow, but handle it just in case
+            try {
+                await createUserWithEmailAndPassword(auth, user.email, password);
+                toast({ title: 'Account Created & Logged In', description: `Welcome, ${user.name}!` });
+                router.push(`/dashboard?role=${user.role}`);
+            } catch (signUpError: any) {
+                toast({ variant: 'destructive', title: 'Sign Up Failed', description: signUpError.message });
+                setIsLoading(false);
+            }
+        } else if (error.code === 'auth/wrong-password') {
+             toast({ variant: 'destructive', title: 'Login Failed', description: 'Incorrect password.' });
+             setIsLoading(false);
+        } else {
+            toast({ variant: 'destructive', title: 'Login Failed', description: error.message });
+            setIsLoading(false);
+        }
+    }
   };
 
   return (
