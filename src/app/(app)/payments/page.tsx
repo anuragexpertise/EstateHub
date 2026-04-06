@@ -7,6 +7,30 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { PaymentsCard, PaymentHistoryCard } from '@/components/app/kpi-cards/payments-card';
 import { ChargesAndPaymentHistoryCard } from '@/components/app/kpi-cards/charges-payment-history-card';
 
+// Role-specific view components to ensure consistent hook calls
+
+function AdminPaymentsView() {
+  return (
+    <div className="space-y-6">
+      <PaymentsCard />
+      <PaymentHistoryCard />
+    </div>
+  );
+}
+
+function SecurityPaymentsView() {
+  return <PaymentsCard />;
+}
+
+function ApartmentPaymentsView() {
+  return <ChargesAndPaymentHistoryCard />;
+}
+
+function ContractorPaymentsView() {
+  return <PaymentHistoryCard />;
+}
+
+
 function PageSkeleton() {
     return (
         <div className="space-y-4">
@@ -28,27 +52,21 @@ function PaymentsPageContent() {
       );
   }
 
-  const renderContent = () => {
-    switch(role) {
-        case 'Admin':
-            return (
-                <div className="space-y-6">
-                    <PaymentsCard />
-                    <PaymentHistoryCard />
-                </div>
-            );
-        case 'Security':
-            return <PaymentsCard />;
-        case 'Apartment':
-            return <ChargesAndPaymentHistoryCard />;
-        case 'Contractor':
-            return <PaymentHistoryCard />;
-        default:
-            return <p>No payment information available.</p>;
-    }
+  // This switch is now safe because each case returns a distinct component
+  // with its own consistent set of hooks, and this component (`PaymentsPageContent`)
+  // has a consistent hook count itself (only `useSearchParams`).
+  switch(role) {
+    case 'Admin':
+      return <AdminPaymentsView />;
+    case 'Security':
+      return <SecurityPaymentsView />;
+    case 'Apartment':
+      return <ApartmentPaymentsView />;
+    case 'Contractor':
+      return <ContractorPaymentsView />;
+    default:
+      return <p>No payment information available.</p>;
   }
-
-  return renderContent();
 }
 
 export default function PaymentsPage() {
