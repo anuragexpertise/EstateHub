@@ -90,7 +90,7 @@ function NewExpenseCard({ role }: { role: UserRole | null }) {
 
         const newExpense = {
             accountId: values.accountId,
-            userId: values.userId,
+            userId: values.userId || 'system',
             amount: values.amount,
             description: values.description,
             date: serverTimestamp(),
@@ -290,7 +290,14 @@ function ExpensesPageContent() {
             expenses = expenses.filter(e => e.status === 'Paid');
             title = 'Paid Expenses';
         }
-        return {filteredExpenses: expenses, listTitle: title};
+        
+        const sorted = expenses.sort((a, b) => {
+            const dateA = a.date ? (a.date as Timestamp).toMillis() : 0;
+            const dateB = b.date ? (b.date as Timestamp).toMillis() : 0;
+            return dateB - dateA;
+        });
+
+        return {filteredExpenses: sorted, listTitle: title};
     }, [allExpenses, status]);
 
     if (!user && !isAuthLoading) {
@@ -345,7 +352,7 @@ function ExpensesPageContent() {
                         <TableBody>
                             {filteredExpenses.map((expense, index) => (
                                 <TableRow key={expense.id} className={cn("whitespace-normal break-words", index % 2 === 0 && "bg-muted/50")}>
-                                    <TableCell>{dateTimeFormatter.format((expense.date as Timestamp).toDate()).replace(',', '')}</TableCell>
+                                    <TableCell>{expense.date ? dateTimeFormatter.format((expense.date as Timestamp).toDate()).replace(',', '') : 'Pending...'}</TableCell>
                                     <TableCell>{accountName(expense.accountId)}</TableCell>
                                     <TableCell>{expense.description}</TableCell>
                                     <TableCell>
