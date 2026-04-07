@@ -1,8 +1,9 @@
+
 'use client';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User, UserRole, Payment } from "@/types";
-import { roleDisplayNames, shifts, rates, roleIcons, roleTextColors } from "@/lib/data";
+import { roleDisplayNames, shifts, roleIcons, roleTextColors } from "@/lib/data";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { Building2, Wrench, Shield, Mail, Phone, Hash, Copy, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useAvatarStore } from "@/hooks/use-avatar-store";
@@ -18,7 +19,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 
 const NoticeCard = ({ user }: { user: User }) => {
-    const { calculationStartDate } = useGlobalStore();
+    const { calculationStartDate, apartmentRates, contractorRates, fineRates } = useGlobalStore();
     const { firestore } = useFirebase();
     const { user: authUser, isUserLoading: isAuthLoading } = useUser();
     const receiptsQuery = useMemoFirebase(() => authUser ? collection(firestore, 'receipts') : null, [firestore, authUser]);
@@ -46,7 +47,7 @@ const NoticeCard = ({ user }: { user: User }) => {
 
             const startDate = startOfMonth(new Date(calculationStartDate));
             const today = new Date();
-            const monthlyChargeAmount = user.details.sqft * rates.apartment['1month'];
+            const monthlyChargeAmount = user.details.sqft * apartmentRates['1month'];
 
             const userPayments = payments
                 .filter(p => p.userId === user.id && p.description.includes('Maintenance') && p.status === 'Paid' && p.date)
@@ -70,12 +71,12 @@ const NoticeCard = ({ user }: { user: User }) => {
                     
                     if (correspondingCharge && isAfter(item.date, correspondingCharge.date)) {
                         // Apply one-time late fee
-                        runningBalance -= rates.fines.latePaymentFee;
+                        runningBalance -= fineRates.latePaymentFee;
                         
                         // Apply daily fine
                         const lateDays = differenceInDays(item.date, correspondingCharge.date);
                         if (lateDays > 0) {
-                            const dailyFineRate = (correspondingCharge.amount * rates.fines.finePercentPerDay) / 100;
+                            const dailyFineRate = (correspondingCharge.amount * fineRates.finePercentPerDay) / 100;
                             const totalDailyFine = lateDays * dailyFineRate;
                             runningBalance -= totalDailyFine;
                         }
@@ -93,9 +94,9 @@ const NoticeCard = ({ user }: { user: User }) => {
                 const paymentForMonth = userPayments.find(p => startOfMonth(p.date).getTime() === month.getTime());
                 if (paymentForMonth) {
                     if (isAfter(paymentForMonth.date, month)) {
-                        tempBalance -= rates.fines.latePaymentFee;
+                        tempBalance -= fineRates.latePaymentFee;
                         const lateDays = differenceInDays(paymentForMonth.date, month);
-                        tempBalance -= lateDays * (monthlyChargeAmount * rates.fines.finePercentPerDay / 100);
+                        tempBalance -= lateDays * (monthlyChargeAmount * fineRates.finePercentPerDay / 100);
                     }
                     tempBalance += paymentForMonth.amount;
                 }
@@ -136,12 +137,12 @@ const NoticeCard = ({ user }: { user: User }) => {
                 validUpto = dateTimeFormatter.format(expiryDate).replace(',', ' ');
             } else {
                 noticeType = 'due';
-                amountDue = rates.contractor['1day'];
+                amountDue = contractorRates['1day'];
                 validUpto = `Expired on ${dateTimeFormatter.format(expiryDate).replace(',', ' ')}`;
             }
         } else {
              noticeType = 'due';
-             amountDue = rates.contractor['1day'];
+             amountDue = contractorRates['1day'];
         }
 
     } else if (user.role === 'Security') {

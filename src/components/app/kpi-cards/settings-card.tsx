@@ -33,7 +33,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { useToast } from "@/hooks/use-toast";
-import { rates as defaultRates, shifts, users, findUserByRole } from "@/lib/data";
+import { shifts, users, findUserByRole } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
 import type { UserRole } from '@/types';
 import { Separator } from '@/components/ui/separator';
@@ -41,6 +41,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Upload, Mail, Phone } from 'lucide-react';
 import { useAvatarStore } from '@/hooks/use-avatar-store';
+import { useGlobalStore } from '@/hooks/use-global-store';
 
 
 const passwordFormSchema = z.object({
@@ -253,14 +254,19 @@ export function SettingsCard() {
 
 export function ApartmentRateManagementCard() {
     const { toast } = useToast();
-    const [rates, setRates] = useState(defaultRates.apartment);
+    const { apartmentRates, setApartmentRates } = useGlobalStore();
+    const [rates, setRates] = useState(apartmentRates);
+
+    React.useEffect(() => {
+        setRates(apartmentRates);
+    }, [apartmentRates]);
 
     const handleRateChange = (key: keyof typeof rates, value: string) => {
         setRates(prev => ({...prev, [key]: parseFloat(value) || 0 }));
     }
 
     const handleSaveRates = () => {
-        console.log("Saving apartment rates:", rates);
+        setApartmentRates(rates);
         toast({ title: "Success", description: "Apartment maintenance rates have been updated." });
     }
     return (
@@ -296,14 +302,19 @@ export function ApartmentRateManagementCard() {
 
 export function UtilityContractorRateManagementCard() {
     const { toast } = useToast();
-    const [rates, setRates] = useState(defaultRates.contractor);
+    const { contractorRates, setContractorRates } = useGlobalStore();
+    const [rates, setRates] = useState(contractorRates);
+
+    React.useEffect(() => {
+        setRates(contractorRates);
+    }, [contractorRates]);
 
     const handleRateChange = (key: keyof typeof rates, value: string) => {
         setRates(prev => ({...prev, [key]: parseFloat(value) || 0 }));
     }
 
     const handleSaveRates = () => {
-        console.log("Saving contractor rates:", rates);
+        setContractorRates(rates);
         toast({ title: "Success", description: "Utility Contractor pass rates have been updated." });
     }
     return (
@@ -335,14 +346,19 @@ export function UtilityContractorRateManagementCard() {
 
 export function FineManagementCard() {
     const { toast } = useToast();
-    const [rates, setRates] = useState(defaultRates.fines);
+    const { fineRates, setFineRates } = useGlobalStore();
+    const [rates, setRates] = useState(fineRates);
+
+    React.useEffect(() => {
+        setRates(fineRates);
+    }, [fineRates]);
 
     const handleRateChange = (key: keyof typeof rates, value: string) => {
         setRates(prev => ({...prev, [key]: parseFloat(value) || 0 }));
     }
 
     const handleSaveRates = () => {
-        console.log("Saving fine rates:", rates);
+        setFineRates(rates);
         toast({ title: "Success", description: "Fine rates have been updated." });
     }
 

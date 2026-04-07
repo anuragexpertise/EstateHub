@@ -1,3 +1,4 @@
+
 'use client';
 import * as React from 'react';
 import { ChargesAndPaymentHistoryCard } from '@/components/app/kpi-cards/charges-payment-history-card';
@@ -5,18 +6,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useSearchParams } from 'next/navigation';
 import type { UserRole, Payment } from '@/types';
 import { TrendingDown } from 'lucide-react';
-import { users, rates } from '@/lib/data';
+import { users } from '@/lib/data';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useGlobalStore } from '@/hooks/use-global-store';
 
 function ContractorCharges() {
+    const { contractorRates } = useGlobalStore();
     const user = users.find(u => u.role === 'Contractor');
     if (!user) return null;
 
     // This is simplified logic. A real app would generate charges based on pass validity.
     const userCharges: Payment[] = [
-        { id: 'charge-con-1', userId: user.id, accountId: 'acc-05', amount: rates.contractor['1day'], date: new Date(), status: 'Due', description: '1-Day Pass Fee' }
+        { id: 'charge-con-1', userId: user.id, accountId: 'acc-05', amount: contractorRates['1day'], date: new Date(), status: 'Due', description: '1-Day Pass Fee' }
     ];
     const dateTimeFormatter = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
