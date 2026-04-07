@@ -775,6 +775,87 @@
         "verdict",
         "createdAt"
       ]
+    },
+    "GlobalSettings": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "GlobalSettings",
+      "type": "object",
+      "description": "Stores global application settings, managed by an Admin.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Should be a singleton, e.g., 'global'."
+        },
+        "societyName": {
+          "type": "string"
+        },
+        "logoUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "loginHeroUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "receiptQrUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "calculationStartDate": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "apartmentRates": {
+          "type": "object",
+          "properties": {
+            "1month": {
+              "type": "number"
+            },
+            "3month": {
+              "type": "number"
+            },
+            "6month": {
+              "type": "number"
+            },
+            "12month": {
+              "type": "number"
+            }
+          }
+        },
+        "contractorRates": {
+          "type": "object",
+          "properties": {
+            "1day": {
+              "type": "number"
+            },
+            "7day": {
+              "type": "number"
+            },
+            "1month": {
+              "type": "number"
+            }
+          }
+        },
+        "fineRates": {
+          "type": "object",
+          "properties": {
+            "latePaymentFee": {
+              "type": "number"
+            },
+            "finePercentPerDay": {
+              "type": "number"
+            }
+          }
+        }
+      },
+      "required": [
+        "id",
+        "societyName",
+        "calculationStartDate",
+        "apartmentRates",
+        "contractorRates",
+        "fineRates"
+      ]
     }
   },
   "auth": {
@@ -986,8 +1067,25 @@
             }
           ]
         }
+      },
+      {
+        "path": "/settings/{settingId}",
+        "definition": {
+          "entityName": "GlobalSettings",
+          "schema": {
+            "$ref": "#/backend/entities/GlobalSettings"
+          },
+          "description": "Stores global application settings. The main settings document should have the ID 'global'. Only accessible by Admin.",
+          "params": [
+            {
+              "name": "settingId",
+              "description": "The unique identifier for the setting document, e.g., 'global'."
+            }
+          ]
+        }
       }
     ],
     "reasoning": "The recommended Firestore data structure prioritizes Authorization Independence and QAPs (Queryable Access Patterns) through strategic denormalization and structural segregation, enabling simple, robust, and easily debuggable security rules. \n\n**Authorization Independence (Denormalization Strategy):**\n1.  **User Profiles and Role-Specific Entities:** `UserProfile`, `Resident`, `ServiceVendor`, and `SecurityPersonnel` are treated as direct extensions of the `User` entity. They are nested under `/users/{userId}/` as single documents (e.g., `/users/{userId}/userProfile/profile`). Each of these documents directly includes the `userId` field (or the parent `userId` is implicit in the path), eliminating the need for `get()` calls to the parent `User` document for authorization checks. For instance, a `Resident` document includes its `userId` and `apartmentId`, making it self-sufficient for ownership and related apartment access.\n2.  **Apartment Access:** To allow residents to access their associated `Apartment` details without a `get()` call, the `Apartment` document itself will be denormalized to include a map of `residentUserIds: {uid1: true, uid2: true}`. This allows a direct check `resource.data.residentUserIds[request.auth.uid]` in security rules.\n3.  **Financial Transactions (`Bill`, `Payment`):** Both `Bill` and `Payment` documents explicitly store `payerUserId` and `payeeUserId`. This denormalization is crucial for enabling secure `list` operations (QAPs) where users can only view bills/payments they are directly involved in, without needing to `get()` related user or entity documents.\n4.  **Admin-Managed Entities (`Rate`, `Shift`):** `Rate` documents include `adminId`, and `Shift` documents include both `securityPersonnelId` and `adminId`. This allows security rules to directly verify ownership or management rights.\n5.  **Log Entries (`SystemAuditLog`, `Attendance`, `AccessLog`):** Each log entry includes relevant `userId`s (e.g., `actorUserId`, `verifiedByUserId`, `securityPersonnelId`, `scannerUserId`, `scannerSecurityPersonnelId`) directly within the document. This ensures that a user can list their own related logs, or an Admin/Security can list all, without needing to `get()` other documents.\n\n**QAPs (Queryable Access Patterns) Support:**\n*   **Path-Based Ownership:** The `/users/{userId}/...` structure naturally supports QAPs for user-specific data. A user can query their own `userProfile`, `residentProfile`, `serviceVendorProfile`, or `securityPersonnelProfile` by simply querying within their designated path.\n*   **Role-Specific List Operations:** Collections like `/bills`, `/payments`, `/shifts`, `/attendance`, and `/accessLogs` are designed for efficient `list` operations for specific roles or users. For example, a security rule for `/shifts` can leverage `where('securityPersonnelId', '==', request.auth.uid)` because `securityPersonnelId` is denormalized within each `Shift` document. Similarly, the explicit `payerUserId` and `payeeUserId` fields in `Bill` and `Payment` documents allow users to query only their own transactions, upholding the "
   }
 }
+    

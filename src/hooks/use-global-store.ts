@@ -1,6 +1,5 @@
 
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
 import { rates as defaultRates } from '@/lib/data';
 
 type ApartmentRates = {
@@ -30,19 +29,19 @@ interface GlobalState {
   apartmentRates: ApartmentRates;
   contractorRates: ContractorRates;
   fineRates: FineRates;
+  isLoaded: boolean;
+  initializeStore: (initialState: Partial<GlobalState>) => void;
   setSocietyName: (name: string) => void;
-  setLogoUrl: (url: string) => void;
-  setLoginHeroUrl: (url: string) => void;
-  setReceiptQrUrl: (url: string) => void;
-  setCalculationStartDate: (date: string) => void;
+  setLogoUrl: (url: string | null) => void;
+  setLoginHeroUrl: (url: string | null) => void;
+  setReceiptQrUrl: (url: string | null) => void;
+  setCalculationStartDate: (date: string | null) => void;
   setApartmentRates: (rates: ApartmentRates) => void;
   setContractorRates: (rates: ContractorRates) => void;
   setFineRates: (rates: FineRates) => void;
 }
 
-export const useGlobalStore = create<GlobalState>()(
-  persist(
-    (set) => ({
+export const useGlobalStore = create<GlobalState>()((set) => ({
       societyName: 'EstateHub',
       logoUrl: null,
       loginHeroUrl: null,
@@ -51,6 +50,8 @@ export const useGlobalStore = create<GlobalState>()(
       apartmentRates: defaultRates.apartment,
       contractorRates: defaultRates.contractor,
       fineRates: defaultRates.fines,
+      isLoaded: false,
+      initializeStore: (initialState) => set((state) => ({ ...state, ...initialState, isLoaded: true })),
       setSocietyName: (name) => set({ societyName: name }),
       setLogoUrl: (url) => set({ logoUrl: url }),
       setLoginHeroUrl: (url) => set({ loginHeroUrl: url }),
@@ -59,10 +60,6 @@ export const useGlobalStore = create<GlobalState>()(
       setApartmentRates: (rates) => set({ apartmentRates: rates }),
       setContractorRates: (rates) => set({ contractorRates: rates }),
       setFineRates: (rates) => set({ fineRates: rates }),
-    }),
-    {
-      name: 'global-app-settings',
-      storage: createJSONStorage(() => localStorage),
-    }
-  )
-);
+}));
+
+    

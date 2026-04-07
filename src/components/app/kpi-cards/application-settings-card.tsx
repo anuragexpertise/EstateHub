@@ -25,13 +25,11 @@ import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Upload, Calendar as CalendarIcon } from 'lucide-react';
+import { Upload } from 'lucide-react';
 import { useGlobalStore } from '@/hooks/use-global-store';
 import Image from 'next/image';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
-import { Calendar } from '@/components/ui/calendar';
+import { useFirebase, updateDocumentNonBlocking } from '@/firebase';
+import { doc } from 'firebase/firestore';
 
 
 const appSettingsSchema = z.object({
@@ -39,6 +37,7 @@ const appSettingsSchema = z.object({
 });
 
 export function ApplicationSettingsCard() {
+    const { firestore } = useFirebase();
     const { toast } = useToast();
     const { 
         societyName, 
@@ -69,6 +68,14 @@ export function ApplicationSettingsCard() {
     React.useEffect(() => {
         form.setValue('societyName', societyName);
     }, [societyName, form]);
+
+    React.useEffect(() => {
+        setLogoPreview(logoUrl);
+    }, [logoUrl]);
+
+    React.useEffect(() => {
+        setHeroPreview(loginHeroUrl);
+    }, [loginHeroUrl]);
 
 
     const handleFileChange = (
@@ -125,17 +132,21 @@ export function ApplicationSettingsCard() {
 
     const handleSave = (values: z.infer<typeof appSettingsSchema>) => {
         setSocietyName(values.societyName);
+        if(logoPreview) setLogoUrl(logoPreview);
+        if(heroPreview) setLoginHeroUrl(heroPreview);
         
-        if(logoPreview) {
-            setLogoUrl(logoPreview);
-        }
-        if(heroPreview) {
-            setLoginHeroUrl(heroPreview);
+        if (firestore) {
+            const settingsDoc = doc(firestore, 'settings', 'global');
+            updateDocumentNonBlocking(settingsDoc, {
+                societyName: values.societyName,
+                logoUrl: logoPreview,
+                loginHeroUrl: heroPreview,
+            });
         }
         
         toast({
             title: "Application Settings Updated",
-            description: "Your global application settings have been saved."
+            description: "Your global application settings have been saved to the server."
         });
     }
 
@@ -230,3 +241,5 @@ export function ApplicationSettingsCard() {
         </Card>
     )
 }
+
+    

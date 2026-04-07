@@ -42,6 +42,8 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Upload, Mail, Phone } from 'lucide-react';
 import { useAvatarStore } from '@/hooks/use-avatar-store';
 import { useGlobalStore } from '@/hooks/use-global-store';
+import { useFirebase, updateDocumentNonBlocking } from '@/firebase';
+import { doc } from 'firebase/firestore';
 
 
 const passwordFormSchema = z.object({
@@ -253,6 +255,7 @@ export function SettingsCard() {
 }
 
 export function ApartmentRateManagementCard() {
+    const { firestore } = useFirebase();
     const { toast } = useToast();
     const { apartmentRates, setApartmentRates } = useGlobalStore();
     const [rates, setRates] = useState(apartmentRates);
@@ -267,7 +270,11 @@ export function ApartmentRateManagementCard() {
 
     const handleSaveRates = () => {
         setApartmentRates(rates);
-        toast({ title: "Success", description: "Apartment maintenance rates have been updated." });
+        if (firestore) {
+            const settingsDoc = doc(firestore, 'settings', 'global');
+            updateDocumentNonBlocking(settingsDoc, { apartmentRates: rates });
+        }
+        toast({ title: "Success", description: "Apartment maintenance rates have been updated on the server." });
     }
     return (
         <Card>
@@ -301,6 +308,7 @@ export function ApartmentRateManagementCard() {
 }
 
 export function UtilityContractorRateManagementCard() {
+    const { firestore } = useFirebase();
     const { toast } = useToast();
     const { contractorRates, setContractorRates } = useGlobalStore();
     const [rates, setRates] = useState(contractorRates);
@@ -315,7 +323,11 @@ export function UtilityContractorRateManagementCard() {
 
     const handleSaveRates = () => {
         setContractorRates(rates);
-        toast({ title: "Success", description: "Utility Contractor pass rates have been updated." });
+        if (firestore) {
+            const settingsDoc = doc(firestore, 'settings', 'global');
+            updateDocumentNonBlocking(settingsDoc, { contractorRates: rates });
+        }
+        toast({ title: "Success", description: "Utility Contractor pass rates have been updated on the server." });
     }
     return (
         <Card>
@@ -345,6 +357,7 @@ export function UtilityContractorRateManagementCard() {
 }
 
 export function FineManagementCard() {
+    const { firestore } = useFirebase();
     const { toast } = useToast();
     const { fineRates, setFineRates } = useGlobalStore();
     const [rates, setRates] = useState(fineRates);
@@ -359,7 +372,11 @@ export function FineManagementCard() {
 
     const handleSaveRates = () => {
         setFineRates(rates);
-        toast({ title: "Success", description: "Fine rates have been updated." });
+        if (firestore) {
+            const settingsDoc = doc(firestore, 'settings', 'global');
+            updateDocumentNonBlocking(settingsDoc, { fineRates: rates });
+        }
+        toast({ title: "Success", description: "Fine rates have been updated on the server." });
     }
 
     return (
@@ -444,3 +461,5 @@ export function WorkShiftsCard() {
         </Card>
     );
 }
+
+    

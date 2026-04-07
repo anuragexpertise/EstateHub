@@ -11,6 +11,40 @@ import { SidebarNavHeader } from '@/components/app/sidebar-nav-header';
 import { DateTimeDisplay } from '@/components/app/date-time-display';
 import { useGlobalStore } from '@/hooks/use-global-store';
 import Image from 'next/image';
+import { useFirebase, useDoc, useMemoFirebase } from '@/firebase';
+import { doc, setDoc } from 'firebase/firestore';
+
+function GlobalSettingsInitializer() {
+  const { firestore, user } = useFirebase();
+  const { initializeStore, isLoaded, ...defaults } = useGlobalStore();
+
+  const settingsDocRef = useMemoFirebase(() => firestore ? doc(firestore, 'settings', 'global') : null, [firestore]);
+  const { data: remoteSettings, isLoading } = useDoc(settingsDocRef);
+
+  React.useEffect(() => {
+    if (isLoading || isLoaded) return;
+
+    if (remoteSettings) {
+      initializeStore(remoteSettings);
+    } else if (user && firestore) { 
+      const { isLoaded: loaded, initializeStore: init, ...settingsToSave } = defaults;
+      const settingsRef = doc(firestore, 'settings', 'global');
+      setDoc(settingsRef, settingsToSave)
+        .then(() => {
+          initializeStore(settingsToSave);
+        })
+        .catch(err => {
+          console.log("Could not initialize global settings, likely due to permissions.");
+          initializeStore({});
+        });
+    } else {
+        initializeStore({});
+    }
+  }, [isLoading, isLoaded, remoteSettings, initializeStore, firestore, user, defaults]);
+
+  return null;
+}
+
 
 export default function AppLayout({
   children,
@@ -26,6 +60,7 @@ export default function AppLayout({
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
+       <GlobalSettingsInitializer />
        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background px-4 sm:px-6">
           <a
             href="#"
@@ -77,3 +112,5 @@ export default function AppLayout({
     </div>
   );
 }
+
+    

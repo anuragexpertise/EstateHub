@@ -305,5 +305,11 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
+    match /settings/{settingId} {
+      allow read, write: if isAdmin();
+    }
+
   }
 }
+
+    

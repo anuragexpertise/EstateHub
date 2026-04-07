@@ -31,6 +31,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
+import { useFirebase, updateDocumentNonBlocking } from '@/firebase';
+import { doc } from 'firebase/firestore';
 
 
 const accountSettingsSchema = z.object({
@@ -38,6 +40,7 @@ const accountSettingsSchema = z.object({
 });
 
 export function AccountSettingsCard() {
+    const { firestore } = useFirebase();
     const { toast } = useToast();
     const { 
         receiptQrUrl,
@@ -57,6 +60,10 @@ export function AccountSettingsCard() {
             calculationStartDate: calculationStartDate ? new Date(calculationStartDate) : undefined,
         },
     });
+
+    React.useEffect(() => {
+        setQrPreview(receiptQrUrl);
+    }, [receiptQrUrl]);
 
     React.useEffect(() => {
         if (calculationStartDate) {
@@ -106,17 +113,24 @@ export function AccountSettingsCard() {
     }
 
     const handleSave = (values: z.infer<typeof accountSettingsSchema>) => {
-        if(values.calculationStartDate){
-            setCalculationStartDate(values.calculationStartDate.toISOString());
-        }
+        const newStartDate = values.calculationStartDate ? values.calculationStartDate.toISOString() : null;
 
+        setCalculationStartDate(newStartDate);
         if(qrPreview){
             setReceiptQrUrl(qrPreview);
+        }
+
+        if (firestore) {
+            const settingsDoc = doc(firestore, 'settings', 'global');
+            updateDocumentNonBlocking(settingsDoc, {
+                calculationStartDate: newStartDate,
+                receiptQrUrl: qrPreview
+            });
         }
         
         toast({
             title: "Account Settings Updated",
-            description: "Your account settings have been saved."
+            description: "Your account settings have been saved to the server."
         });
     }
 
@@ -212,3 +226,5 @@ export function AccountSettingsCard() {
         </Card>
     )
 }
+
+    
